@@ -1,0 +1,74 @@
+name: UCP Conformance Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout merchant
+        uses: actions/checkout@v4
+
+      - name: Checkout conformance suite
+        uses: actions/checkout@v4
+        with:
+          repository: Universal-Commerce-Protocol/conformance
+          path: conformance
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install conformance dependencies
+        working-directory: conformance
+        run: uv sync
+
+      - name: Build merchant server
+        run: go build -o merchant-server ./merchant/simple_merchant
+
+      - name: Start merchant server
+        run: |
+          ./merchant-server \
+            --port 8182 \
+            --data-dir ./merchant/simple_merchant/testdata/flower_shop \
+            --simulation-secret super-secret-sim-key &
+          # Wait for server to be ready
+          for i in $(seq 1 30); do
+            curl -s http://localhost:8182/.well-known/ucp > /dev/null && break
+            sleep 1
+          done
+
+      - name: Run conformance tests
+        working-directory: conformance
+        run: |
+          failures=0
+          for test_file in *_test.py; do
+            echo "=== Running $test_file ==="
+            uv run python3 "$test_file" \
+              --server_url=http://localhost:8182 \
+              --simulation_secret=super-secret-sim-key \
+              --conformance_input=test_data/flower_shop/conformance_input.json \
+              --test_data_dir=test_data/flower_shop \
+              || failures=$((failures + 1))
+          done
+          if [ $failures -ne 0 ]; then
+            echo "$failures test file(s) failed"
+            exit 1
+          fi
+
+      - name: Stop merchant server
+        if: always()
+        run: pkill merchant-server || true
