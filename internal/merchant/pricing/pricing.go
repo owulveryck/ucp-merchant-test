@@ -7,7 +7,23 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
-// BuildLineItems creates line items from typed request data.
+// BuildLineItems constructs the UCP line_items array from a platform's checkout
+// or cart request. It resolves each [model.LineItemRequest] against the product
+// catalog, validates stock availability, and computes per-item subtotals.
+//
+// Product resolution tries Item.ID first, then falls back to ProductID. Both
+// must match a variant ID from the merchant's catalog
+// (dev.ucp.shopping.catalog.lookup). If the product is not found or is out of
+// stock, an error is returned.
+//
+// Each resulting [model.LineItem] includes:
+//   - A server-assigned ID ("li_001", "li_002", …) unless the caller provides one
+//   - The resolved product metadata (title, unit price, image URL)
+//   - The requested quantity (minimum 1)
+//   - Totals with "subtotal" (price × quantity) and "total" entries
+//
+// This function is called during checkout create, checkout update (when
+// line_items are provided), and cart create/update operations.
 func BuildLineItems(reqItems []model.LineItemRequest, cat catalog.Catalog) ([]model.LineItem, error) {
 	if len(reqItems) == 0 {
 		return nil, fmt.Errorf("line_items is required")
@@ -68,7 +84,23 @@ func BuildLineItems(reqItems []model.LineItemRequest, cat catalog.Catalog) ([]mo
 	return items, nil
 }
 
-// CalculateTotals computes checkout/cart totals from line items, shipping cost, and discounts.
+// CalculateTotals computes the order-level totals array for a UCP checkout or
+// cart response. It aggregates line item subtotals, applies discounts, adds the
+// fulfillment cost, and produces the final total.
+//
+// The returned totals array follows the UCP-defined ordering:
+//   - "subtotal": sum of all line item subtotals (before discounts and shipping)
+//   - "discount": total discount amount (only present when discounts are applied;
+//     the amount is always a positive integer, displayed as subtractive by platforms)
+//   - "fulfillment": shipping/delivery cost from the selected fulfillment option
+//     (only present when shippingCost > 0; UCP requires this type name, never "shipping")
+//   - "total": final amount = subtotal − discount + fulfillment
+//
+// All amounts are in minor currency units (e.g., cents). Each total includes a
+// DisplayText formatted as "$X.XX" for human-readable rendering.
+//
+// This function is called after every checkout or cart mutation that could affect
+// pricing: line item changes, discount application, and fulfillment option selection.
 func CalculateTotals(items []model.LineItem, shippingCost int, discounts *model.Discounts) []model.Total {
 	subtotal := 0
 	for _, li := range items {

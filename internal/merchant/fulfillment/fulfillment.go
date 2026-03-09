@@ -7,7 +7,10 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
-// Address represents a shipping destination.
+// Address represents a known shipping destination from the merchant's address
+// book, typically loaded from customer data (e.g., addresses.csv). Addresses
+// are keyed by customer email and used during the UCP fulfillment flow to
+// pre-populate destinations when a buyer's identity is linked.
 type Address struct {
 	ID            string
 	CustomerID    string
@@ -18,7 +21,11 @@ type Address struct {
 	Country       string
 }
 
-// ShippingRate represents a fulfillment cost keyed by country code and service level.
+// ShippingRate represents a fulfillment cost for a specific country and service
+// level (e.g., "standard", "express"). Rates are loaded from the merchant's
+// shipping configuration (e.g., shipping_rates.csv) and used by
+// [GenerateShippingOptions] to build the UCP fulfillment options presented to
+// the buyer after destination selection.
 type ShippingRate struct {
 	ID           string
 	CountryCode  string
@@ -27,7 +34,14 @@ type ShippingRate struct {
 	Title        string
 }
 
-// Promotion represents an automatic discount rule such as free shipping.
+// Promotion represents an automatic discount rule applied by the business
+// during fulfillment option generation. The most common type is "free_shipping",
+// which waives the standard shipping fee when the order meets certain criteria.
+//
+// Free shipping promotions are triggered by either:
+//   - MinSubtotal: the order subtotal meets or exceeds this threshold (e.g., $100)
+//   - EligibleItemIDs: the order contains at least one of the specified products
+//     (e.g., "bouquet_roses" always qualifies for free shipping)
 type Promotion struct {
 	ID              string
 	Type            string
@@ -36,7 +50,16 @@ type Promotion struct {
 	Description     string
 }
 
-// FulfillmentDataSource provides access to address, shipping, and promotion data.
+// FulfillmentDataSource provides access to the merchant's address book, shipping
+// rates, and promotion rules. This interface abstracts the data layer so the
+// fulfillment logic can be tested independently of the data source (CSV files,
+// JSON database, etc.).
+//
+// Implementations must support:
+//   - Address lookup by buyer email (for destination pre-population)
+//   - Dynamic address persistence (for new addresses submitted during checkout)
+//   - Country-specific shipping rate retrieval
+//   - Promotion rule retrieval for free shipping evaluation
 type FulfillmentDataSource interface {
 	FindAddressesForEmail(email string) []Address
 	SaveDynamicAddress(email string, addr Address) string
@@ -44,7 +67,14 @@ type FulfillmentDataSource interface {
 	GetPromotions() []Promotion
 }
 
-// MatchExistingAddress checks if a submitted address matches an existing one.
+// MatchExistingAddress performs case-insensitive matching of a submitted address
+// against a list of known addresses. This supports the UCP fulfillment flow where
+// a buyer submits a new destination without an ID — the server checks whether
+// the address already exists in the buyer's address book to avoid creating
+// duplicates.
+//
+// Returns the first matching address, or nil if no match is found. All string
+// comparisons use case-insensitive folding per UCP conventions.
 func MatchExistingAddress(addrs []Address, street, locality, region, postal, country string) *Address {
 	for i := range addrs {
 		a := &addrs[i]
@@ -59,7 +89,36 @@ func MatchExistingAddress(addrs []Address, street, locality, region, postal, cou
 	return nil
 }
 
-// ParseFulfillment parses fulfillment data from a typed request.
+// ParseFulfillment processes the fulfillment section of a UCP checkout create or
+// update request, implementing the progressive fulfillment flow defined by the
+// Fulfillment Extension (dev.ucp.shopping.fulfillment).
+//
+// The function handles all stages of the fulfillment lifecycle:
+//
+//  1. Method initialization: creates fulfillment methods from the request,
+//     linking all checkout line items to each method via LineItemIDs.
+//
+//  2. Destination population: if the request includes destinations, they are
+//     parsed via [ParseDestination]. If no destinations are provided and the
+//     method type is "shipping", the function auto-populates destinations from
+//     the buyer's known addresses (looked up by email via the [FulfillmentDataSource]).
+//
+//  3. Destination selection: when SelectedDestinationID is set, the selected
+//     destination is recorded in checkoutDestinations (for order creation) and
+//     shipping options are generated for the destination's country via
+//     [GenerateShippingOptions].
+//
+//  4. Option selection: when Groups with SelectedOptionID are provided, the
+//     selected option title is recorded in checkoutOptionTitles (for order
+//     fulfillment expectations). Existing options from the checkout's prior state
+//     are preserved so the response includes the full option list.
+//
+// Returns nil when req is nil or contains no methods, indicating the checkout
+// has no fulfillment requirements (appropriate for digital goods).
+//
+// The checkoutDestinations and checkoutOptionTitles maps accumulate state across
+// multiple checkout updates, keyed by checkout ID. The addrSeqCounter and
+// addrSeqMu provide thread-safe generation of dynamic address IDs.
 func ParseFulfillment(
 	req *model.FulfillmentRequest,
 	buyer *model.Buyer,
@@ -207,7 +266,26 @@ func ParseFulfillment(
 	return f
 }
 
-// ParseDestination parses a destination from a typed request.
+// ParseDestination converts a [model.FulfillmentDestinationRequest] into a
+// [model.FulfillmentDestination] suitable for inclusion in a UCP checkout
+// response.
+//
+// When the request includes an ID, the destination is used as-is (it references
+// a known address). When no ID is provided, the function performs address
+// deduplication:
+//
+//  1. If a buyer email is available, existing addresses for that email are
+//     searched via [MatchExistingAddress] (case-insensitive field comparison).
+//  2. If a match is found, the existing address ID is reused.
+//  3. If no match is found, a new dynamic address ID is generated
+//     ("addr_dyn_1", "addr_dyn_2", etc.) and the address is saved via the
+//     [FulfillmentDataSource] for future lookups.
+//  4. If no buyer email is available, a dynamic ID is assigned without saving.
+//
+// This supports the UCP flow where buyers submit new shipping addresses during
+// checkout — the business ensures each unique address gets a stable ID that
+// can be referenced in subsequent operations (destination selection, order
+// fulfillment expectations).
 func ParseDestination(
 	dReq model.FulfillmentDestinationRequest,
 	buyer *model.Buyer,
@@ -263,7 +341,29 @@ func ParseDestination(
 	return dest
 }
 
-// GenerateShippingOptions generates shipping options based on country and checkout.
+// GenerateShippingOptions creates the UCP fulfillment options array for a
+// destination country. Options represent selectable shipping speeds with costs,
+// displayed to the buyer after they select a destination address.
+//
+// The function queries the [FulfillmentDataSource] for country-specific shipping
+// rates and evaluates free shipping promotions against the current checkout:
+//
+//   - Subtotal threshold: if the order subtotal meets or exceeds a promotion's
+//     MinSubtotal, standard shipping is free (e.g., orders >= $100)
+//   - Eligible items: if the order contains any product listed in the
+//     promotion's EligibleItemIDs, standard shipping is free
+//     (e.g., "bouquet_roses" always ships free)
+//
+// When free shipping applies, the standard rate's price is set to 0 and its
+// title is changed to "Free Standard Shipping". Other service levels (express,
+// next-day) are unaffected.
+//
+// Each returned [model.FulfillmentOption] includes:
+//   - ID and Title for display
+//   - Totals with "fulfillment" and "total" amounts (per UCP, never "shipping")
+//
+// Per UCP rendering guidelines, title + totals is sufficient for a platform to
+// render any fulfillment option without understanding the specific method type.
 func GenerateShippingOptions(country string, co *model.Checkout, ds FulfillmentDataSource) []model.FulfillmentOption {
 	rates := ds.GetShippingRatesForCountry(country)
 	var options []model.FulfillmentOption
@@ -325,7 +425,15 @@ func GenerateShippingOptions(country string, co *model.Checkout, ds FulfillmentD
 	return options
 }
 
-// GetCurrentShippingCost extracts the selected shipping cost from a checkout.
+// GetCurrentShippingCost extracts the total amount from the currently selected
+// shipping option in a checkout's fulfillment structure. This value is used as
+// the shippingCost parameter in [pricing.CalculateTotals] to include fulfillment
+// cost in the checkout-level totals.
+//
+// The function traverses the fulfillment hierarchy: methods → groups →
+// selected option → totals, looking for the "total" total type on the selected
+// option. Returns 0 when no fulfillment is configured or no option is selected,
+// which is appropriate for checkouts without physical delivery requirements.
 func GetCurrentShippingCost(co *model.Checkout) int {
 	if co.Fulfillment == nil {
 		return 0
@@ -348,7 +456,17 @@ func GetCurrentShippingCost(co *model.Checkout) int {
 	return 0
 }
 
-// IsFulfillmentComplete checks if fulfillment has all required selections.
+// IsFulfillmentComplete checks whether all required fulfillment selections have
+// been made, which is a precondition for completing a UCP checkout session.
+//
+// A checkout's fulfillment is complete when every method has:
+//   - A selected destination (SelectedDestinationID is non-empty)
+//   - At least one group with a selected shipping option (SelectedOptionID is non-empty)
+//
+// The checkout can only transition to the "ready_for_complete" status (and
+// subsequently be completed via the complete endpoint) when this function
+// returns true. Returns false when fulfillment is nil (digital goods checkouts
+// should not call this function — they do not require fulfillment).
 func IsFulfillmentComplete(co *model.Checkout) bool {
 	if co.Fulfillment == nil {
 		return false
