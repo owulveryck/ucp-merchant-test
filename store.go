@@ -73,4 +73,11 @@ func resetStores() {
 	sessionMu.Lock()
 	sessionCounter = 0
 	sessionMu.Unlock()
+
+	// OAuth token state
+	oauthMu.Lock()
+	accessTokens = map[string]*tokenEntry{}
+	refreshTokens = map[string]*refreshEntry{}
+	authCodes = map[string]*authCode{}
+	oauthMu.Unlock()
 }
