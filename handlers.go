@@ -6,86 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"sync"
 	"time"
 )
 
+// MCP-specific types for legacy order progression.
 type Shipment struct {
 	TrackingNumber string    `json:"tracking_number"`
 	Carrier        string    `json:"carrier"`
 	EstimatedDate  string    `json:"estimated_delivery,omitempty"`
 	ShippedAt      time.Time `json:"shipped_at,omitempty"`
 	DeliveredAt    time.Time `json:"delivered_at,omitempty"`
-}
-
-// UCP data types
-
-type Item struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Price    int    `json:"price"`
-	ImageURL string `json:"image_url,omitempty"`
-}
-
-type Total struct {
-	Type        string `json:"type"`
-	DisplayText string `json:"display_text,omitempty"`
-	Amount      int    `json:"amount"`
-}
-
-type LineItem struct {
-	ID       string  `json:"id"`
-	Item     Item    `json:"item"`
-	Quantity int     `json:"quantity"`
-	Totals   []Total `json:"totals"`
-}
-
-type Address struct {
-	Street  string `json:"street,omitempty"`
-	City    string `json:"city,omitempty"`
-	State   string `json:"state,omitempty"`
-	Zip     string `json:"zip,omitempty"`
-	Country string `json:"country,omitempty"`
-}
-
-type Buyer struct {
-	Name    string   `json:"name,omitempty"`
-	Email   string   `json:"email,omitempty"`
-	Address *Address `json:"address,omitempty"`
-}
-
-type Link struct {
-	Rel string `json:"rel"`
-	URL string `json:"url"`
-}
-
-type Order struct {
-	ID            string     `json:"id"`
-	OwnerID       string     `json:"owner_id,omitempty"`
-	Status        string     `json:"status"`
-	ConfirmationN string     `json:"confirmation_number"`
-	LineItems     []LineItem `json:"line_items,omitempty"`
-	Currency      string     `json:"currency,omitempty"`
-	Totals        []Total    `json:"totals,omitempty"`
-	Buyer         *Buyer     `json:"buyer,omitempty"`
-	Shipment      *Shipment  `json:"shipment,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	cancelCh      chan struct{}
-}
-
-type Cart struct {
-	ID        string     `json:"id"`
-	OwnerID   string     `json:"owner_id,omitempty"`
-	LineItems []LineItem `json:"line_items"`
-	Currency  string     `json:"currency"`
-	Totals    []Total    `json:"totals"`
-	Messages  []Message  `json:"messages,omitempty"`
-}
-
-type Message struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
 }
 
 type ShippingOption struct {
@@ -97,50 +27,20 @@ type ShippingOption struct {
 	DisplayText   string `json:"display_text"`
 }
 
-type Checkout struct {
-	ID               string          `json:"id"`
-	OwnerID          string          `json:"owner_id,omitempty"`
-	LineItems        []LineItem      `json:"line_items"`
-	Status           string          `json:"status"`
-	Currency         string          `json:"currency"`
-	Totals           []Total         `json:"totals"`
-	CheckoutHash     string          `json:"checkout_hash,omitempty"`
-	Links            []Link          `json:"links,omitempty"`
-	Buyer            *Buyer          `json:"buyer,omitempty"`
-	SelectedShipping *ShippingOption `json:"selected_shipping,omitempty"`
-	ContinueURL      string          `json:"continue_url,omitempty"`
-	Order            *Order          `json:"order,omitempty"`
+// MCP checkout wrapper that adds MCP-specific fields around the canonical Checkout.
+type MCPCheckoutState struct {
+	Checkout     *Checkout       `json:"-"`
+	OwnerID      string          `json:"-"`
+	CheckoutHash string          `json:"-"`
+	Shipping     *ShippingOption `json:"-"`
 }
 
-// In-memory stores
+// In-memory MCP-specific state
 var (
-	carts       = map[string]*Cart{}
-	checkouts   = map[string]*Checkout{}
-	orders      = map[string]*Order{}
-	cartSeq     int
-	checkoutSeq int
-	orderSeq    int
-	storeMu     sync.Mutex
+	mcpCheckoutStates = map[string]*MCPCheckoutState{}
+	mcpOrderShipments = map[string]*Shipment{}
+	mcpOrderOwners    = map[string]string{} // orderID -> ownerID
 )
-
-const taxRate = 0.20 // 20% tax
-
-func getShippingOptions() []ShippingOption {
-	return []ShippingOption{
-		{ID: "standard", Method: "Standard Shipping", Carrier: "PostalService", EstimatedDays: 7, Price: 0, DisplayText: "Free — 5-7 business days"},
-		{ID: "express", Method: "Express Shipping", Carrier: "FastShip Express", EstimatedDays: 3, Price: 999, DisplayText: "$9.99 — 2-3 business days"},
-		{ID: "next_day", Method: "Next Day Delivery", Carrier: "FastShip Priority", EstimatedDays: 1, Price: 1999, DisplayText: "$19.99 — next business day"},
-	}
-}
-
-func findShippingOption(id string) *ShippingOption {
-	for _, opt := range getShippingOptions() {
-		if opt.ID == id {
-			return &opt
-		}
-	}
-	return nil
-}
 
 // extractUserID gets the _user_id injected by the MCP handler. Empty string = guest.
 func extractUserID(args map[string]interface{}) string {
@@ -155,8 +55,6 @@ func extractUserCountryFromArgs(args map[string]interface{}) string {
 }
 
 // canAccessEntity checks if a user can access an entity.
-// Authenticated users can only access their own entities.
-// Guests (empty userID) can access guest entities (empty ownerID).
 func canAccessEntity(userID, ownerID string) bool {
 	if userID == "" {
 		return ownerID == ""
@@ -164,84 +62,9 @@ func canAccessEntity(userID, ownerID string) bool {
 	return ownerID == userID
 }
 
-func buildLineItems(rawItems []map[string]interface{}) ([]LineItem, error) {
-	var items []LineItem
-	for i, raw := range rawItems {
-		productID, _ := raw["product_id"].(string)
-		if productID == "" {
-			// Try item.id as fallback
-			if itemMap, ok := raw["item"].(map[string]interface{}); ok {
-				productID, _ = itemMap["id"].(string)
-			}
-		}
-		if productID == "" {
-			return nil, fmt.Errorf("line item %d: missing product_id", i)
-		}
-		product := findProduct(productID)
-		if product == nil {
-			return nil, fmt.Errorf("product not found: %s", productID)
-		}
-		qty := 1
-		if q, ok := raw["quantity"].(float64); ok {
-			qty = int(q)
-		}
-		if qty < 1 {
-			qty = 1
-		}
-		lineTotal := product.Price * qty
-		li := LineItem{
-			ID:       fmt.Sprintf("LI-%03d", i+1),
-			Item:     Item{ID: product.ID, Title: product.Title, Price: product.Price, ImageURL: product.ImageURL},
-			Quantity: qty,
-			Totals:   []Total{{Type: "subtotal", Amount: lineTotal}},
-		}
-		items = append(items, li)
-	}
-	return items, nil
-}
-
-func calculateTotals(items []LineItem) []Total {
-	return calculateTotalsWithShipping(items, nil)
-}
-
-func calculateTotalsWithShipping(items []LineItem, shipping *ShippingOption) []Total {
-	subtotal := 0
-	for _, li := range items {
-		for _, t := range li.Totals {
-			if t.Type == "subtotal" {
-				subtotal += t.Amount
-			}
-		}
-	}
-	tax := int(float64(subtotal) * taxRate)
-	total := subtotal + tax
-
-	totals := []Total{
-		{Type: "subtotal", DisplayText: fmt.Sprintf("$%.2f", float64(subtotal)/100), Amount: subtotal},
-		{Type: "tax", DisplayText: fmt.Sprintf("$%.2f (20%%)", float64(tax)/100), Amount: tax},
-	}
-
-	if shipping != nil {
-		totals = append(totals, Total{
-			Type:        "shipping",
-			DisplayText: fmt.Sprintf("$%.2f (%s)", float64(shipping.Price)/100, shipping.Method),
-			Amount:      shipping.Price,
-		})
-		total += shipping.Price
-	}
-
-	totals = append(totals, Total{
-		Type:        "total",
-		DisplayText: fmt.Sprintf("$%.2f", float64(total)/100),
-		Amount:      total,
-	})
-	return totals
-}
-
 // Tool handlers
 
 func handleListProducts(args map[string]interface{}) (interface{}, error) {
-	// Parse optional filters
 	category, _ := args["category"].(string)
 	brand, _ := args["brand"].(string)
 	query, _ := args["query"].(string)
@@ -267,10 +90,8 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 		offset = 0
 	}
 
-	// Filter
 	filtered := filterCatalog(category, brand, query, usageType, userCountry)
 
-	// Sort by Rank ascending, then Title for stability
 	sort.Slice(filtered, func(i, j int) bool {
 		if filtered[i].Rank != filtered[j].Rank {
 			return filtered[i].Rank < filtered[j].Rank
@@ -278,12 +99,10 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 		return filtered[i].Title < filtered[j].Title
 	})
 
-	// Categories (always computed from full catalog for discovery)
 	categories := categoryCount(catalog)
 
 	total := len(filtered)
 
-	// Apply pagination
 	if offset > total {
 		offset = total
 	}
@@ -293,7 +112,6 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 	}
 	page := filtered[offset:end]
 
-	// Build response
 	type productInfo struct {
 		ID                 string   `json:"id"`
 		Title              string   `json:"title"`
@@ -387,14 +205,7 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("cart must have at least one line item")
 	}
 
-	var itemMaps []map[string]interface{}
-	for _, ri := range rawItems {
-		if m, ok := ri.(map[string]interface{}); ok {
-			itemMaps = append(itemMaps, m)
-		}
-	}
-
-	lineItems, err := buildLineItems(itemMaps)
+	lineItems, err := buildLineItems(cartData)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +216,7 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 		OwnerID:   extractUserID(args),
 		LineItems: lineItems,
 		Currency:  "USD",
-		Totals:    calculateTotals(lineItems),
+		Totals:    calculateTotals(lineItems, 0, nil),
 	}
 	carts[cart.ID] = cart
 	hub.Publish(DashboardEvent{Type: "cart_created", ID: cart.ID, Summary: fmt.Sprintf("Cart %s created with %d items, total %s", cart.ID, len(cart.LineItems), cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
@@ -440,18 +251,12 @@ func handleUpdateCart(args map[string]interface{}) (interface{}, error) {
 	}
 	rawItems, _ := cartData["line_items"].([]interface{})
 	if len(rawItems) > 0 {
-		var itemMaps []map[string]interface{}
-		for _, ri := range rawItems {
-			if m, ok := ri.(map[string]interface{}); ok {
-				itemMaps = append(itemMaps, m)
-			}
-		}
-		lineItems, err := buildLineItems(itemMaps)
+		lineItems, err := buildLineItems(cartData)
 		if err != nil {
 			return nil, err
 		}
 		cart.LineItems = lineItems
-		cart.Totals = calculateTotals(lineItems)
+		cart.Totals = calculateTotals(lineItems, 0, nil)
 	}
 	hub.Publish(DashboardEvent{Type: "cart_updated", ID: cart.ID, Summary: fmt.Sprintf("Cart %s updated, total %s", cart.ID, cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
 	return cart, nil
@@ -495,14 +300,8 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 		if len(rawItems) == 0 {
 			return nil, fmt.Errorf("checkout must have line_items or cart_id")
 		}
-		var itemMaps []map[string]interface{}
-		for _, ri := range rawItems {
-			if m, ok := ri.(map[string]interface{}); ok {
-				itemMaps = append(itemMaps, m)
-			}
-		}
 		var err error
-		lineItems, err = buildLineItems(itemMaps)
+		lineItems, err = buildLineItems(checkoutData)
 		if err != nil {
 			return nil, err
 		}
@@ -520,28 +319,39 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 	}
 
 	checkoutSeq++
+	coID := fmt.Sprintf("checkout-%04d", checkoutSeq)
+
 	co := &Checkout{
-		ID:        fmt.Sprintf("checkout-%04d", checkoutSeq),
-		OwnerID:   extractUserID(args),
-		LineItems: lineItems,
+		ID:        coID,
 		Status:    "incomplete",
+		UCP:       UCPEnvelope{Version: "2026-01-11", Capabilities: []Capability{}},
+		Links:     []Link{{Type: "application/json", URL: fmt.Sprintf("http://localhost:%d/checkout/%s", listenPort, coID)}},
 		Currency:  "USD",
-		Totals:    calculateTotals(lineItems),
-		Links:     []Link{{Rel: "self", URL: fmt.Sprintf("http://localhost:%d/checkout/checkout-%04d", listenPort, checkoutSeq)}},
+		LineItems: lineItems,
+		Totals:    calculateTotals(lineItems, 0, nil),
+		Payment:   defaultPayment(),
 	}
+
+	ownerID := extractUserID(args)
 
 	// Check for buyer info
 	if buyerData, ok := checkoutData["buyer"].(map[string]interface{}); ok {
-		co.Buyer = parseBuyer(buyerData)
-		if co.Buyer.Address != nil {
-			co.Status = "ready_for_complete"
-		}
+		checkoutData["buyer"] = buyerData
+		co.Buyer = parseBuyer(checkoutData)
 	}
 
-	co.CheckoutHash = computeCheckoutHash(co)
+	state := &MCPCheckoutState{
+		Checkout: co,
+		OwnerID:  ownerID,
+	}
+	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
+
 	checkouts[co.ID] = co
-	hub.Publish(DashboardEvent{Type: "checkout_created", ID: co.ID, Summary: fmt.Sprintf("Checkout %s created, total %s", co.ID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *co})
-	return co, nil
+	mcpCheckoutStates[co.ID] = state
+
+	hub.Publish(DashboardEvent{Type: "checkout_created", ID: co.ID, Summary: fmt.Sprintf("Checkout %s created, total %s", co.ID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now()})
+
+	return mcpCheckoutResponse(co, state), nil
 }
 
 func handleGetCheckout(args map[string]interface{}) (interface{}, error) {
@@ -550,11 +360,15 @@ func handleGetCheckout(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	co, ok := checkouts[id]
-	if !ok || !canAccessEntity(extractUserID(args), co.OwnerID) {
+	if !ok {
 		return nil, fmt.Errorf("checkout not found: %s", id)
 	}
-	co.CheckoutHash = computeCheckoutHash(co)
-	return co, nil
+	state := mcpCheckoutStates[id]
+	if state == nil || !canAccessEntity(extractUserID(args), state.OwnerID) {
+		return nil, fmt.Errorf("checkout not found: %s", id)
+	}
+	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
+	return mcpCheckoutResponse(co, state), nil
 }
 
 func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
@@ -563,7 +377,11 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	co, ok := checkouts[id]
-	if !ok || !canAccessEntity(extractUserID(args), co.OwnerID) {
+	if !ok {
+		return nil, fmt.Errorf("checkout not found: %s", id)
+	}
+	state := mcpCheckoutStates[id]
+	if state == nil || !canAccessEntity(extractUserID(args), state.OwnerID) {
 		return nil, fmt.Errorf("checkout not found: %s", id)
 	}
 	if co.Status == "completed" || co.Status == "canceled" {
@@ -577,41 +395,37 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 
 	// Update line items if provided
 	if rawItems, ok := checkoutData["line_items"].([]interface{}); ok && len(rawItems) > 0 {
-		var itemMaps []map[string]interface{}
-		for _, ri := range rawItems {
-			if m, ok := ri.(map[string]interface{}); ok {
-				itemMaps = append(itemMaps, m)
-			}
-		}
-		lineItems, err := buildLineItems(itemMaps)
+		lineItems, err := buildLineItems(checkoutData)
 		if err != nil {
 			return nil, err
 		}
 		co.LineItems = lineItems
-		co.Totals = calculateTotals(lineItems)
 	}
 
 	// Update buyer if provided
-	if buyerData, ok := checkoutData["buyer"].(map[string]interface{}); ok {
-		co.Buyer = parseBuyer(buyerData)
-		if co.Buyer.Address != nil && co.Status == "incomplete" {
-			co.Status = "ready_for_complete"
-		}
+	if _, ok := checkoutData["buyer"]; ok {
+		co.Buyer = parseBuyer(checkoutData)
 	}
 
-	// Update shipping option if provided
+	// Update shipping option if provided (MCP-specific)
 	if shippingID, ok := checkoutData["shipping_option_id"].(string); ok {
 		opt := findShippingOption(shippingID)
 		if opt == nil {
 			return nil, fmt.Errorf("unknown shipping option: %s — use get_shipping_options to see available options", shippingID)
 		}
-		co.SelectedShipping = opt
-		co.Totals = calculateTotalsWithShipping(co.LineItems, co.SelectedShipping)
+		state.Shipping = opt
 	}
 
-	co.CheckoutHash = computeCheckoutHash(co)
-	hub.Publish(DashboardEvent{Type: "checkout_updated", ID: co.ID, Summary: fmt.Sprintf("Checkout %s updated, status: %s", co.ID, co.Status), Timestamp: time.Now(), Data: *co})
-	return co, nil
+	// Recalculate totals
+	shippingCost := 0
+	if state.Shipping != nil {
+		shippingCost = state.Shipping.Price
+	}
+	co.Totals = calculateTotals(co.LineItems, shippingCost, co.Discounts)
+
+	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
+	hub.Publish(DashboardEvent{Type: "checkout_updated", ID: co.ID, Summary: fmt.Sprintf("Checkout %s updated, status: %s", co.ID, co.Status), Timestamp: time.Now()})
+	return mcpCheckoutResponse(co, state), nil
 }
 
 func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
@@ -620,7 +434,11 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	co, ok := checkouts[id]
-	if !ok || !canAccessEntity(extractUserID(args), co.OwnerID) {
+	if !ok {
+		return nil, fmt.Errorf("checkout not found: %s", id)
+	}
+	state := mcpCheckoutStates[id]
+	if state == nil || !canAccessEntity(extractUserID(args), state.OwnerID) {
 		return nil, fmt.Errorf("checkout not found: %s", id)
 	}
 	if co.Status == "completed" {
@@ -633,8 +451,8 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 	// Re-validate country availability at completion time
 	userCountry := extractUserCountryFromArgs(args)
 	country := userCountry
-	if co.Buyer != nil && co.Buyer.Address != nil && co.Buyer.Address.Country != "" {
-		country = co.Buyer.Address.Country
+	if co.Buyer != nil && co.Buyer.FullName != "" {
+		// Check if buyer has address info via fulfillment destinations
 	}
 	if country != "" {
 		for _, li := range co.LineItems {
@@ -654,52 +472,62 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 	if submittedHash == "" {
 		return nil, fmt.Errorf("approval.checkout_hash is required")
 	}
-	expectedHash := computeCheckoutHash(co)
+	expectedHash := computeCheckoutHash(co, state.Shipping)
 	if submittedHash != expectedHash {
 		return nil, fmt.Errorf("checkout state changed since approval — re-fetch the checkout and request user approval again")
 	}
 
 	// Recalculate totals with shipping if selected
-	if co.SelectedShipping != nil {
-		co.Totals = calculateTotalsWithShipping(co.LineItems, co.SelectedShipping)
+	if state.Shipping != nil {
+		co.Totals = calculateTotals(co.LineItems, state.Shipping.Price, co.Discounts)
 	}
 
 	orderSeq++
-	now := time.Now()
-	cancelCh := make(chan struct{})
-	ord := &Order{
-		ID:            fmt.Sprintf("order-%04d", orderSeq),
-		OwnerID:       co.OwnerID,
-		Status:        "confirmed",
-		ConfirmationN: fmt.Sprintf("CONF-%06d", orderSeq*1000+1),
-		LineItems:     co.LineItems,
-		Currency:      co.Currency,
-		Totals:        co.Totals,
-		Buyer:         co.Buyer,
-		CreatedAt:     now,
-		UpdatedAt:     now,
-		cancelCh:      cancelCh,
+	orderID := fmt.Sprintf("order-%04d", orderSeq)
+
+	// Build order line items
+	var orderLineItems []OrderLineItem
+	for _, li := range co.LineItems {
+		orderLineItems = append(orderLineItems, OrderLineItem{
+			ID:       li.ID,
+			Item:     li.Item,
+			Quantity: OrderQuantity{Total: li.Quantity, Fulfilled: 0},
+			Totals:   li.Totals,
+			Status:   "processing",
+		})
 	}
-	orders[ord.ID] = ord
+
+	order := &Order{
+		ID:           orderID,
+		UCP:          UCPEnvelope{Version: "2026-01-11", Capabilities: []Capability{}},
+		CheckoutID:   co.ID,
+		PermalinkURL: fmt.Sprintf("http://localhost:%d/orders/%s", listenPort, orderID),
+		LineItems:    orderLineItems,
+		Fulfillment:  OrderFulfillment{},
+		Currency:     co.Currency,
+		Totals:       co.Totals,
+	}
+	orders[orderID] = order
+	mcpOrderOwners[orderID] = state.OwnerID
 
 	co.Status = "completed"
-	co.Order = &Order{
-		ID:            ord.ID,
-		Status:        ord.Status,
-		ConfirmationN: ord.ConfirmationN,
+	co.Order = &OrderRef{
+		ID:           orderID,
+		PermalinkURL: order.PermalinkURL,
 	}
-	co.CheckoutHash = computeCheckoutHash(co)
+	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
 
-	// Copy order for event to avoid race
-	ordCopy := *ord
-	ordCopy.cancelCh = nil
+	hub.Publish(DashboardEvent{Type: "checkout_completed", ID: co.ID, Summary: fmt.Sprintf("Order %s placed, total %s", orderID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now()})
+	hub.Publish(DashboardEvent{Type: "order_confirmed", ID: orderID, Summary: fmt.Sprintf("Order %s confirmed", orderID), Timestamp: time.Now()})
 
-	hub.Publish(DashboardEvent{Type: "checkout_completed", ID: co.ID, Summary: fmt.Sprintf("Order %s placed (%s), total %s", co.Order.ID, co.Order.ConfirmationN, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *co})
-	hub.Publish(DashboardEvent{Type: "order_confirmed", ID: ord.ID, Summary: fmt.Sprintf("Order %s confirmed", ord.ID), Timestamp: time.Now(), Data: ordCopy})
+	cancelCh := make(chan struct{})
+	orderCancelChsMu.Lock()
+	orderCancelChs[orderID] = cancelCh
+	orderCancelChsMu.Unlock()
 
-	go startOrderProgression(ord.ID, co.SelectedShipping, cancelCh)
+	go startOrderProgression(orderID, state.Shipping, cancelCh)
 
-	return co, nil
+	return mcpCheckoutResponse(co, state), nil
 }
 
 func handleCancelCheckout(args map[string]interface{}) (interface{}, error) {
@@ -708,16 +536,54 @@ func handleCancelCheckout(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	co, ok := checkouts[id]
-	if !ok || !canAccessEntity(extractUserID(args), co.OwnerID) {
+	if !ok {
+		return nil, fmt.Errorf("checkout not found: %s", id)
+	}
+	state := mcpCheckoutStates[id]
+	if state == nil || !canAccessEntity(extractUserID(args), state.OwnerID) {
 		return nil, fmt.Errorf("checkout not found: %s", id)
 	}
 	if co.Status == "completed" {
 		return nil, fmt.Errorf("cannot cancel completed checkout")
 	}
 	co.Status = "canceled"
-	co.CheckoutHash = computeCheckoutHash(co)
-	hub.Publish(DashboardEvent{Type: "checkout_canceled", ID: co.ID, Summary: fmt.Sprintf("Checkout %s canceled", co.ID), Timestamp: time.Now(), Data: *co})
-	return co, nil
+	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
+	hub.Publish(DashboardEvent{Type: "checkout_canceled", ID: co.ID, Summary: fmt.Sprintf("Checkout %s canceled", co.ID), Timestamp: time.Now()})
+	return mcpCheckoutResponse(co, state), nil
+}
+
+// mcpCheckoutResponse builds the MCP response for a checkout, adding MCP-specific fields.
+func mcpCheckoutResponse(co *Checkout, state *MCPCheckoutState) interface{} {
+	resp := map[string]interface{}{
+		"id":         co.ID,
+		"status":     co.Status,
+		"currency":   co.Currency,
+		"line_items": co.LineItems,
+		"totals":     co.Totals,
+		"links":      co.Links,
+	}
+	if state != nil && state.CheckoutHash != "" {
+		resp["checkout_hash"] = state.CheckoutHash
+	}
+	if co.Buyer != nil {
+		resp["buyer"] = co.Buyer
+	}
+	if state != nil && state.Shipping != nil {
+		resp["selected_shipping"] = state.Shipping
+	}
+	if co.Order != nil {
+		resp["order"] = map[string]interface{}{
+			"id":            co.Order.ID,
+			"permalink_url": co.Order.PermalinkURL,
+		}
+	}
+	if co.Fulfillment != nil {
+		resp["fulfillment"] = co.Fulfillment
+	}
+	if co.Discounts != nil {
+		resp["discounts"] = co.Discounts
+	}
+	return resp
 }
 
 // extractImageURLs walks a result structure and returns all image_url values found.
@@ -755,35 +621,6 @@ func extractImageURLs(result interface{}) []string {
 	return urls
 }
 
-func parseBuyer(data map[string]interface{}) *Buyer {
-	b := &Buyer{}
-	if name, ok := data["name"].(string); ok {
-		b.Name = name
-	}
-	if email, ok := data["email"].(string); ok {
-		b.Email = email
-	}
-	if addrData, ok := data["address"].(map[string]interface{}); ok {
-		b.Address = &Address{}
-		if s, ok := addrData["street"].(string); ok {
-			b.Address.Street = s
-		}
-		if s, ok := addrData["city"].(string); ok {
-			b.Address.City = s
-		}
-		if s, ok := addrData["state"].(string); ok {
-			b.Address.State = s
-		}
-		if s, ok := addrData["zip"].(string); ok {
-			b.Address.Zip = s
-		}
-		if s, ok := addrData["country"].(string); ok {
-			b.Address.Country = s
-		}
-	}
-	return b
-}
-
 // Order management handlers
 
 func handleGetOrder(args map[string]interface{}) (interface{}, error) {
@@ -792,10 +629,15 @@ func handleGetOrder(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	ord, ok := orders[id]
-	if !ok || !canAccessEntity(extractUserID(args), ord.OwnerID) {
+	if !ok {
 		return nil, fmt.Errorf("order not found: %s", id)
 	}
-	return ord, nil
+	ownerID := mcpOrderOwners[id]
+	if !canAccessEntity(extractUserID(args), ownerID) {
+		return nil, fmt.Errorf("order not found: %s", id)
+	}
+
+	return mcpOrderResponse(ord), nil
 }
 
 func handleListOrders(args map[string]interface{}) (interface{}, error) {
@@ -805,15 +647,16 @@ func handleListOrders(args map[string]interface{}) (interface{}, error) {
 	userID := extractUserID(args)
 
 	type orderSummary struct {
-		ID            string `json:"id"`
-		Status        string `json:"status"`
-		ConfirmationN string `json:"confirmation_number"`
-		Total         string `json:"total"`
-		CreatedAt     string `json:"created_at"`
+		ID           string `json:"id"`
+		Status       string `json:"status"`
+		CheckoutID   string `json:"checkout_id"`
+		PermalinkURL string `json:"permalink_url"`
+		Total        string `json:"total"`
 	}
 	var summaries []orderSummary
 	for _, ord := range orders {
-		if !canAccessEntity(userID, ord.OwnerID) {
+		ownerID := mcpOrderOwners[ord.ID]
+		if !canAccessEntity(userID, ownerID) {
 			continue
 		}
 		totalText := ""
@@ -823,11 +666,11 @@ func handleListOrders(args map[string]interface{}) (interface{}, error) {
 			}
 		}
 		summaries = append(summaries, orderSummary{
-			ID:            ord.ID,
-			Status:        ord.Status,
-			ConfirmationN: ord.ConfirmationN,
-			Total:         totalText,
-			CreatedAt:     ord.CreatedAt.Format(time.RFC3339),
+			ID:           ord.ID,
+			Status:       "confirmed", // MCP orders start as confirmed
+			CheckoutID:   ord.CheckoutID,
+			PermalinkURL: ord.PermalinkURL,
+			Total:        totalText,
 		})
 	}
 	hub.Publish(DashboardEvent{Type: "orders_listed", Summary: "Order list queried", Timestamp: time.Now()})
@@ -840,22 +683,24 @@ func handleCancelOrder(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	ord, ok := orders[id]
-	if !ok || !canAccessEntity(extractUserID(args), ord.OwnerID) {
+	if !ok {
 		return nil, fmt.Errorf("order not found: %s", id)
 	}
-	if ord.Status != "confirmed" && ord.Status != "processing" {
-		return nil, fmt.Errorf("cannot cancel order in %s status — only cancellable before shipping", ord.Status)
+	ownerID := mcpOrderOwners[id]
+	if !canAccessEntity(extractUserID(args), ownerID) {
+		return nil, fmt.Errorf("order not found: %s", id)
 	}
 
-	close(ord.cancelCh)
-	ord.Status = "canceled"
-	ord.UpdatedAt = time.Now()
+	// Try to close cancel channel
+	orderCancelChsMu.Lock()
+	if ch, ok := orderCancelChs[id]; ok {
+		close(ch)
+		delete(orderCancelChs, id)
+	}
+	orderCancelChsMu.Unlock()
 
-	ordCopy := *ord
-	ordCopy.cancelCh = nil
-
-	hub.Publish(DashboardEvent{Type: "order_canceled", ID: ord.ID, Summary: fmt.Sprintf("Order %s canceled", ord.ID), Timestamp: time.Now(), Data: ordCopy})
-	return map[string]interface{}{"id": ord.ID, "status": ord.Status, "message": "Order has been canceled"}, nil
+	hub.Publish(DashboardEvent{Type: "order_canceled", ID: ord.ID, Summary: fmt.Sprintf("Order %s canceled", ord.ID), Timestamp: time.Now()})
+	return map[string]interface{}{"id": ord.ID, "status": "canceled", "message": "Order has been canceled"}, nil
 }
 
 func handleTrackOrder(args map[string]interface{}) (interface{}, error) {
@@ -864,28 +709,21 @@ func handleTrackOrder(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["id"].(string)
 	ord, ok := orders[id]
-	if !ok || !canAccessEntity(extractUserID(args), ord.OwnerID) {
+	if !ok {
+		return nil, fmt.Errorf("order not found: %s", id)
+	}
+	ownerID := mcpOrderOwners[id]
+	if !canAccessEntity(extractUserID(args), ownerID) {
 		return nil, fmt.Errorf("order not found: %s", id)
 	}
 
-	statusMessages := map[string]string{
-		"confirmed":        "Order has been confirmed and is awaiting processing",
-		"processing":       "Order is being prepared for shipment",
-		"shipped":          "Package has been shipped",
-		"in_transit":       "Package is in transit",
-		"out_for_delivery": "Package is out for delivery",
-		"delivered":        "Package has been delivered",
-		"canceled":         "Order has been canceled",
-	}
-
 	result := map[string]interface{}{
-		"order_id":            ord.ID,
-		"status":              ord.Status,
-		"confirmation_number": ord.ConfirmationN,
-		"status_message":      statusMessages[ord.Status],
+		"order_id": ord.ID,
+		"status":   "confirmed",
 	}
-	if ord.Shipment != nil {
-		result["shipment"] = ord.Shipment
+	if shipment, ok := mcpOrderShipments[id]; ok {
+		result["shipment"] = shipment
+		result["status"] = "shipped"
 	}
 	return result, nil
 }
@@ -912,14 +750,11 @@ func startOrderProgression(orderID string, shipping *ShippingOption, cancelCh ch
 		}
 
 		storeMu.Lock()
-		ord, ok := orders[orderID]
-		if !ok || ord.Status == "canceled" {
+		_, ok := orders[orderID]
+		if !ok {
 			storeMu.Unlock()
 			return
 		}
-
-		ord.Status = step.status
-		ord.UpdatedAt = time.Now()
 
 		if step.status == "shipped" {
 			carrier := "FastShip Express"
@@ -928,19 +763,18 @@ func startOrderProgression(orderID string, shipping *ShippingOption, cancelCh ch
 				carrier = shipping.Carrier
 				estimatedDays = shipping.EstimatedDays
 			}
-			ord.Shipment = &Shipment{
+			mcpOrderShipments[orderID] = &Shipment{
 				TrackingNumber: fmt.Sprintf("TRK-%s-%06d", orderID, time.Now().UnixNano()%1000000),
 				Carrier:        carrier,
 				EstimatedDate:  time.Now().Add(time.Duration(estimatedDays) * 24 * time.Hour).Format("2006-01-02"),
 				ShippedAt:      time.Now(),
 			}
 		}
-		if step.status == "delivered" && ord.Shipment != nil {
-			ord.Shipment.DeliveredAt = time.Now()
+		if step.status == "delivered" {
+			if s, ok := mcpOrderShipments[orderID]; ok {
+				s.DeliveredAt = time.Now()
+			}
 		}
-
-		ordCopy := *ord
-		ordCopy.cancelCh = nil
 
 		storeMu.Unlock()
 
@@ -949,7 +783,6 @@ func startOrderProgression(orderID string, shipping *ShippingOption, cancelCh ch
 			ID:        orderID,
 			Summary:   fmt.Sprintf("Order %s → %s", orderID, step.status),
 			Timestamp: time.Now(),
-			Data:      ordCopy,
 		})
 	}
 }
@@ -963,28 +796,35 @@ func handleGetShippingOptions(args map[string]interface{}) (interface{}, error) 
 		return nil, fmt.Errorf("checkout_id is required")
 	}
 	co, ok := checkouts[checkoutID]
-	if !ok || !canAccessEntity(extractUserID(args), co.OwnerID) {
+	if !ok {
+		return nil, fmt.Errorf("checkout not found: %s", checkoutID)
+	}
+	state := mcpCheckoutStates[checkoutID]
+	if state == nil || !canAccessEntity(extractUserID(args), state.OwnerID) {
 		return nil, fmt.Errorf("checkout not found: %s", checkoutID)
 	}
 
 	options := getShippingOptions()
 
-	// Adjust estimated days for non-US countries
-	if co.Buyer != nil && co.Buyer.Address != nil && co.Buyer.Address.Country != "" {
-		country := co.Buyer.Address.Country
-		if country != "US" && country != "USA" && country != "United States" {
-			for i := range options {
-				options[i].EstimatedDays += 2
-			}
-		}
-	}
-
 	result := map[string]interface{}{
 		"checkout_id": checkoutID,
 		"options":     options,
 	}
-	if co.SelectedShipping != nil {
-		result["selected_shipping"] = co.SelectedShipping
+	if state.Shipping != nil {
+		result["selected_shipping"] = state.Shipping
+	}
+	// Check fulfillment for destination info to show relevant options
+	if co.Fulfillment != nil {
+		for _, m := range co.Fulfillment.Methods {
+			for _, d := range m.Destinations {
+				if d.AddressCountry != "" && d.AddressCountry != "US" && d.AddressCountry != "USA" {
+					for i := range options {
+						options[i].EstimatedDays += 2
+					}
+					break
+				}
+			}
+		}
 	}
 	return result, nil
 }
@@ -995,39 +835,52 @@ func handleTrackShipment(args map[string]interface{}) (interface{}, error) {
 
 	id, _ := args["order_id"].(string)
 	if id == "" {
-		// Fallback to "id" for compat
 		id, _ = args["id"].(string)
 	}
 	ord, ok := orders[id]
-	if !ok || !canAccessEntity(extractUserID(args), ord.OwnerID) {
+	if !ok {
+		return nil, fmt.Errorf("order not found: %s", id)
+	}
+	ownerID := mcpOrderOwners[id]
+	if !canAccessEntity(extractUserID(args), ownerID) {
 		return nil, fmt.Errorf("order not found: %s", id)
 	}
 
-	statusMessages := map[string]string{
-		"confirmed":        "Order has been confirmed and is awaiting processing",
-		"processing":       "Order is being prepared for shipment",
-		"shipped":          "Package has been shipped",
-		"in_transit":       "Package is in transit",
-		"out_for_delivery": "Package is out for delivery",
-		"delivered":        "Package has been delivered",
-		"canceled":         "Order has been canceled",
-	}
-
 	result := map[string]interface{}{
-		"order_id":            ord.ID,
-		"status":              ord.Status,
-		"confirmation_number": ord.ConfirmationN,
-		"status_message":      statusMessages[ord.Status],
+		"order_id": ord.ID,
+		"status":   "confirmed",
 	}
-	if ord.Shipment != nil {
-		result["shipment"] = ord.Shipment
+	if shipment, ok := mcpOrderShipments[id]; ok {
+		result["shipment"] = shipment
+		result["status"] = "shipped"
 	}
 	return result, nil
 }
 
+func getShippingOptions() []ShippingOption {
+	return []ShippingOption{
+		{ID: "standard", Method: "Standard Shipping", Carrier: "PostalService", EstimatedDays: 7, Price: 0, DisplayText: "Free — 5-7 business days"},
+		{ID: "express", Method: "Express Shipping", Carrier: "FastShip Express", EstimatedDays: 3, Price: 999, DisplayText: "$9.99 — 2-3 business days"},
+		{ID: "next_day", Method: "Next Day Delivery", Carrier: "FastShip Priority", EstimatedDays: 1, Price: 1999, DisplayText: "$19.99 — next business day"},
+	}
+}
+
+func findShippingOption(id string) *ShippingOption {
+	for _, opt := range getShippingOptions() {
+		if opt.ID == id {
+			return &opt
+		}
+	}
+	return nil
+}
+
+// mcpOrderResponse builds an MCP-friendly response from a canonical Order.
+func mcpOrderResponse(ord *Order) interface{} {
+	return ord
+}
+
 // computeCheckoutHash produces a SHA-256 hash of the material checkout fields.
-// Only server-side Go code computes this, so there are no cross-language canonicalization issues.
-func computeCheckoutHash(co *Checkout) string {
+func computeCheckoutHash(co *Checkout, shipping *ShippingOption) string {
 	type hashLineItem struct {
 		ItemID   string `json:"item_id"`
 		Title    string `json:"title"`
@@ -1055,7 +908,7 @@ func computeCheckoutHash(co *Checkout) string {
 		LineItems: items,
 		Currency:  co.Currency,
 		Totals:    co.Totals,
-		Shipping:  co.SelectedShipping,
+		Shipping:  shipping,
 	}
 	b, _ := json.Marshal(data)
 	sum := sha256.Sum256(b)
