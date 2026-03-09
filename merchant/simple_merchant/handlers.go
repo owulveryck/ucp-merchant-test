@@ -179,12 +179,13 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 	if cartData == nil {
 		return nil, fmt.Errorf("missing cart parameter")
 	}
-	rawItems, _ := cartData["line_items"].([]interface{})
-	if len(rawItems) == 0 {
+
+	cartLineItems := parseLineItemRequests(cartData)
+	if len(cartLineItems) == 0 {
 		return nil, fmt.Errorf("cart must have at least one line item")
 	}
 
-	lineItems, err := pricing.BuildLineItems(cartData, catalogInstance)
+	lineItems, err := pricing.BuildLineItems(cartLineItems, catalogInstance)
 	if err != nil {
 		return nil, err
 	}
@@ -228,9 +229,9 @@ func handleUpdateCart(args map[string]interface{}) (interface{}, error) {
 	if cartData == nil {
 		return nil, fmt.Errorf("missing cart parameter")
 	}
-	rawItems, _ := cartData["line_items"].([]interface{})
-	if len(rawItems) > 0 {
-		lineItems, err := pricing.BuildLineItems(cartData, catalogInstance)
+	cartLineItems := parseLineItemRequests(cartData)
+	if len(cartLineItems) > 0 {
+		lineItems, err := pricing.BuildLineItems(cartLineItems, catalogInstance)
 		if err != nil {
 			return nil, err
 		}
@@ -275,12 +276,12 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 		}
 		lineItems = cart.LineItems
 	} else {
-		rawItems, _ := checkoutData["line_items"].([]interface{})
-		if len(rawItems) == 0 {
+		coLineItems := parseLineItemRequests(checkoutData)
+		if len(coLineItems) == 0 {
 			return nil, fmt.Errorf("checkout must have line_items or cart_id")
 		}
 		var err error
-		lineItems, err = pricing.BuildLineItems(checkoutData, catalogInstance)
+		lineItems, err = pricing.BuildLineItems(coLineItems, catalogInstance)
 		if err != nil {
 			return nil, err
 		}
@@ -315,8 +316,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 
 	// Check for buyer info
 	if buyerData, ok := checkoutData["buyer"].(map[string]interface{}); ok {
-		checkoutData["buyer"] = buyerData
-		co.Buyer = mpayment.ParseBuyer(checkoutData)
+		co.Buyer = mpayment.ParseBuyer(parseBuyerRequest(buyerData))
 	}
 
 	state := &model.MCPCheckoutState{
@@ -373,8 +373,9 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 	}
 
 	// Update line items if provided
-	if rawItems, ok := checkoutData["line_items"].([]interface{}); ok && len(rawItems) > 0 {
-		lineItems, err := pricing.BuildLineItems(checkoutData, catalogInstance)
+	coLineItems := parseLineItemRequests(checkoutData)
+	if len(coLineItems) > 0 {
+		lineItems, err := pricing.BuildLineItems(coLineItems, catalogInstance)
 		if err != nil {
 			return nil, err
 		}
@@ -382,8 +383,8 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 	}
 
 	// Update buyer if provided
-	if _, ok := checkoutData["buyer"]; ok {
-		co.Buyer = mpayment.ParseBuyer(checkoutData)
+	if buyerData, ok := checkoutData["buyer"].(map[string]interface{}); ok {
+		co.Buyer = mpayment.ParseBuyer(parseBuyerRequest(buyerData))
 	}
 
 	// Update shipping option if provided (MCP-specific)
@@ -892,4 +893,60 @@ func computeCheckoutHash(co *model.Checkout, shipping *model.ShippingOption) str
 	b, _ := json.Marshal(data)
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
+
+// parseLineItemRequests converts a raw map's "line_items" field to typed requests.
+func parseLineItemRequests(data map[string]interface{}) []model.LineItemRequest {
+	rawItems, _ := data["line_items"].([]interface{})
+	if len(rawItems) == 0 {
+		return nil
+	}
+	items := make([]model.LineItemRequest, 0, len(rawItems))
+	for _, raw := range rawItems {
+		rawMap, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		li := model.LineItemRequest{}
+		if id, ok := rawMap["id"].(string); ok {
+			li.ID = id
+		}
+		if itemMap, ok := rawMap["item"].(map[string]interface{}); ok {
+			if id, ok := itemMap["id"].(string); ok {
+				li.Item = &model.ItemRef{ID: id}
+			}
+		}
+		if pid, ok := rawMap["product_id"].(string); ok {
+			li.ProductID = pid
+		}
+		if q, ok := rawMap["quantity"].(float64); ok {
+			li.Quantity = int(q)
+		}
+		items = append(items, li)
+	}
+	return items
+}
+
+// parseBuyerRequest converts a raw buyer map to a typed BuyerRequest.
+func parseBuyerRequest(data map[string]interface{}) *model.BuyerRequest {
+	if data == nil {
+		return nil
+	}
+	b := &model.BuyerRequest{}
+	if v, ok := data["first_name"].(string); ok {
+		b.FirstName = v
+	}
+	if v, ok := data["last_name"].(string); ok {
+		b.LastName = v
+	}
+	if v, ok := data["fullName"].(string); ok {
+		b.FullName = v
+	}
+	if v, ok := data["name"].(string); ok {
+		b.Name = v
+	}
+	if v, ok := data["email"].(string); ok {
+		b.Email = v
+	}
+	return b
 }

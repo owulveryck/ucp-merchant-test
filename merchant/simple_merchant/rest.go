@@ -110,7 +110,7 @@ func restCreateCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req map[string]interface{}
+	var req model.CheckoutRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON")
 		return
@@ -119,7 +119,7 @@ func restCreateCheckout(w http.ResponseWriter, r *http.Request) {
 	storeMu.Lock()
 	defer storeMu.Unlock()
 
-	lineItems, err := pricing.BuildLineItems(req, catalogInstance)
+	lineItems, err := pricing.BuildLineItems(req.LineItems, catalogInstance)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -128,19 +128,24 @@ func restCreateCheckout(w http.ResponseWriter, r *http.Request) {
 	checkoutSeq++
 	coID := fmt.Sprintf("co_%04d", checkoutSeq)
 
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
 	co := &model.Checkout{
 		ID:        coID,
 		Status:    "incomplete",
 		UCP:       model.UCPEnvelope{Version: "2026-01-11", Capabilities: []model.Capability{}},
 		Links:     []model.Link{{Type: "application/json", URL: fmt.Sprintf("%s://localhost:%d/shopping-api/checkout-sessions/%s", scheme(), listenPort, coID)}},
-		Currency:  stringOr(req, "currency", "USD"),
+		Currency:  currency,
 		LineItems: lineItems,
 	}
 
 	co.Totals = pricing.CalculateTotals(lineItems, 0, nil)
-	co.Payment = mpayment.ParsePayment(req)
-	co.Fulfillment = mfulfillment.ParseFulfillment(req, nil, co, shopData, checkoutDestinations, checkoutOptionTitles, &addrSeqCounter, &addrSeqMu)
-	co.Buyer = mpayment.ParseBuyer(req)
+	co.Payment = mpayment.ParsePayment(req.Payment)
+	co.Fulfillment = mfulfillment.ParseFulfillment(req.Fulfillment, nil, co, shopData, checkoutDestinations, checkoutOptionTitles, &addrSeqCounter, &addrSeqMu)
+	co.Buyer = mpayment.ParseBuyer(req.Buyer)
 
 	// Store webhook URL from UCP-Agent header
 	webhookURL := webhook.ResolveWebhookURL(r.Header.Get("UCP-Agent"))
@@ -204,7 +209,7 @@ func restUpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req map[string]interface{}
+	var req model.CheckoutRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON")
 		return
@@ -225,8 +230,8 @@ func restUpdateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update line items if provided
-	if rawItems, ok := req["line_items"]; ok && rawItems != nil {
-		lineItems, err := pricing.BuildLineItems(req, catalogInstance)
+	if len(req.LineItems) > 0 {
+		lineItems, err := pricing.BuildLineItems(req.LineItems, catalogInstance)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
@@ -235,24 +240,24 @@ func restUpdateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update buyer if provided
-	if _, ok := req["buyer"]; ok {
-		co.Buyer = mpayment.ParseBuyer(req)
+	if req.Buyer != nil {
+		co.Buyer = mpayment.ParseBuyer(req.Buyer)
 	}
 
 	// Update payment if provided
-	if _, ok := req["payment"]; ok {
-		co.Payment = mpayment.ParsePayment(req)
+	if req.Payment != nil {
+		co.Payment = mpayment.ParsePayment(req.Payment)
 	}
 
 	// Handle discounts
 	shippingCost := mfulfillment.GetCurrentShippingCost(co)
-	if discountsRaw, ok := req["discounts"]; ok && discountsRaw != nil {
-		co.Discounts = discount.ApplyDiscounts(discountsRaw, co.LineItems, shopData)
+	if req.Discounts != nil {
+		co.Discounts = discount.ApplyDiscounts(req.Discounts, co.LineItems, shopData)
 	}
 
 	// Handle fulfillment
-	if fulfillmentRaw, ok := req["fulfillment"]; ok && fulfillmentRaw != nil {
-		co.Fulfillment = mfulfillment.ParseFulfillment(req, co.Buyer, co, shopData, checkoutDestinations, checkoutOptionTitles, &addrSeqCounter, &addrSeqMu)
+	if req.Fulfillment != nil {
+		co.Fulfillment = mfulfillment.ParseFulfillment(req.Fulfillment, co.Buyer, co, shopData, checkoutDestinations, checkoutOptionTitles, &addrSeqCounter, &addrSeqMu)
 		shippingCost = mfulfillment.GetCurrentShippingCost(co)
 	}
 
@@ -285,7 +290,7 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req map[string]interface{}
+	var req model.CheckoutRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON")
 		return
@@ -316,25 +321,19 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process payment
-	paymentData, _ := req["payment_data"].(map[string]interface{})
-	if paymentData != nil {
-		credential, _ := paymentData["credential"].(map[string]interface{})
-		if credential != nil {
-			token, _ := credential["token"].(string)
-			if token == "fail_token" {
-				writeError(w, http.StatusPaymentRequired, "Payment failed")
-				return
-			}
+	if req.PaymentData != nil {
+		if req.PaymentData.Credential != nil && req.PaymentData.Credential.Token == "fail_token" {
+			writeError(w, http.StatusPaymentRequired, "Payment failed")
+			return
 		}
-		handlerID, _ := paymentData["handler_id"].(string)
-		if handlerID != "" {
+		if req.PaymentData.HandlerID != "" {
 			validHandlers := map[string]bool{
 				"google_pay":           true,
 				"mock_payment_handler": true,
 				"shop_pay":             true,
 			}
-			if !validHandlers[handlerID] {
-				writeError(w, http.StatusBadRequest, fmt.Sprintf("Unknown payment handler: %s", handlerID))
+			if !validHandlers[req.PaymentData.HandlerID] {
+				writeError(w, http.StatusBadRequest, fmt.Sprintf("Unknown payment handler: %s", req.PaymentData.HandlerID))
 				return
 			}
 		}
@@ -620,13 +619,6 @@ func restSimulateShipping(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helper functions
-
-func stringOr(m map[string]interface{}, key, def string) string {
-	if v, ok := m[key].(string); ok && v != "" {
-		return v
-	}
-	return def
-}
 
 func extractPathParam(path, prefix string) string {
 	s := strings.TrimPrefix(path, prefix)

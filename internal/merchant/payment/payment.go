@@ -2,42 +2,21 @@ package payment
 
 import "github.com/owulveryck/ucp-merchant-test/internal/model"
 
-// ParsePayment extracts payment info from a request map.
-func ParsePayment(req map[string]interface{}) model.Payment {
-	paymentRaw, ok := req["payment"]
-	if !ok || paymentRaw == nil {
-		return DefaultPayment()
-	}
-
-	paymentMap, ok := paymentRaw.(map[string]interface{})
-	if !ok {
+// ParsePayment extracts payment info from a typed request.
+func ParsePayment(req *model.PaymentRequest) model.Payment {
+	if req == nil {
 		return DefaultPayment()
 	}
 
 	p := &model.Payment{}
+	p.SelectedInstrumentID = req.SelectedInstrumentID
 
-	if sid, ok := paymentMap["selected_instrument_id"].(string); ok {
-		p.SelectedInstrumentID = sid
-	}
-
-	if instRaw, ok := paymentMap["instruments"].([]interface{}); ok {
-		for _, inst := range instRaw {
-			if m, ok := inst.(map[string]interface{}); ok {
-				p.Instruments = append(p.Instruments, m)
-			}
-		}
-	}
+	p.Instruments = req.Instruments
 	if p.Instruments == nil {
 		p.Instruments = []map[string]interface{}{}
 	}
 
-	if hRaw, ok := paymentMap["handlers"].([]interface{}); ok {
-		for _, h := range hRaw {
-			if m, ok := h.(map[string]interface{}); ok {
-				p.Handlers = append(p.Handlers, m)
-			}
-		}
-	}
+	p.Handlers = req.Handlers
 	if p.Handlers == nil {
 		p.Handlers = DefaultPaymentHandlers()
 	}
@@ -87,46 +66,28 @@ func DefaultPaymentHandlers() []map[string]interface{} {
 	}
 }
 
-// ParseBuyer extracts buyer info from a request map.
-func ParseBuyer(req map[string]interface{}) *model.Buyer {
-	buyerRaw, ok := req["buyer"]
-	if !ok || buyerRaw == nil {
-		return nil
-	}
-	buyerMap, ok := buyerRaw.(map[string]interface{})
-	if !ok {
+// ParseBuyer extracts buyer info from a typed request.
+func ParseBuyer(req *model.BuyerRequest) *model.Buyer {
+	if req == nil {
 		return nil
 	}
 
-	b := &model.Buyer{}
-	if v, ok := buyerMap["first_name"].(string); ok {
-		b.FirstName = v
+	b := &model.Buyer{
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		FullName:  req.FullName,
+		Email:     req.Email,
 	}
-	if v, ok := buyerMap["last_name"].(string); ok {
-		b.LastName = v
-	}
-	if v, ok := buyerMap["fullName"].(string); ok {
-		b.FullName = v
-	}
-	if v, ok := buyerMap["name"].(string); ok && b.FullName == "" && b.FirstName == "" {
-		b.FullName = v
-	}
-	if v, ok := buyerMap["email"].(string); ok {
-		b.Email = v
+	if req.Name != "" && b.FullName == "" && b.FirstName == "" {
+		b.FullName = req.Name
 	}
 
-	if consentRaw, ok := buyerMap["consent"].(map[string]interface{}); ok {
-		c := &model.Consent{}
-		if v, ok := consentRaw["marketing"].(bool); ok {
-			c.Marketing = &v
+	if req.Consent != nil {
+		b.Consent = &model.Consent{
+			Marketing:  req.Consent.Marketing,
+			Analytics:  req.Consent.Analytics,
+			SaleOfData: req.Consent.SaleOfData,
 		}
-		if v, ok := consentRaw["analytics"].(bool); ok {
-			c.Analytics = &v
-		}
-		if v, ok := consentRaw["sale_of_data"].(bool); ok {
-			c.SaleOfData = &v
-		}
-		b.Consent = c
 	}
 
 	return b

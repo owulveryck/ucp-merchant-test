@@ -36,11 +36,9 @@ func ExampleApplyDiscounts() {
 		},
 	}
 
-	discountsRaw := map[string]interface{}{
-		"codes": []interface{}{"10OFF"},
-	}
+	req := &model.DiscountsRequest{Codes: []string{"10OFF"}}
 
-	result := discount.ApplyDiscounts(discountsRaw, items, dl)
+	result := discount.ApplyDiscounts(req, items, dl)
 	fmt.Println(result.Codes[0])
 	fmt.Println(result.Applied[0].Title)
 	fmt.Println(result.Applied[0].Amount)

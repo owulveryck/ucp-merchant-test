@@ -35,16 +35,11 @@ func TestBuildLineItems(t *testing.T) {
 		},
 	}
 
-	req := map[string]interface{}{
-		"line_items": []interface{}{
-			map[string]interface{}{
-				"item":     map[string]interface{}{"id": "prod_1"},
-				"quantity": float64(2),
-			},
-		},
+	reqItems := []model.LineItemRequest{
+		{Item: &model.ItemRef{ID: "prod_1"}, Quantity: 2},
 	}
 
-	items, err := BuildLineItems(req, cat)
+	items, err := BuildLineItems(reqItems, cat)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,16 +61,11 @@ func TestBuildLineItemsOutOfStock(t *testing.T) {
 		},
 	}
 
-	req := map[string]interface{}{
-		"line_items": []interface{}{
-			map[string]interface{}{
-				"item":     map[string]interface{}{"id": "prod_1"},
-				"quantity": float64(1),
-			},
-		},
+	reqItems := []model.LineItemRequest{
+		{Item: &model.ItemRef{ID: "prod_1"}, Quantity: 1},
 	}
 
-	_, err := BuildLineItems(req, cat)
+	_, err := BuildLineItems(reqItems, cat)
 	if err == nil {
 		t.Fatal("expected error for out of stock product")
 	}

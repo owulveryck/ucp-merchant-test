@@ -18,14 +18,8 @@ type DiscountLookup interface {
 }
 
 // ApplyDiscounts processes discount codes against line items.
-func ApplyDiscounts(discountsRaw interface{}, lineItems []model.LineItem, dl DiscountLookup) *model.Discounts {
-	dMap, ok := discountsRaw.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	codesRaw, _ := dMap["codes"].([]interface{})
-	if len(codesRaw) == 0 {
+func ApplyDiscounts(req *model.DiscountsRequest, lineItems []model.LineItem, dl DiscountLookup) *model.Discounts {
+	if req == nil || len(req.Codes) == 0 {
 		return nil
 	}
 
@@ -39,8 +33,7 @@ func ApplyDiscounts(discountsRaw interface{}, lineItems []model.LineItem, dl Dis
 	}
 
 	result := &model.Discounts{}
-	for _, cRaw := range codesRaw {
-		code, _ := cRaw.(string)
+	for _, code := range req.Codes {
 		if code == "" {
 			continue
 		}

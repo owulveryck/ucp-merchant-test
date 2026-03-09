@@ -48,7 +48,7 @@ func TestParseFulfillmentNil(t *testing.T) {
 	ds := newMockDS()
 	counter := 0
 	var mu sync.Mutex
-	result := ParseFulfillment(map[string]interface{}{}, nil, nil, ds, nil, nil, &counter, &mu)
+	result := ParseFulfillment(nil, nil, nil, ds, nil, nil, &counter, &mu)
 	if result != nil {
 		t.Error("expected nil fulfillment when not provided")
 	}
@@ -59,14 +59,9 @@ func TestParseFulfillmentBasic(t *testing.T) {
 	counter := 0
 	var mu sync.Mutex
 
-	req := map[string]interface{}{
-		"fulfillment": map[string]interface{}{
-			"methods": []interface{}{
-				map[string]interface{}{
-					"id":   "method_shipping",
-					"type": "shipping",
-				},
-			},
+	req := &model.FulfillmentRequest{
+		Methods: []model.FulfillmentMethodRequest{
+			{ID: "method_shipping", Type: "shipping"},
 		},
 	}
 
@@ -87,15 +82,15 @@ func TestParseDestination(t *testing.T) {
 	counter := 0
 	var mu sync.Mutex
 
-	dMap := map[string]interface{}{
-		"street_address":   "123 Main St",
-		"address_locality": "NYC",
-		"address_region":   "NY",
-		"postal_code":      "10001",
-		"address_country":  "US",
+	dReq := model.FulfillmentDestinationRequest{
+		StreetAddress:   "123 Main St",
+		AddressLocality: "NYC",
+		AddressRegion:   "NY",
+		PostalCode:      "10001",
+		AddressCountry:  "US",
 	}
 
-	dest := ParseDestination(dMap, nil, ds, &counter, &mu)
+	dest := ParseDestination(dReq, nil, ds, &counter, &mu)
 	if dest.StreetAddress != "123 Main St" {
 		t.Errorf("expected 123 Main St, got %s", dest.StreetAddress)
 	}

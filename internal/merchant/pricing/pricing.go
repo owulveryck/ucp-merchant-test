@@ -7,26 +7,20 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
-// BuildLineItems creates line items from a raw request map.
-func BuildLineItems(req map[string]interface{}, cat catalog.Catalog) ([]model.LineItem, error) {
-	rawItems, _ := req["line_items"].([]interface{})
-	if len(rawItems) == 0 {
+// BuildLineItems creates line items from typed request data.
+func BuildLineItems(reqItems []model.LineItemRequest, cat catalog.Catalog) ([]model.LineItem, error) {
+	if len(reqItems) == 0 {
 		return nil, fmt.Errorf("line_items is required")
 	}
 
 	var items []model.LineItem
-	for i, raw := range rawItems {
-		rawMap, ok := raw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
+	for i, li := range reqItems {
 		itemID := ""
-		if itemMap, ok := rawMap["item"].(map[string]interface{}); ok {
-			itemID, _ = itemMap["id"].(string)
+		if li.Item != nil {
+			itemID = li.Item.ID
 		}
 		if itemID == "" {
-			itemID, _ = rawMap["product_id"].(string)
+			itemID = li.ProductID
 		}
 		if itemID == "" {
 			return nil, fmt.Errorf("line item %d: missing item.id", i)
@@ -37,10 +31,7 @@ func BuildLineItems(req map[string]interface{}, cat catalog.Catalog) ([]model.Li
 			return nil, fmt.Errorf("Product not found: %s", itemID)
 		}
 
-		qty := 1
-		if q, ok := rawMap["quantity"].(float64); ok {
-			qty = int(q)
-		}
+		qty := li.Quantity
 		if qty < 1 {
 			qty = 1
 		}
@@ -55,8 +46,8 @@ func BuildLineItems(req map[string]interface{}, cat catalog.Catalog) ([]model.Li
 		lineTotal := product.Price * qty
 
 		liID := fmt.Sprintf("li_%03d", i+1)
-		if existingID, ok := rawMap["id"].(string); ok && existingID != "" {
-			liID = existingID
+		if li.ID != "" {
+			liID = li.ID
 		}
 
 		items = append(items, model.LineItem{

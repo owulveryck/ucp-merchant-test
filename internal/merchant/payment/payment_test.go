@@ -1,9 +1,13 @@
 package payment
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
+)
 
 func TestParsePaymentDefault(t *testing.T) {
-	p := ParsePayment(map[string]interface{}{})
+	p := ParsePayment(nil)
 	if p.SelectedInstrumentID != "instr_1" {
 		t.Errorf("expected instr_1, got %s", p.SelectedInstrumentID)
 	}
@@ -13,12 +17,10 @@ func TestParsePaymentDefault(t *testing.T) {
 }
 
 func TestParsePaymentWithData(t *testing.T) {
-	req := map[string]interface{}{
-		"payment": map[string]interface{}{
-			"selected_instrument_id": "custom_instr",
-			"instruments":            []interface{}{map[string]interface{}{"id": "i1"}},
-			"handlers":               []interface{}{map[string]interface{}{"id": "h1"}},
-		},
+	req := &model.PaymentRequest{
+		SelectedInstrumentID: "custom_instr",
+		Instruments:          []map[string]interface{}{{"id": "i1"}},
+		Handlers:             []map[string]interface{}{{"id": "h1"}},
 	}
 	p := ParsePayment(req)
 	if p.SelectedInstrumentID != "custom_instr" {
@@ -33,12 +35,10 @@ func TestParsePaymentWithData(t *testing.T) {
 }
 
 func TestParseBuyer(t *testing.T) {
-	req := map[string]interface{}{
-		"buyer": map[string]interface{}{
-			"first_name": "John",
-			"last_name":  "Doe",
-			"email":      "john@example.com",
-		},
+	req := &model.BuyerRequest{
+		FirstName: "John",
+		LastName:  "Doe",
+		Email:     "john@example.com",
 	}
 	b := ParseBuyer(req)
 	if b == nil {
@@ -53,7 +53,7 @@ func TestParseBuyer(t *testing.T) {
 }
 
 func TestParseBuyerNil(t *testing.T) {
-	b := ParseBuyer(map[string]interface{}{})
+	b := ParseBuyer(nil)
 	if b != nil {
 		t.Error("expected nil buyer when not provided")
 	}

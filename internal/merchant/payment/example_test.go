@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 func ExampleParsePayment() {
-	req := map[string]interface{}{
-		"payment": map[string]interface{}{
-			"selected_instrument_id": "instr_1",
-			"instruments":            []interface{}{},
-		},
+	req := &model.PaymentRequest{
+		SelectedInstrumentID: "instr_1",
+		Instruments:          []map[string]interface{}{},
 	}
 
 	p := payment.ParsePayment(req)
@@ -23,12 +22,10 @@ func ExampleParsePayment() {
 }
 
 func ExampleParseBuyer() {
-	req := map[string]interface{}{
-		"buyer": map[string]interface{}{
-			"first_name": "John",
-			"last_name":  "Doe",
-			"email":      "john@example.com",
-		},
+	req := &model.BuyerRequest{
+		FirstName: "John",
+		LastName:  "Doe",
+		Email:     "john@example.com",
 	}
 
 	b := payment.ParseBuyer(req)

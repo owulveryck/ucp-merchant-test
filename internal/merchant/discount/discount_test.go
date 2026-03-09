@@ -30,11 +30,9 @@ func TestApplyDiscountsPercentage(t *testing.T) {
 		{Totals: []model.Total{{Type: "subtotal", Amount: 10000}}},
 	}
 
-	raw := map[string]interface{}{
-		"codes": []interface{}{"10OFF"},
-	}
+	req := &model.DiscountsRequest{Codes: []string{"10OFF"}}
 
-	result := ApplyDiscounts(raw, items, dl)
+	result := ApplyDiscounts(req, items, dl)
 	if result == nil {
 		t.Fatal("expected non-nil discounts")
 	}
@@ -57,11 +55,9 @@ func TestApplyDiscountsFixed(t *testing.T) {
 		{Totals: []model.Total{{Type: "subtotal", Amount: 10000}}},
 	}
 
-	raw := map[string]interface{}{
-		"codes": []interface{}{"FIXED500"},
-	}
+	req := &model.DiscountsRequest{Codes: []string{"FIXED500"}}
 
-	result := ApplyDiscounts(raw, items, dl)
+	result := ApplyDiscounts(req, items, dl)
 	if result == nil {
 		t.Fatal("expected non-nil discounts")
 	}
@@ -85,11 +81,9 @@ func TestApplyDiscountsUnknownCode(t *testing.T) {
 		{Totals: []model.Total{{Type: "subtotal", Amount: 10000}}},
 	}
 
-	raw := map[string]interface{}{
-		"codes": []interface{}{"UNKNOWN"},
-	}
+	req := &model.DiscountsRequest{Codes: []string{"UNKNOWN"}}
 
-	result := ApplyDiscounts(raw, items, dl)
+	result := ApplyDiscounts(req, items, dl)
 	if result == nil {
 		t.Fatal("expected non-nil result (codes are tracked even if invalid)")
 	}

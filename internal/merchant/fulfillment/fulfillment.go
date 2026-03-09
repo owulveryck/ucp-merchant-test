@@ -59,9 +59,9 @@ func MatchExistingAddress(addrs []Address, street, locality, region, postal, cou
 	return nil
 }
 
-// ParseFulfillment parses fulfillment data from a request map.
+// ParseFulfillment parses fulfillment data from a typed request.
 func ParseFulfillment(
-	req map[string]interface{},
+	req *model.FulfillmentRequest,
 	buyer *model.Buyer,
 	co *model.Checkout,
 	ds FulfillmentDataSource,
@@ -73,35 +73,19 @@ func ParseFulfillment(
 		Unlock()
 	},
 ) *model.Fulfillment {
-	fulfillmentRaw, ok := req["fulfillment"]
-	if !ok || fulfillmentRaw == nil {
-		return nil
-	}
-	fMap, ok := fulfillmentRaw.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	methodsRaw, _ := fMap["methods"].([]interface{})
-	if len(methodsRaw) == 0 {
+	if req == nil || len(req.Methods) == 0 {
 		return nil
 	}
 
 	f := &model.Fulfillment{}
-	for _, mRaw := range methodsRaw {
-		mData, ok := mRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
+	for _, mData := range req.Methods {
 		method := model.FulfillmentMethod{}
-		if v, ok := mData["id"].(string); ok {
-			method.ID = v
+		if mData.ID != "" {
+			method.ID = mData.ID
 		} else {
 			method.ID = "method_shipping"
 		}
-		if v, ok := mData["type"].(string); ok {
-			method.Type = v
-		}
+		method.Type = mData.Type
 		if co != nil {
 			for _, li := range co.LineItems {
 				method.LineItemIDs = append(method.LineItemIDs, li.ID)
@@ -111,14 +95,9 @@ func ParseFulfillment(
 			method.LineItemIDs = []string{}
 		}
 
-		destsRaw, _ := mData["destinations"].([]interface{})
-		if len(destsRaw) > 0 {
-			for _, dRaw := range destsRaw {
-				dMap, ok := dRaw.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				dest := ParseDestination(dMap, buyer, ds, addrSeqCounter, addrSeqMu)
+		if len(mData.Destinations) > 0 {
+			for _, dReq := range mData.Destinations {
+				dest := ParseDestination(dReq, buyer, ds, addrSeqCounter, addrSeqMu)
 				method.Destinations = append(method.Destinations, dest)
 			}
 		} else if method.Type == "shipping" {
@@ -146,8 +125,8 @@ func ParseFulfillment(
 			}
 		}
 
-		if v, ok := mData["selected_destination_id"].(string); ok {
-			method.SelectedDestinationID = v
+		if mData.SelectedDestinationID != "" {
+			method.SelectedDestinationID = mData.SelectedDestinationID
 
 			if len(method.Destinations) == 0 && co != nil && co.Fulfillment != nil && len(co.Fulfillment.Methods) > 0 {
 				method.Destinations = co.Fulfillment.Methods[0].Destinations
@@ -155,7 +134,7 @@ func ParseFulfillment(
 
 			if co != nil {
 				for _, d := range method.Destinations {
-					if d.ID == v {
+					if d.ID == mData.SelectedDestinationID {
 						dest := d
 						checkoutDestinations[co.ID] = &dest
 						break
@@ -165,7 +144,7 @@ func ParseFulfillment(
 
 			destCountry := ""
 			for _, d := range method.Destinations {
-				if d.ID == v {
+				if d.ID == mData.SelectedDestinationID {
 					destCountry = d.AddressCountry
 					break
 				}
@@ -182,7 +161,7 @@ func ParseFulfillment(
 			}
 		}
 
-		if groupsRaw, ok := mData["groups"].([]interface{}); ok && len(groupsRaw) > 0 {
+		if len(mData.Groups) > 0 {
 			existingOptions := []model.FulfillmentOption{}
 			if co != nil && co.Fulfillment != nil && len(co.Fulfillment.Methods) > 0 {
 				existingMethod := co.Fulfillment.Methods[0]
@@ -197,11 +176,7 @@ func ParseFulfillment(
 				}
 			}
 
-			for gi, gRaw := range groupsRaw {
-				gMap, ok := gRaw.(map[string]interface{})
-				if !ok {
-					continue
-				}
+			for gi, gReq := range mData.Groups {
 				groupLineItemIDs := method.LineItemIDs
 				if groupLineItemIDs == nil {
 					groupLineItemIDs = []string{}
@@ -210,11 +185,11 @@ func ParseFulfillment(
 					ID:          fmt.Sprintf("group_%d", gi+1),
 					LineItemIDs: groupLineItemIDs,
 				}
-				if v, ok := gMap["selected_option_id"].(string); ok {
-					group.SelectedOptionID = v
+				if gReq.SelectedOptionID != "" {
+					group.SelectedOptionID = gReq.SelectedOptionID
 					if co != nil {
 						for _, opt := range existingOptions {
-							if opt.ID == v {
+							if opt.ID == gReq.SelectedOptionID {
 								checkoutOptionTitles[co.ID] = opt.Title
 								break
 							}
@@ -232,9 +207,9 @@ func ParseFulfillment(
 	return f
 }
 
-// ParseDestination parses a destination from a map.
+// ParseDestination parses a destination from a typed request.
 func ParseDestination(
-	dMap map[string]interface{},
+	dReq model.FulfillmentDestinationRequest,
 	buyer *model.Buyer,
 	ds FulfillmentDataSource,
 	addrSeqCounter *int,
@@ -243,27 +218,14 @@ func ParseDestination(
 		Unlock()
 	},
 ) model.FulfillmentDestination {
-	dest := model.FulfillmentDestination{}
-	if v, ok := dMap["id"].(string); ok {
-		dest.ID = v
-	}
-	if v, ok := dMap["full_name"].(string); ok {
-		dest.FullName = v
-	}
-	if v, ok := dMap["street_address"].(string); ok {
-		dest.StreetAddress = v
-	}
-	if v, ok := dMap["address_locality"].(string); ok {
-		dest.AddressLocality = v
-	}
-	if v, ok := dMap["address_region"].(string); ok {
-		dest.AddressRegion = v
-	}
-	if v, ok := dMap["postal_code"].(string); ok {
-		dest.PostalCode = v
-	}
-	if v, ok := dMap["address_country"].(string); ok {
-		dest.AddressCountry = v
+	dest := model.FulfillmentDestination{
+		ID:              dReq.ID,
+		FullName:        dReq.FullName,
+		StreetAddress:   dReq.StreetAddress,
+		AddressLocality: dReq.AddressLocality,
+		AddressRegion:   dReq.AddressRegion,
+		PostalCode:      dReq.PostalCode,
+		AddressCountry:  dReq.AddressCountry,
 	}
 
 	if dest.ID == "" {

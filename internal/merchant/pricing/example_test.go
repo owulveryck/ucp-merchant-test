@@ -36,16 +36,11 @@ func ExampleBuildLineItems() {
 		},
 	}
 
-	req := map[string]interface{}{
-		"line_items": []interface{}{
-			map[string]interface{}{
-				"item":     map[string]interface{}{"id": "sku_roses"},
-				"quantity": float64(2),
-			},
-		},
+	reqItems := []model.LineItemRequest{
+		{Item: &model.ItemRef{ID: "sku_roses"}, Quantity: 2},
 	}
 
-	items, err := pricing.BuildLineItems(req, cat)
+	items, err := pricing.BuildLineItems(reqItems, cat)
 	if err != nil {
 		fmt.Println("error:", err)
 		return
