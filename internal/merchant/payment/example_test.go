@@ -10,7 +10,7 @@ import (
 func ExampleParsePayment() {
 	req := &model.PaymentRequest{
 		SelectedInstrumentID: "instr_1",
-		Instruments:          []map[string]interface{}{},
+		Instruments:          []map[string]any{},
 	}
 
 	p := payment.ParsePayment(req)
@@ -19,6 +19,15 @@ func ExampleParsePayment() {
 	// Output:
 	// instr_1
 	// true
+}
+
+func ExampleDefaultPayment() {
+	p := payment.DefaultPayment()
+	fmt.Println(p.SelectedInstrumentID)
+	fmt.Println(len(p.Handlers))
+	// Output:
+	// instr_1
+	// 3
 }
 
 func ExampleParseBuyer() {

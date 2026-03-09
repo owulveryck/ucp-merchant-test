@@ -22,16 +22,12 @@ func ExampleCheckout() {
 			},
 		},
 		Totals:  []model.Total{{Type: "subtotal", Amount: 9998}, {Type: "total", Amount: 9998}},
-		Payment: model.Payment{Instruments: []map[string]interface{}{}, Handlers: []map[string]interface{}{}},
+		Payment: model.Payment{Instruments: []map[string]any{}, Handlers: []map[string]any{}},
 	}
 
-	b, _ := json.Marshal(co)
-	var out map[string]interface{}
-	json.Unmarshal(b, &out)
-
-	fmt.Println(out["id"])
-	fmt.Println(out["status"])
-	fmt.Println(out["currency"])
+	fmt.Println(co.ID)
+	fmt.Println(co.Status)
+	fmt.Println(co.Currency)
 	// Output:
 	// co_001
 	// incomplete
@@ -70,13 +66,57 @@ func ExampleOrder() {
 		Totals: []model.Total{{Type: "subtotal", Amount: 9998}, {Type: "total", Amount: 9998}},
 	}
 
-	b, _ := json.Marshal(order)
-	var out map[string]interface{}
-	json.Unmarshal(b, &out)
-
-	fmt.Println(out["id"])
-	fmt.Println(out["checkout_id"])
+	fmt.Println(order.ID)
+	fmt.Println(order.CheckoutID)
 	// Output:
 	// ord_001
 	// co_001
+}
+
+func ExampleWebhookEvent() {
+	event := model.WebhookEvent{
+		EventType:  "order.created",
+		CheckoutID: "co_001",
+	}
+
+	b, _ := json.Marshal(event)
+	fmt.Println(string(b))
+	// Output:
+	// {"event_type":"order.created","checkout_id":"co_001"}
+}
+
+func ExampleUCPDiscovery() {
+	d := model.UCPDiscovery{
+		UCP: model.UCPDiscoveryProfile{
+			Version: "2026-01-11",
+			Services: map[string]model.UCPServiceEntry{
+				"dev.ucp.shopping": {
+					Version: "2026-01-11",
+					Spec:    "https://ucp.dev/specs/shopping",
+					REST:    &model.UCPRESTConfig{Endpoint: "/api/shopping"},
+				},
+			},
+			Capabilities: []model.UCPCapabilityEntry{},
+		},
+		Payment: model.UCPPaymentProfile{Handlers: []map[string]any{}},
+	}
+
+	fmt.Println(d.UCP.Version)
+	fmt.Println(d.UCP.Services["dev.ucp.shopping"].Spec)
+	// Output:
+	// 2026-01-11
+	// https://ucp.dev/specs/shopping
+}
+
+func ExampleMCPToolResult() {
+	result := model.MCPToolResult{
+		Content: []model.MCPContentBlock{
+			{Type: "text", Text: "Operation completed successfully"},
+		},
+	}
+
+	b, _ := json.Marshal(result)
+	fmt.Println(string(b))
+	// Output:
+	// {"content":[{"type":"text","text":"Operation completed successfully"}]}
 }

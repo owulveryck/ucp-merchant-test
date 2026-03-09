@@ -52,6 +52,22 @@ func ExampleGenerateShippingOptions() {
 	// Express Shipping: 1500
 }
 
+func ExampleMatchExistingAddress() {
+	addrs := []fulfillment.Address{
+		{ID: "addr_1", StreetAddress: "123 Main St", City: "Springfield", State: "IL", PostalCode: "62701", Country: "US"},
+		{ID: "addr_2", StreetAddress: "456 Oak Ave", City: "Portland", State: "OR", PostalCode: "97201", Country: "US"},
+	}
+
+	match := fulfillment.MatchExistingAddress(addrs, "123 main st", "springfield", "il", "62701", "us")
+	fmt.Println(match.ID)
+
+	noMatch := fulfillment.MatchExistingAddress(addrs, "789 Elm St", "Chicago", "IL", "60601", "US")
+	fmt.Println(noMatch == nil)
+	// Output:
+	// addr_1
+	// true
+}
+
 func ExampleIsFulfillmentComplete() {
 	co := &model.Checkout{
 		Fulfillment: &model.Fulfillment{
