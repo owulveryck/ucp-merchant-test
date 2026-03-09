@@ -25,7 +25,7 @@ func (c *exampleCatalog) Filter(category, brand, query, usageType, country, curr
 	return nil
 }
 
-func (c *exampleCatalog) CategoryCount() []map[string]interface{} {
+func (c *exampleCatalog) CategoryCount() []catalog.CategoryStat {
 	return nil
 }
 

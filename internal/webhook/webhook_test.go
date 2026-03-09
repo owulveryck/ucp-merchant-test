@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 func TestResolveWebhookURLEmpty(t *testing.T) {
@@ -46,5 +48,5 @@ func TestResolveWebhookURLWithProfile(t *testing.T) {
 
 func TestSendWebhookEventEmpty(t *testing.T) {
 	// Should not panic with empty URL
-	SendWebhookEvent("", map[string]interface{}{"event_type": "test"})
+	SendWebhookEvent("", model.WebhookEvent{EventType: "test"})
 }

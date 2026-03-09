@@ -272,7 +272,7 @@ func (c *catalogStore) Filter(category, brand, query, usageType, country, curren
 	return result
 }
 
-func (c *catalogStore) CategoryCount() []map[string]interface{} {
+func (c *catalogStore) CategoryCount() []icatalog.CategoryStat {
 	counts := map[string]int{}
 	order := []string{}
 	for _, p := range c.Products {
@@ -281,11 +281,11 @@ func (c *catalogStore) CategoryCount() []map[string]interface{} {
 		}
 		counts[p.Category]++
 	}
-	result := make([]map[string]interface{}, 0, len(order))
+	result := make([]icatalog.CategoryStat, 0, len(order))
 	for _, name := range order {
-		result = append(result, map[string]interface{}{
-			"name":  name,
-			"count": counts[name],
+		result = append(result, icatalog.CategoryStat{
+			Name:  name,
+			Count: counts[name],
 		})
 	}
 	return result

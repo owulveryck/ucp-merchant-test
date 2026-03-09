@@ -401,13 +401,10 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 
 	// Send webhook
 	if webhookURL, ok := checkoutWebhooks[id]; ok {
-		orderJSON, _ := json.Marshal(order)
-		var orderMap map[string]interface{}
-		json.Unmarshal(orderJSON, &orderMap)
-		webhook.SendWebhookEvent(webhookURL, map[string]interface{}{
-			"event_type":  "order_placed",
-			"checkout_id": id,
-			"order":       orderMap,
+		webhook.SendWebhookEvent(webhookURL, model.WebhookEvent{
+			EventType:  "order_placed",
+			CheckoutID: id,
+			Order:      order,
 		})
 	}
 
@@ -494,31 +491,18 @@ func restUpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var reqMap map[string]interface{}
-	if err := json.Unmarshal(body, &reqMap); err != nil {
+	var req model.OrderUpdateRequest
+	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, "Invalid JSON")
 		return
 	}
 
-	// Validate adjustments
-	if adjRaw, ok := reqMap["adjustments"]; ok && adjRaw != nil {
-		adjList, ok := adjRaw.([]interface{})
-		if !ok {
-			writeError(w, http.StatusUnprocessableEntity, "adjustments must be a list")
+	// Validate adjustment statuses
+	validStatuses := map[string]bool{"pending": true, "approved": true, "rejected": true, "completed": true}
+	for _, adj := range req.Adjustments {
+		if adj.Status != "" && !validStatuses[adj.Status] {
+			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Invalid adjustment status: %s", adj.Status))
 			return
-		}
-		validStatuses := map[string]bool{"pending": true, "approved": true, "rejected": true, "completed": true}
-		for _, a := range adjList {
-			adjMap, ok := a.(map[string]interface{})
-			if !ok {
-				writeError(w, http.StatusUnprocessableEntity, "Invalid adjustment format")
-				return
-			}
-			status, _ := adjMap["status"].(string)
-			if status != "" && !validStatuses[status] {
-				writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Invalid adjustment status: %s", status))
-				return
-			}
 		}
 	}
 
@@ -531,31 +515,19 @@ func restUpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update fulfillment events
-	if fulfillmentRaw, ok := reqMap["fulfillment"]; ok {
-		fMap, _ := fulfillmentRaw.(map[string]interface{})
-		if fMap != nil {
-			if eventsRaw, ok := fMap["events"]; ok {
-				eventsJSON, _ := json.Marshal(eventsRaw)
-				var events []model.FulfillmentEvent
-				json.Unmarshal(eventsJSON, &events)
-				order.Fulfillment.Events = events
-			}
-			if expectRaw, ok := fMap["expectations"]; ok {
-				expectJSON, _ := json.Marshal(expectRaw)
-				var expectations []model.Expectation
-				json.Unmarshal(expectJSON, &expectations)
-				order.Fulfillment.Expectations = expectations
-			}
+	// Update fulfillment
+	if req.Fulfillment != nil {
+		if req.Fulfillment.Events != nil {
+			order.Fulfillment.Events = req.Fulfillment.Events
+		}
+		if req.Fulfillment.Expectations != nil {
+			order.Fulfillment.Expectations = req.Fulfillment.Expectations
 		}
 	}
 
 	// Update adjustments
-	if adjRaw, ok := reqMap["adjustments"]; ok {
-		adjJSON, _ := json.Marshal(adjRaw)
-		var adjustments []model.Adjustment
-		json.Unmarshal(adjJSON, &adjustments)
-		order.Adjustments = adjustments
+	if req.Adjustments != nil {
+		order.Adjustments = req.Adjustments
 	}
 
 	writeJSONResponse(w, http.StatusOK, order)
@@ -605,13 +577,10 @@ func restSimulateShipping(w http.ResponseWriter, r *http.Request) {
 
 	// Send webhook
 	if webhookURL, ok := checkoutWebhooks[order.CheckoutID]; ok {
-		orderJSON, _ := json.Marshal(order)
-		var orderMap map[string]interface{}
-		json.Unmarshal(orderJSON, &orderMap)
-		webhook.SendWebhookEvent(webhookURL, map[string]interface{}{
-			"event_type":  "order_shipped",
-			"checkout_id": order.CheckoutID,
-			"order":       orderMap,
+		webhook.SendWebhookEvent(webhookURL, model.WebhookEvent{
+			EventType:  "order_shipped",
+			CheckoutID: order.CheckoutID,
+			Order:      order,
 		})
 	}
 

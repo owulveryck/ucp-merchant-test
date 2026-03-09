@@ -31,7 +31,7 @@
 //     country, currency, and language (maps to dev.ucp.shopping.catalog.search).
 //     Supports the UCP search contract where an empty result set is not an error.
 //
-//   - CategoryCount: returns a list of categories with their product counts.
+//   - CategoryCount: returns a list of CategoryStat with category names and product counts.
 //
 // Concrete implementations of the Catalog interface live in merchant packages
 // (e.g., merchant/simple_merchant).

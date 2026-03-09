@@ -246,29 +246,29 @@ func handleUCPDiscovery(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	base := fmt.Sprintf("%s://localhost:%d", scheme(), listenPort)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ucp": map[string]interface{}{
-			"version": "2026-01-11",
-			"services": map[string]interface{}{
-				"dev.ucp.shopping": map[string]interface{}{
-					"version": "2026-01-11",
-					"spec":    base + "/specs/shopping",
-					"rest": map[string]interface{}{
-						"endpoint": base + "/shopping-api",
-						"schema":   base + "/schemas/shopping/rest.json",
+	json.NewEncoder(w).Encode(model.UCPDiscovery{
+		UCP: model.UCPDiscoveryProfile{
+			Version: "2026-01-11",
+			Services: map[string]model.UCPServiceEntry{
+				"dev.ucp.shopping": {
+					Version: "2026-01-11",
+					Spec:    base + "/specs/shopping",
+					REST: &model.UCPRESTConfig{
+						Endpoint: base + "/shopping-api",
+						Schema:   base + "/schemas/shopping/rest.json",
 					},
 				},
 			},
-			"capabilities": []map[string]interface{}{
-				{"name": "dev.ucp.shopping.checkout", "version": "2026-01-11", "spec": base + "/specs/shopping/checkout", "schema": base + "/schemas/shopping/checkout.json"},
-				{"name": "dev.ucp.shopping.order", "version": "2026-01-11", "spec": base + "/specs/shopping/order", "schema": base + "/schemas/shopping/order.json"},
-				{"name": "dev.ucp.shopping.discount", "version": "2026-01-11", "spec": base + "/specs/shopping/discount", "schema": base + "/schemas/shopping/discount.json"},
-				{"name": "dev.ucp.shopping.fulfillment", "version": "2026-01-11", "spec": base + "/specs/shopping/fulfillment", "schema": base + "/schemas/shopping/fulfillment.json"},
-				{"name": "dev.ucp.shopping.buyer_consent", "version": "2026-01-11", "spec": base + "/specs/shopping/buyer_consent", "schema": base + "/schemas/shopping/buyer_consent.json"},
+			Capabilities: []model.UCPCapabilityEntry{
+				{Name: "dev.ucp.shopping.checkout", Version: "2026-01-11", Spec: base + "/specs/shopping/checkout", Schema: base + "/schemas/shopping/checkout.json"},
+				{Name: "dev.ucp.shopping.order", Version: "2026-01-11", Spec: base + "/specs/shopping/order", Schema: base + "/schemas/shopping/order.json"},
+				{Name: "dev.ucp.shopping.discount", Version: "2026-01-11", Spec: base + "/specs/shopping/discount", Schema: base + "/schemas/shopping/discount.json"},
+				{Name: "dev.ucp.shopping.fulfillment", Version: "2026-01-11", Spec: base + "/specs/shopping/fulfillment", Schema: base + "/schemas/shopping/fulfillment.json"},
+				{Name: "dev.ucp.shopping.buyer_consent", Version: "2026-01-11", Spec: base + "/specs/shopping/buyer_consent", Schema: base + "/schemas/shopping/buyer_consent.json"},
 			},
 		},
-		"payment": map[string]interface{}{
-			"handlers": []map[string]interface{}{
+		Payment: model.UCPPaymentProfile{
+			Handlers: []map[string]any{
 				{
 					"id":                 "google_pay",
 					"name":               "google.pay",
@@ -276,7 +276,7 @@ func handleUCPDiscovery(w http.ResponseWriter, r *http.Request) {
 					"spec":               base + "/specs/payment/google_pay",
 					"config_schema":      base + "/schemas/payment/google_pay.json",
 					"instrument_schemas": []string{base + "/schemas/payment/google_pay_instrument.json"},
-					"config":             map[string]interface{}{},
+					"config":             map[string]any{},
 				},
 				{
 					"id":                 "mock_payment_handler",
@@ -285,7 +285,7 @@ func handleUCPDiscovery(w http.ResponseWriter, r *http.Request) {
 					"spec":               base + "/specs/payment/mock",
 					"config_schema":      base + "/schemas/payment/mock.json",
 					"instrument_schemas": []string{base + "/schemas/payment/mock_instrument.json"},
-					"config":             map[string]interface{}{},
+					"config":             map[string]any{},
 				},
 				{
 					"id":                 "shop_pay",
@@ -294,7 +294,7 @@ func handleUCPDiscovery(w http.ResponseWriter, r *http.Request) {
 					"spec":               base + "/specs/payment/shop_pay",
 					"config_schema":      base + "/schemas/payment/shop_pay.json",
 					"instrument_schemas": []string{base + "/schemas/payment/shop_pay_instrument.json"},
-					"config":             map[string]interface{}{"shop_id": "merchant_1"},
+					"config":             map[string]any{"shop_id": "merchant_1"},
 				},
 			},
 		},
@@ -359,15 +359,10 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Result: map[string]interface{}{
-				"protocolVersion": "2025-03-26",
-				"capabilities": map[string]interface{}{
-					"tools": map[string]interface{}{},
-				},
-				"serverInfo": map[string]interface{}{
-					"name":    merchantName,
-					"version": "1.0.0",
-				},
+			Result: model.MCPInitializeResult{
+				ProtocolVersion: "2025-03-26",
+				Capabilities:    model.MCPCapabilities{Tools: map[string]any{}},
+				ServerInfo:      model.MCPServerInfo{Name: merchantName, Version: "1.0.0"},
 			},
 		})
 
@@ -379,8 +374,8 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Result: map[string]interface{}{
-				"tools": getToolDefinitions(),
+			Result: model.MCPToolsListResult{
+				Tools: getToolDefinitions(),
 			},
 		})
 
@@ -449,11 +444,11 @@ func handleToolCall(w http.ResponseWriter, req model.JSONRPCRequest, userID, use
 		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Result: map[string]interface{}{
-				"content": []map[string]interface{}{
-					{"type": "text", "text": fmt.Sprintf("Error: %s", err.Error())},
+			Result: model.MCPToolResult{
+				Content: []model.MCPContentBlock{
+					{Type: "text", Text: fmt.Sprintf("Error: %s", err.Error())},
 				},
-				"isError": true,
+				IsError: true,
 			},
 		})
 		return
@@ -461,8 +456,8 @@ func handleToolCall(w http.ResponseWriter, req model.JSONRPCRequest, userID, use
 
 	resultJSON, _ := json.MarshalIndent(result, "", "  ")
 
-	content := []map[string]interface{}{
-		{"type": "text", "text": string(resultJSON)},
+	content := []model.MCPContentBlock{
+		{Type: "text", Text: string(resultJSON)},
 	}
 
 	// Extract image URLs from the result and add as image content blocks (cap at 5)
@@ -476,18 +471,18 @@ func handleToolCall(w http.ResponseWriter, req model.JSONRPCRequest, userID, use
 			log.Printf("Failed to fetch image %s: %v", imgURL, err)
 			continue
 		}
-		content = append(content, map[string]interface{}{
-			"type":     "image",
-			"data":     data,
-			"mimeType": mime,
+		content = append(content, model.MCPContentBlock{
+			Type:     "image",
+			Data:     data,
+			MimeType: mime,
 		})
 	}
 
 	writeJSON(w, model.JSONRPCResponse{
 		JSONRPC: "2.0",
 		ID:      req.ID,
-		Result: map[string]interface{}{
-			"content": content,
+		Result: model.MCPToolResult{
+			Content: content,
 		},
 	})
 }

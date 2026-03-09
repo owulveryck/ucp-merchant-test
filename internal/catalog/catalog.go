@@ -1,6 +1,8 @@
 package catalog
 
-import "strings"
+import (
+	"strings"
+)
 
 // Product represents an item in the merchant's catalog.
 type Product struct {
@@ -17,11 +19,17 @@ type Product struct {
 	AvailableCountries []string `json:"available_countries,omitempty"`
 }
 
+// CategoryStat holds a category name and its product count.
+type CategoryStat struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 // Catalog is the read-only interface for catalog operations.
 type Catalog interface {
 	Find(id string) *Product
 	Filter(category, brand, query, usageType, country, currency, language string) []Product
-	CategoryCount() []map[string]interface{}
+	CategoryCount() []CategoryStat
 }
 
 // ContainsCountry checks if a country code is in the list (case-insensitive).

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 // ResolveWebhookURL extracts webhook_url from the agent profile referenced in the UCP-Agent header.
@@ -60,7 +62,7 @@ func ResolveWebhookURL(ucpAgentHeader string) string {
 }
 
 // SendWebhookEvent sends a webhook event to the given URL.
-func SendWebhookEvent(webhookURL string, event map[string]interface{}) {
+func SendWebhookEvent(webhookURL string, event model.WebhookEvent) {
 	if webhookURL == "" {
 		return
 	}
@@ -77,6 +79,6 @@ func SendWebhookEvent(webhookURL string, event map[string]interface{}) {
 			return
 		}
 		resp.Body.Close()
-		log.Printf("webhook: sent %s to %s (status %d)", event["event_type"], webhookURL, resp.StatusCode)
+		log.Printf("webhook: sent %s to %s (status %d)", event.EventType, webhookURL, resp.StatusCode)
 	}()
 }

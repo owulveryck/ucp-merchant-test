@@ -199,3 +199,17 @@ type PaymentDataRequest struct {
 type PaymentCredential struct {
 	Token string `json:"token,omitempty"`
 }
+
+// OrderUpdateRequest represents the incoming JSON body for order update
+// (PUT /orders/{id}) operations. It replaces the untyped map[string]interface{}
+// previously used for parsing.
+type OrderUpdateRequest struct {
+	Fulfillment *OrderFulfillmentUpdate `json:"fulfillment,omitempty"`
+	Adjustments []Adjustment            `json:"adjustments,omitempty"`
+}
+
+// OrderFulfillmentUpdate carries fulfillment updates for an order.
+type OrderFulfillmentUpdate struct {
+	Events       []FulfillmentEvent `json:"events,omitempty"`
+	Expectations []Expectation      `json:"expectations,omitempty"`
+}
