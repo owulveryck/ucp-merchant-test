@@ -1,5 +1,8 @@
 # UCP Merchant Test Server
 
+[![UCP Conformance Tests](https://github.com/owulveryck/ucp-merchant-test/actions/workflows/conformance.yml/badge.svg)](https://github.com/owulveryck/ucp-merchant-test/actions/workflows/conformance.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/owulveryck/ucp-merchant-test.svg)](https://pkg.go.dev/github.com/owulveryck/ucp-merchant-test)
+
 A Go-based merchant server implementing the [Universal Commerce Protocol (UCP)](https://ucp.dev) Shopping Service. Supports both MCP (JSON-RPC) and REST API transports. Passes all 60 UCP conformance tests.
 
 ## Quick Start
