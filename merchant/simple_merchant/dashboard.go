@@ -7,25 +7,27 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 // EventHub broadcasts events to SSE subscribers.
 type EventHub struct {
 	mu          sync.Mutex
-	subscribers []chan DashboardEvent
+	subscribers []chan model.DashboardEvent
 }
 
 var hub = &EventHub{}
 
-func (h *EventHub) Subscribe() chan DashboardEvent {
-	ch := make(chan DashboardEvent, 64)
+func (h *EventHub) Subscribe() chan model.DashboardEvent {
+	ch := make(chan model.DashboardEvent, 64)
 	h.mu.Lock()
 	h.subscribers = append(h.subscribers, ch)
 	h.mu.Unlock()
 	return ch
 }
 
-func (h *EventHub) Unsubscribe(ch chan DashboardEvent) {
+func (h *EventHub) Unsubscribe(ch chan model.DashboardEvent) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for i, s := range h.subscribers {
@@ -37,7 +39,7 @@ func (h *EventHub) Unsubscribe(ch chan DashboardEvent) {
 	}
 }
 
-func (h *EventHub) Publish(event DashboardEvent) {
+func (h *EventHub) Publish(event model.DashboardEvent) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for _, ch := range h.subscribers {
@@ -177,7 +179,7 @@ func handleAPIAddProduct(w http.ResponseWriter, r *http.Request) {
 	catalog = append(catalog, p)
 	storeMu.Unlock()
 
-	hub.Publish(DashboardEvent{
+	hub.Publish(model.DashboardEvent{
 		Type:      "product_added",
 		ID:        p.ID,
 		Summary:   fmt.Sprintf("Product %s added: %s ($%.2f, stock: %d)", p.ID, p.Title, float64(p.Price)/100, p.Quantity),
@@ -255,7 +257,7 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 	updated := *found
 	storeMu.Unlock()
 
-	hub.Publish(DashboardEvent{
+	hub.Publish(model.DashboardEvent{
 		Type:      "product_updated",
 		ID:        updated.ID,
 		Summary:   fmt.Sprintf("Product %s updated: %s ($%.2f, stock: %d)", updated.ID, updated.Title, float64(updated.Price)/100, updated.Quantity),
@@ -292,7 +294,7 @@ func handleAPIDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	catalog = append(catalog[:idx], catalog[idx+1:]...)
 	storeMu.Unlock()
 
-	hub.Publish(DashboardEvent{
+	hub.Publish(model.DashboardEvent{
 		Type:      "product_removed",
 		ID:        removed.ID,
 		Summary:   fmt.Sprintf("Product %s removed: %s", removed.ID, removed.Title),

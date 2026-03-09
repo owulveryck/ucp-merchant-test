@@ -11,12 +11,13 @@ import (
 	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
 	mpayment "github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 // In-memory MCP-specific state
 var (
-	mcpCheckoutStates = map[string]*MCPCheckoutState{}
-	mcpOrderShipments = map[string]*Shipment{}
+	mcpCheckoutStates = map[string]*model.MCPCheckoutState{}
+	mcpOrderShipments = map[string]*model.Shipment{}
 	mcpOrderOwners    = map[string]string{} // orderID -> ownerID
 )
 
@@ -118,7 +119,7 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 		})
 	}
 
-	hub.Publish(DashboardEvent{Type: "products_listed", Summary: fmt.Sprintf("Product catalog queried (showing %d of %d)", len(products), total), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "products_listed", Summary: fmt.Sprintf("Product catalog queried (showing %d of %d)", len(products), total), Timestamp: time.Now()})
 	return map[string]interface{}{
 		"products": products,
 		"pagination": map[string]interface{}{
@@ -166,7 +167,7 @@ func handleGetProductDetails(args map[string]interface{}) (interface{}, error) {
 	}
 	storeMu.Unlock()
 
-	hub.Publish(DashboardEvent{Type: "product_viewed", ID: p.ID, Summary: fmt.Sprintf("Product details viewed: %s", p.Title), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "product_viewed", ID: p.ID, Summary: fmt.Sprintf("Product details viewed: %s", p.Title), Timestamp: time.Now()})
 	return result, nil
 }
 
@@ -189,7 +190,7 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 	}
 
 	cartSeq++
-	cart := &Cart{
+	cart := &model.Cart{
 		ID:        fmt.Sprintf("cart-%04d", cartSeq),
 		OwnerID:   extractUserID(args),
 		LineItems: lineItems,
@@ -197,7 +198,7 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 		Totals:    pricing.CalculateTotals(lineItems, 0, nil),
 	}
 	carts[cart.ID] = cart
-	hub.Publish(DashboardEvent{Type: "cart_created", ID: cart.ID, Summary: fmt.Sprintf("Cart %s created with %d items, total %s", cart.ID, len(cart.LineItems), cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
+	hub.Publish(model.DashboardEvent{Type: "cart_created", ID: cart.ID, Summary: fmt.Sprintf("Cart %s created with %d items, total %s", cart.ID, len(cart.LineItems), cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
 	return cart, nil
 }
 
@@ -236,7 +237,7 @@ func handleUpdateCart(args map[string]interface{}) (interface{}, error) {
 		cart.LineItems = lineItems
 		cart.Totals = pricing.CalculateTotals(lineItems, 0, nil)
 	}
-	hub.Publish(DashboardEvent{Type: "cart_updated", ID: cart.ID, Summary: fmt.Sprintf("Cart %s updated, total %s", cart.ID, cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
+	hub.Publish(model.DashboardEvent{Type: "cart_updated", ID: cart.ID, Summary: fmt.Sprintf("Cart %s updated, total %s", cart.ID, cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
 	return cart, nil
 }
 
@@ -250,8 +251,8 @@ func handleCancelCart(args map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("cart not found: %s", id)
 	}
 	delete(carts, id)
-	cart.Messages = append(cart.Messages, Message{Type: "info", Text: "Cart has been canceled"})
-	hub.Publish(DashboardEvent{Type: "cart_canceled", ID: id, Summary: fmt.Sprintf("Cart %s canceled", id), Timestamp: time.Now()})
+	cart.Messages = append(cart.Messages, model.Message{Type: "info", Text: "Cart has been canceled"})
+	hub.Publish(model.DashboardEvent{Type: "cart_canceled", ID: id, Summary: fmt.Sprintf("Cart %s canceled", id), Timestamp: time.Now()})
 	return cart, nil
 }
 
@@ -264,7 +265,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("missing checkout parameter")
 	}
 
-	var lineItems []LineItem
+	var lineItems []model.LineItem
 
 	// Check if creating from a cart
 	if cartID, ok := checkoutData["cart_id"].(string); ok && cartID != "" {
@@ -299,11 +300,11 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 	checkoutSeq++
 	coID := fmt.Sprintf("checkout-%04d", checkoutSeq)
 
-	co := &Checkout{
+	co := &model.Checkout{
 		ID:        coID,
 		Status:    "incomplete",
-		UCP:       UCPEnvelope{Version: "2026-01-11", Capabilities: []Capability{}},
-		Links:     []Link{{Type: "application/json", URL: fmt.Sprintf("http://localhost:%d/checkout/%s", listenPort, coID)}},
+		UCP:       model.UCPEnvelope{Version: "2026-01-11", Capabilities: []model.Capability{}},
+		Links:     []model.Link{{Type: "application/json", URL: fmt.Sprintf("http://localhost:%d/checkout/%s", listenPort, coID)}},
 		Currency:  "USD",
 		LineItems: lineItems,
 		Totals:    pricing.CalculateTotals(lineItems, 0, nil),
@@ -318,7 +319,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 		co.Buyer = mpayment.ParseBuyer(checkoutData)
 	}
 
-	state := &MCPCheckoutState{
+	state := &model.MCPCheckoutState{
 		Checkout: co,
 		OwnerID:  ownerID,
 	}
@@ -327,7 +328,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 	checkouts[co.ID] = co
 	mcpCheckoutStates[co.ID] = state
 
-	hub.Publish(DashboardEvent{Type: "checkout_created", ID: co.ID, Summary: fmt.Sprintf("Checkout %s created, total %s", co.ID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "checkout_created", ID: co.ID, Summary: fmt.Sprintf("Checkout %s created, total %s", co.ID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now()})
 
 	return mcpCheckoutResponse(co, state), nil
 }
@@ -402,7 +403,7 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 	co.Totals = pricing.CalculateTotals(co.LineItems, shippingCost, co.Discounts)
 
 	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
-	hub.Publish(DashboardEvent{Type: "checkout_updated", ID: co.ID, Summary: fmt.Sprintf("Checkout %s updated, status: %s", co.ID, co.Status), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "checkout_updated", ID: co.ID, Summary: fmt.Sprintf("Checkout %s updated, status: %s", co.ID, co.Status), Timestamp: time.Now()})
 	return mcpCheckoutResponse(co, state), nil
 }
 
@@ -464,24 +465,24 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 	orderID := fmt.Sprintf("order-%04d", orderSeq)
 
 	// Build order line items
-	var orderLineItems []OrderLineItem
+	var orderLineItems []model.OrderLineItem
 	for _, li := range co.LineItems {
-		orderLineItems = append(orderLineItems, OrderLineItem{
+		orderLineItems = append(orderLineItems, model.OrderLineItem{
 			ID:       li.ID,
 			Item:     li.Item,
-			Quantity: OrderQuantity{Total: li.Quantity, Fulfilled: 0},
+			Quantity: model.OrderQuantity{Total: li.Quantity, Fulfilled: 0},
 			Totals:   li.Totals,
 			Status:   "processing",
 		})
 	}
 
-	order := &Order{
+	order := &model.Order{
 		ID:           orderID,
-		UCP:          UCPEnvelope{Version: "2026-01-11", Capabilities: []Capability{}},
+		UCP:          model.UCPEnvelope{Version: "2026-01-11", Capabilities: []model.Capability{}},
 		CheckoutID:   co.ID,
 		PermalinkURL: fmt.Sprintf("http://localhost:%d/orders/%s", listenPort, orderID),
 		LineItems:    orderLineItems,
-		Fulfillment:  OrderFulfillment{},
+		Fulfillment:  model.OrderFulfillment{},
 		Currency:     co.Currency,
 		Totals:       co.Totals,
 	}
@@ -489,14 +490,14 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 	mcpOrderOwners[orderID] = state.OwnerID
 
 	co.Status = "completed"
-	co.Order = &OrderRef{
+	co.Order = &model.OrderRef{
 		ID:           orderID,
 		PermalinkURL: order.PermalinkURL,
 	}
 	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
 
-	hub.Publish(DashboardEvent{Type: "checkout_completed", ID: co.ID, Summary: fmt.Sprintf("Order %s placed, total %s", orderID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now()})
-	hub.Publish(DashboardEvent{Type: "order_confirmed", ID: orderID, Summary: fmt.Sprintf("Order %s confirmed", orderID), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "checkout_completed", ID: co.ID, Summary: fmt.Sprintf("Order %s placed, total %s", orderID, co.Totals[len(co.Totals)-1].DisplayText), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "order_confirmed", ID: orderID, Summary: fmt.Sprintf("Order %s confirmed", orderID), Timestamp: time.Now()})
 
 	cancelCh := make(chan struct{})
 	orderCancelChsMu.Lock()
@@ -526,12 +527,12 @@ func handleCancelCheckout(args map[string]interface{}) (interface{}, error) {
 	}
 	co.Status = "canceled"
 	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
-	hub.Publish(DashboardEvent{Type: "checkout_canceled", ID: co.ID, Summary: fmt.Sprintf("Checkout %s canceled", co.ID), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "checkout_canceled", ID: co.ID, Summary: fmt.Sprintf("Checkout %s canceled", co.ID), Timestamp: time.Now()})
 	return mcpCheckoutResponse(co, state), nil
 }
 
 // mcpCheckoutResponse builds the MCP response for a checkout, adding MCP-specific fields.
-func mcpCheckoutResponse(co *Checkout, state *MCPCheckoutState) interface{} {
+func mcpCheckoutResponse(co *model.Checkout, state *model.MCPCheckoutState) interface{} {
 	resp := map[string]interface{}{
 		"id":         co.ID,
 		"status":     co.Status,
@@ -651,7 +652,7 @@ func handleListOrders(args map[string]interface{}) (interface{}, error) {
 			Total:        totalText,
 		})
 	}
-	hub.Publish(DashboardEvent{Type: "orders_listed", Summary: "Order list queried", Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "orders_listed", Summary: "Order list queried", Timestamp: time.Now()})
 	return map[string]interface{}{"orders": summaries}, nil
 }
 
@@ -677,7 +678,7 @@ func handleCancelOrder(args map[string]interface{}) (interface{}, error) {
 	}
 	orderCancelChsMu.Unlock()
 
-	hub.Publish(DashboardEvent{Type: "order_canceled", ID: ord.ID, Summary: fmt.Sprintf("Order %s canceled", ord.ID), Timestamp: time.Now()})
+	hub.Publish(model.DashboardEvent{Type: "order_canceled", ID: ord.ID, Summary: fmt.Sprintf("Order %s canceled", ord.ID), Timestamp: time.Now()})
 	return map[string]interface{}{"id": ord.ID, "status": "canceled", "message": "Order has been canceled"}, nil
 }
 
@@ -707,7 +708,7 @@ func handleTrackOrder(args map[string]interface{}) (interface{}, error) {
 }
 
 // startOrderProgression simulates order fulfillment with timed status transitions.
-func startOrderProgression(orderID string, shipping *ShippingOption, cancelCh chan struct{}) {
+func startOrderProgression(orderID string, shipping *model.ShippingOption, cancelCh chan struct{}) {
 	type transition struct {
 		delay  time.Duration
 		status string
@@ -741,7 +742,7 @@ func startOrderProgression(orderID string, shipping *ShippingOption, cancelCh ch
 				carrier = shipping.Carrier
 				estimatedDays = shipping.EstimatedDays
 			}
-			mcpOrderShipments[orderID] = &Shipment{
+			mcpOrderShipments[orderID] = &model.Shipment{
 				TrackingNumber: fmt.Sprintf("TRK-%s-%06d", orderID, time.Now().UnixNano()%1000000),
 				Carrier:        carrier,
 				EstimatedDate:  time.Now().Add(time.Duration(estimatedDays) * 24 * time.Hour).Format("2006-01-02"),
@@ -756,7 +757,7 @@ func startOrderProgression(orderID string, shipping *ShippingOption, cancelCh ch
 
 		storeMu.Unlock()
 
-		hub.Publish(DashboardEvent{
+		hub.Publish(model.DashboardEvent{
 			Type:      "order_" + step.status,
 			ID:        orderID,
 			Summary:   fmt.Sprintf("Order %s → %s", orderID, step.status),
@@ -835,15 +836,15 @@ func handleTrackShipment(args map[string]interface{}) (interface{}, error) {
 	return result, nil
 }
 
-func getShippingOptions() []ShippingOption {
-	return []ShippingOption{
+func getShippingOptions() []model.ShippingOption {
+	return []model.ShippingOption{
 		{ID: "standard", Method: "Standard Shipping", Carrier: "PostalService", EstimatedDays: 7, Price: 0, DisplayText: "Free — 5-7 business days"},
 		{ID: "express", Method: "Express Shipping", Carrier: "FastShip Express", EstimatedDays: 3, Price: 999, DisplayText: "$9.99 — 2-3 business days"},
 		{ID: "next_day", Method: "Next Day Delivery", Carrier: "FastShip Priority", EstimatedDays: 1, Price: 1999, DisplayText: "$19.99 — next business day"},
 	}
 }
 
-func findShippingOption(id string) *ShippingOption {
+func findShippingOption(id string) *model.ShippingOption {
 	for _, opt := range getShippingOptions() {
 		if opt.ID == id {
 			return &opt
@@ -853,12 +854,12 @@ func findShippingOption(id string) *ShippingOption {
 }
 
 // mcpOrderResponse builds an MCP-friendly response from a canonical Order.
-func mcpOrderResponse(ord *Order) interface{} {
+func mcpOrderResponse(ord *model.Order) interface{} {
 	return ord
 }
 
 // computeCheckoutHash produces a SHA-256 hash of the material checkout fields.
-func computeCheckoutHash(co *Checkout, shipping *ShippingOption) string {
+func computeCheckoutHash(co *model.Checkout, shipping *model.ShippingOption) string {
 	type hashLineItem struct {
 		ItemID   string `json:"item_id"`
 		Title    string `json:"title"`
@@ -866,11 +867,11 @@ func computeCheckoutHash(co *Checkout, shipping *ShippingOption) string {
 		Quantity int    `json:"quantity"`
 	}
 	type hashData struct {
-		ID        string          `json:"id"`
-		LineItems []hashLineItem  `json:"line_items"`
-		Currency  string          `json:"currency"`
-		Totals    []Total         `json:"totals"`
-		Shipping  *ShippingOption `json:"shipping,omitempty"`
+		ID        string                `json:"id"`
+		LineItems []hashLineItem        `json:"line_items"`
+		Currency  string                `json:"currency"`
+		Totals    []model.Total         `json:"totals"`
+		Shipping  *model.ShippingOption `json:"shipping,omitempty"`
 	}
 	var items []hashLineItem
 	for _, li := range co.LineItems {

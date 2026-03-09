@@ -14,6 +14,7 @@ import (
 	mfulfillment "github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
 	mpayment "github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 	"github.com/owulveryck/ucp-merchant-test/internal/webhook"
 )
 
@@ -127,11 +128,11 @@ func restCreateCheckout(w http.ResponseWriter, r *http.Request) {
 	checkoutSeq++
 	coID := fmt.Sprintf("co_%04d", checkoutSeq)
 
-	co := &Checkout{
+	co := &model.Checkout{
 		ID:        coID,
 		Status:    "incomplete",
-		UCP:       UCPEnvelope{Version: "2026-01-11", Capabilities: []Capability{}},
-		Links:     []Link{{Type: "application/json", URL: fmt.Sprintf("%s://localhost:%d/shopping-api/checkout-sessions/%s", scheme(), listenPort, coID)}},
+		UCP:       model.UCPEnvelope{Version: "2026-01-11", Capabilities: []model.Capability{}},
+		Links:     []model.Link{{Type: "application/json", URL: fmt.Sprintf("%s://localhost:%d/shopping-api/checkout-sessions/%s", scheme(), listenPort, coID)}},
 		Currency:  stringOr(req, "currency", "USD"),
 		LineItems: lineItems,
 	}
@@ -343,34 +344,34 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 	orderSeq++
 	orderID := fmt.Sprintf("order_%04d", orderSeq)
 
-	var orderLineItems []OrderLineItem
-	var expectationLineItems []EventLineItem
+	var orderLineItems []model.OrderLineItem
+	var expectationLineItems []model.EventLineItem
 	for _, li := range co.LineItems {
-		orderLineItems = append(orderLineItems, OrderLineItem{
+		orderLineItems = append(orderLineItems, model.OrderLineItem{
 			ID:       li.ID,
 			Item:     li.Item,
-			Quantity: OrderQuantity{Total: li.Quantity, Fulfilled: 0},
+			Quantity: model.OrderQuantity{Total: li.Quantity, Fulfilled: 0},
 			Totals:   li.Totals,
 			Status:   "processing",
 		})
-		expectationLineItems = append(expectationLineItems, EventLineItem{
+		expectationLineItems = append(expectationLineItems, model.EventLineItem{
 			ID:       li.ID,
 			Quantity: li.Quantity,
 		})
 	}
 
 	// Build fulfillment expectations from selected option
-	var expectations []Expectation
+	var expectations []model.Expectation
 	optionTitle := checkoutOptionTitles[id]
 	if optionTitle == "" {
 		optionTitle = "Standard Shipping"
 	}
 	dest := checkoutDestinations[id]
-	destVal := FulfillmentDestination{}
+	destVal := model.FulfillmentDestination{}
 	if dest != nil {
 		destVal = *dest
 	}
-	expectations = append(expectations, Expectation{
+	expectations = append(expectations, model.Expectation{
 		ID:          "expect_1",
 		LineItems:   expectationLineItems,
 		MethodType:  "shipping",
@@ -378,13 +379,13 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 		Destination: destVal,
 	})
 
-	order := &Order{
+	order := &model.Order{
 		ID:           orderID,
-		UCP:          UCPEnvelope{Version: "2026-01-11", Capabilities: []Capability{}},
+		UCP:          model.UCPEnvelope{Version: "2026-01-11", Capabilities: []model.Capability{}},
 		CheckoutID:   id,
 		PermalinkURL: fmt.Sprintf("%s://localhost:%d/orders/%s", scheme(), listenPort, orderID),
 		LineItems:    orderLineItems,
-		Fulfillment: OrderFulfillment{
+		Fulfillment: model.OrderFulfillment{
 			Expectations: expectations,
 		},
 		Currency: co.Currency,
@@ -394,7 +395,7 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 	orders[orderID] = order
 
 	co.Status = "completed"
-	co.Order = &OrderRef{
+	co.Order = &model.OrderRef{
 		ID:           orderID,
 		PermalinkURL: order.PermalinkURL,
 	}
@@ -537,13 +538,13 @@ func restUpdateOrder(w http.ResponseWriter, r *http.Request) {
 		if fMap != nil {
 			if eventsRaw, ok := fMap["events"]; ok {
 				eventsJSON, _ := json.Marshal(eventsRaw)
-				var events []FulfillmentEvent
+				var events []model.FulfillmentEvent
 				json.Unmarshal(eventsJSON, &events)
 				order.Fulfillment.Events = events
 			}
 			if expectRaw, ok := fMap["expectations"]; ok {
 				expectJSON, _ := json.Marshal(expectRaw)
-				var expectations []Expectation
+				var expectations []model.Expectation
 				json.Unmarshal(expectJSON, &expectations)
 				order.Fulfillment.Expectations = expectations
 			}
@@ -553,7 +554,7 @@ func restUpdateOrder(w http.ResponseWriter, r *http.Request) {
 	// Update adjustments
 	if adjRaw, ok := reqMap["adjustments"]; ok {
 		adjJSON, _ := json.Marshal(adjRaw)
-		var adjustments []Adjustment
+		var adjustments []model.Adjustment
 		json.Unmarshal(adjJSON, &adjustments)
 		order.Adjustments = adjustments
 	}
@@ -586,7 +587,7 @@ func restSimulateShipping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event := FulfillmentEvent{
+	event := model.FulfillmentEvent{
 		ID:             fmt.Sprintf("evt_ship_%s", id),
 		OccurredAt:     time.Now().UTC().Format(time.RFC3339),
 		Type:           "shipped",
@@ -595,7 +596,7 @@ func restSimulateShipping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, li := range order.LineItems {
-		event.LineItems = append(event.LineItems, EventLineItem{
+		event.LineItems = append(event.LineItems, model.EventLineItem{
 			ID:       li.ID,
 			Quantity: li.Quantity.Total,
 		})

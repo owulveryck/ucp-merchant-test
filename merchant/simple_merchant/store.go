@@ -4,13 +4,14 @@ import (
 	"sync"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 // Unified in-memory stores used by both REST and MCP transports.
 var (
-	checkouts   = map[string]*Checkout{}
-	orders      = map[string]*Order{}
-	carts       = map[string]*Cart{}
+	checkouts   = map[string]*model.Checkout{}
+	orders      = map[string]*model.Order{}
+	carts       = map[string]*model.Cart{}
 	checkoutSeq int
 	orderSeq    int
 	cartSeq     int
@@ -18,7 +19,7 @@ var (
 
 	// Checkout metadata for order creation.
 	checkoutWebhooks     = map[string]string{}
-	checkoutDestinations = map[string]*FulfillmentDestination{}
+	checkoutDestinations = map[string]*model.FulfillmentDestination{}
 	checkoutOptionTitles = map[string]string{}
 
 	// MCP order cancel channels (keyed by order ID).
@@ -35,14 +36,14 @@ var (
 
 func resetStores() {
 	storeMu.Lock()
-	checkouts = map[string]*Checkout{}
-	orders = map[string]*Order{}
-	carts = map[string]*Cart{}
+	checkouts = map[string]*model.Checkout{}
+	orders = map[string]*model.Order{}
+	carts = map[string]*model.Cart{}
 	checkoutSeq = 0
 	orderSeq = 0
 	cartSeq = 0
 	checkoutWebhooks = map[string]string{}
-	checkoutDestinations = map[string]*FulfillmentDestination{}
+	checkoutDestinations = map[string]*model.FulfillmentDestination{}
 	checkoutOptionTitles = map[string]string{}
 	storeMu.Unlock()
 
@@ -62,8 +63,8 @@ func resetStores() {
 	addrSeqMu.Unlock()
 
 	// MCP-specific state
-	mcpCheckoutStates = map[string]*MCPCheckoutState{}
-	mcpOrderShipments = map[string]*Shipment{}
+	mcpCheckoutStates = map[string]*model.MCPCheckoutState{}
+	mcpOrderShipments = map[string]*model.Shipment{}
 	mcpOrderOwners = map[string]string{}
 
 	// Idempotency store

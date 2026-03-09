@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/auth"
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
 // Merchant identity
@@ -334,11 +335,11 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 	userID := oauthServer.ExtractUserFromToken(r)
 	userCountry := oauthServer.ExtractUserCountry(r)
 
-	var req jsonRPCRequest
+	var req model.JSONRPCRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
-			Error:   &rpcError{Code: -32700, Message: "Parse error"},
+			Error:   &model.RPCError{Code: -32700, Message: "Parse error"},
 		})
 		return
 	}
@@ -353,7 +354,7 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 
 	switch req.Method {
 	case "initialize":
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result: map[string]interface{}{
@@ -373,7 +374,7 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 
 	case "tools/list":
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result: map[string]interface{}{
@@ -385,24 +386,24 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 		handleToolCall(w, req, userID, userCountry)
 
 	default:
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Error:   &rpcError{Code: -32601, Message: fmt.Sprintf("Method not found: %s", req.Method)},
+			Error:   &model.RPCError{Code: -32601, Message: fmt.Sprintf("Method not found: %s", req.Method)},
 		})
 	}
 }
 
-func handleToolCall(w http.ResponseWriter, req jsonRPCRequest, userID, userCountry string) {
+func handleToolCall(w http.ResponseWriter, req model.JSONRPCRequest, userID, userCountry string) {
 	var params struct {
 		Name      string                 `json:"name"`
 		Arguments map[string]interface{} `json:"arguments"`
 	}
 	if err := json.Unmarshal(req.Params, &params); err != nil {
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Error:   &rpcError{Code: -32602, Message: "Invalid params"},
+			Error:   &model.RPCError{Code: -32602, Message: "Invalid params"},
 		})
 		return
 	}
@@ -433,17 +434,17 @@ func handleToolCall(w http.ResponseWriter, req jsonRPCRequest, userID, userCount
 
 	handler, ok := handlers[params.Name]
 	if !ok {
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Error:   &rpcError{Code: -32602, Message: fmt.Sprintf("Unknown tool: %s", params.Name)},
+			Error:   &model.RPCError{Code: -32602, Message: fmt.Sprintf("Unknown tool: %s", params.Name)},
 		})
 		return
 	}
 
 	result, err := handler(params.Arguments)
 	if err != nil {
-		writeJSON(w, jsonRPCResponse{
+		writeJSON(w, model.JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result: map[string]interface{}{
@@ -480,7 +481,7 @@ func handleToolCall(w http.ResponseWriter, req jsonRPCRequest, userID, userCount
 		})
 	}
 
-	writeJSON(w, jsonRPCResponse{
+	writeJSON(w, model.JSONRPCResponse{
 		JSONRPC: "2.0",
 		ID:      req.ID,
 		Result: map[string]interface{}{
@@ -520,7 +521,7 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
-func getToolDefinitions() []toolDef {
+func getToolDefinitions() []model.ToolDef {
 	metaSchema := map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
@@ -540,7 +541,7 @@ func getToolDefinitions() []toolDef {
 		},
 	}
 
-	return []toolDef{
+	return []model.ToolDef{
 		{
 			Name:        "list_products",
 			Description: "List products from the catalog. Call with no arguments first to see featured products and available categories. Use category, brand, query, or usage_type filters to narrow results. Each product includes a usage_type (intensive, occasional, versatile). Use get_product_details to get the full product sheet with description before recommending.",
