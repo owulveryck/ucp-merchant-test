@@ -1,0 +1,352 @@
+package fulfillment
+
+import (
+	"fmt"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/data"
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
+)
+
+// ParseFulfillment parses fulfillment data from a request map.
+func ParseFulfillment(
+	req map[string]interface{},
+	buyer *model.Buyer,
+	co *model.Checkout,
+	ds *data.DataSource,
+	checkoutDestinations map[string]*model.FulfillmentDestination,
+	checkoutOptionTitles map[string]string,
+	addrSeqCounter *int,
+	addrSeqMu interface{ Lock(); Unlock() },
+) *model.Fulfillment {
+	fulfillmentRaw, ok := req["fulfillment"]
+	if !ok || fulfillmentRaw == nil {
+		return nil
+	}
+	fMap, ok := fulfillmentRaw.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	methodsRaw, _ := fMap["methods"].([]interface{})
+	if len(methodsRaw) == 0 {
+		return nil
+	}
+
+	f := &model.Fulfillment{}
+	for _, mRaw := range methodsRaw {
+		mData, ok := mRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		method := model.FulfillmentMethod{}
+		if v, ok := mData["id"].(string); ok {
+			method.ID = v
+		} else {
+			method.ID = "method_shipping"
+		}
+		if v, ok := mData["type"].(string); ok {
+			method.Type = v
+		}
+		if co != nil {
+			for _, li := range co.LineItems {
+				method.LineItemIDs = append(method.LineItemIDs, li.ID)
+			}
+		}
+		if method.LineItemIDs == nil {
+			method.LineItemIDs = []string{}
+		}
+
+		destsRaw, _ := mData["destinations"].([]interface{})
+		if len(destsRaw) > 0 {
+			for _, dRaw := range destsRaw {
+				dMap, ok := dRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				dest := ParseDestination(dMap, buyer, ds, addrSeqCounter, addrSeqMu)
+				method.Destinations = append(method.Destinations, dest)
+			}
+		} else if method.Type == "shipping" {
+			email := ""
+			if buyer != nil {
+				email = buyer.Email
+			} else if co != nil && co.Buyer != nil {
+				email = co.Buyer.Email
+			}
+			if email != "" {
+				addresses := ds.FindAddressesForEmail(email)
+				for _, addr := range addresses {
+					method.Destinations = append(method.Destinations, model.FulfillmentDestination{
+						ID:              addr.ID,
+						StreetAddress:   addr.StreetAddress,
+						AddressLocality: addr.City,
+						AddressRegion:   addr.State,
+						PostalCode:      addr.PostalCode,
+						AddressCountry:  addr.Country,
+					})
+				}
+			}
+			if len(method.Destinations) == 0 {
+				method.Destinations = nil
+			}
+		}
+
+		if v, ok := mData["selected_destination_id"].(string); ok {
+			method.SelectedDestinationID = v
+
+			if len(method.Destinations) == 0 && co != nil && co.Fulfillment != nil && len(co.Fulfillment.Methods) > 0 {
+				method.Destinations = co.Fulfillment.Methods[0].Destinations
+			}
+
+			if co != nil {
+				for _, d := range method.Destinations {
+					if d.ID == v {
+						dest := d
+						checkoutDestinations[co.ID] = &dest
+						break
+					}
+				}
+			}
+
+			destCountry := ""
+			for _, d := range method.Destinations {
+				if d.ID == v {
+					destCountry = d.AddressCountry
+					break
+				}
+			}
+			if destCountry != "" {
+				options := GenerateShippingOptions(destCountry, co, ds)
+				groupLineItemIDs := method.LineItemIDs
+				if groupLineItemIDs == nil {
+					groupLineItemIDs = []string{}
+				}
+				method.Groups = []model.FulfillmentGroup{
+					{ID: "group_1", LineItemIDs: groupLineItemIDs, Options: options},
+				}
+			}
+		}
+
+		if groupsRaw, ok := mData["groups"].([]interface{}); ok && len(groupsRaw) > 0 {
+			existingOptions := []model.FulfillmentOption{}
+			if co != nil && co.Fulfillment != nil && len(co.Fulfillment.Methods) > 0 {
+				existingMethod := co.Fulfillment.Methods[0]
+				if len(existingMethod.Groups) > 0 {
+					existingOptions = existingMethod.Groups[0].Options
+				}
+				if len(method.Destinations) == 0 {
+					method.Destinations = existingMethod.Destinations
+				}
+				if method.SelectedDestinationID == "" {
+					method.SelectedDestinationID = existingMethod.SelectedDestinationID
+				}
+			}
+
+			for gi, gRaw := range groupsRaw {
+				gMap, ok := gRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				groupLineItemIDs := method.LineItemIDs
+				if groupLineItemIDs == nil {
+					groupLineItemIDs = []string{}
+				}
+				group := model.FulfillmentGroup{
+					ID:          fmt.Sprintf("group_%d", gi+1),
+					LineItemIDs: groupLineItemIDs,
+				}
+				if v, ok := gMap["selected_option_id"].(string); ok {
+					group.SelectedOptionID = v
+					if co != nil {
+						for _, opt := range existingOptions {
+							if opt.ID == v {
+								checkoutOptionTitles[co.ID] = opt.Title
+								break
+							}
+						}
+					}
+				}
+				group.Options = existingOptions
+				method.Groups = append(method.Groups, group)
+			}
+		}
+
+		f.Methods = append(f.Methods, method)
+	}
+
+	return f
+}
+
+// ParseDestination parses a destination from a map.
+func ParseDestination(
+	dMap map[string]interface{},
+	buyer *model.Buyer,
+	ds *data.DataSource,
+	addrSeqCounter *int,
+	addrSeqMu interface{ Lock(); Unlock() },
+) model.FulfillmentDestination {
+	dest := model.FulfillmentDestination{}
+	if v, ok := dMap["id"].(string); ok {
+		dest.ID = v
+	}
+	if v, ok := dMap["full_name"].(string); ok {
+		dest.FullName = v
+	}
+	if v, ok := dMap["street_address"].(string); ok {
+		dest.StreetAddress = v
+	}
+	if v, ok := dMap["address_locality"].(string); ok {
+		dest.AddressLocality = v
+	}
+	if v, ok := dMap["address_region"].(string); ok {
+		dest.AddressRegion = v
+	}
+	if v, ok := dMap["postal_code"].(string); ok {
+		dest.PostalCode = v
+	}
+	if v, ok := dMap["address_country"].(string); ok {
+		dest.AddressCountry = v
+	}
+
+	if dest.ID == "" {
+		email := ""
+		if buyer != nil {
+			email = buyer.Email
+		}
+		if email != "" {
+			existingAddrs := ds.FindAddressesForEmail(email)
+			matched := data.MatchExistingAddress(existingAddrs, dest.StreetAddress, dest.AddressLocality, dest.AddressRegion, dest.PostalCode, dest.AddressCountry)
+			if matched != nil {
+				dest.ID = matched.ID
+			} else {
+				addrSeqMu.Lock()
+				*addrSeqCounter++
+				dest.ID = fmt.Sprintf("addr_dyn_%d", *addrSeqCounter)
+				addrSeqMu.Unlock()
+				ds.SaveDynamicAddress(email, data.CSVAddress{
+					ID:            dest.ID,
+					StreetAddress: dest.StreetAddress,
+					City:          dest.AddressLocality,
+					State:         dest.AddressRegion,
+					PostalCode:    dest.PostalCode,
+					Country:       dest.AddressCountry,
+				})
+			}
+		} else {
+			addrSeqMu.Lock()
+			*addrSeqCounter++
+			dest.ID = fmt.Sprintf("addr_dyn_%d", *addrSeqCounter)
+			addrSeqMu.Unlock()
+		}
+	}
+
+	return dest
+}
+
+// GenerateShippingOptions generates shipping options based on country and checkout.
+func GenerateShippingOptions(country string, co *model.Checkout, ds *data.DataSource) []model.FulfillmentOption {
+	rates := ds.GetShippingRatesForCountry(country)
+	var options []model.FulfillmentOption
+
+	freeShipping := false
+	if co != nil {
+		subtotal := 0
+		var itemIDs []string
+		for _, li := range co.LineItems {
+			for _, t := range li.Totals {
+				if t.Type == "subtotal" {
+					subtotal += t.Amount
+				}
+			}
+			itemIDs = append(itemIDs, li.Item.ID)
+		}
+		for _, promo := range ds.Promotions {
+			if promo.Type == "free_shipping" {
+				if promo.MinSubtotal > 0 && subtotal >= promo.MinSubtotal {
+					freeShipping = true
+					break
+				}
+				if len(promo.EligibleItemIDs) > 0 {
+					for _, eligible := range promo.EligibleItemIDs {
+						for _, itemID := range itemIDs {
+							if eligible == itemID {
+								freeShipping = true
+								break
+							}
+						}
+						if freeShipping {
+							break
+						}
+					}
+				}
+			}
+			if freeShipping {
+				break
+			}
+		}
+	}
+
+	for _, rate := range rates {
+		price := rate.Price
+		title := rate.Title
+		if freeShipping && rate.ServiceLevel == "standard" {
+			price = 0
+			title = "Free Standard Shipping"
+		}
+		options = append(options, model.FulfillmentOption{
+			ID:    rate.ID,
+			Title: title,
+			Totals: []model.Total{
+				{Type: "fulfillment", Amount: price},
+				{Type: "total", Amount: price},
+			},
+		})
+	}
+	return options
+}
+
+// GetCurrentShippingCost extracts the selected shipping cost from a checkout.
+func GetCurrentShippingCost(co *model.Checkout) int {
+	if co.Fulfillment == nil {
+		return 0
+	}
+	for _, m := range co.Fulfillment.Methods {
+		for _, g := range m.Groups {
+			if g.SelectedOptionID != "" {
+				for _, opt := range g.Options {
+					if opt.ID == g.SelectedOptionID {
+						for _, t := range opt.Totals {
+							if t.Type == "total" {
+								return t.Amount
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0
+}
+
+// IsFulfillmentComplete checks if fulfillment has all required selections.
+func IsFulfillmentComplete(co *model.Checkout) bool {
+	if co.Fulfillment == nil {
+		return false
+	}
+	for _, m := range co.Fulfillment.Methods {
+		if m.SelectedDestinationID == "" {
+			return false
+		}
+		hasOption := false
+		for _, g := range m.Groups {
+			if g.SelectedOptionID != "" {
+				hasOption = true
+				break
+			}
+		}
+		if !hasOption {
+			return false
+		}
+	}
+	return len(co.Fulfillment.Methods) > 0
+}

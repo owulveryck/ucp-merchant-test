@@ -1,6 +1,6 @@
 # Binaries
-merchant
-ucp-merchant-test
+/merchant
+/ucp-merchant-test
 *.exe
 
 # IDE
