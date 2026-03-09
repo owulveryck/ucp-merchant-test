@@ -3,15 +3,28 @@ package discount_test
 import (
 	"fmt"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/data"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+type exampleDiscountLookup struct {
+	discounts []discount.Discount
+}
+
+func (m *exampleDiscountLookup) FindDiscountByCode(code string) *discount.Discount {
+	for i := range m.discounts {
+		if m.discounts[i].Code == code {
+			return &m.discounts[i]
+		}
+	}
+	return nil
+}
+
 func ExampleApplyDiscounts() {
-	ds := data.New()
-	ds.Discounts = []data.CSVDiscount{
-		{Code: "10OFF", Type: "percentage", Value: 10, Description: "10% Off"},
+	dl := &exampleDiscountLookup{
+		discounts: []discount.Discount{
+			{Code: "10OFF", Type: "percentage", Value: 10, Description: "10% Off"},
+		},
 	}
 
 	items := []model.LineItem{
@@ -27,7 +40,7 @@ func ExampleApplyDiscounts() {
 		"codes": []interface{}{"10OFF"},
 	}
 
-	result := discount.ApplyDiscounts(discountsRaw, items, ds)
+	result := discount.ApplyDiscounts(discountsRaw, items, dl)
 	fmt.Println(result.Codes[0])
 	fmt.Println(result.Applied[0].Title)
 	fmt.Println(result.Applied[0].Amount)

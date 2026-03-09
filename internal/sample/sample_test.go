@@ -1,11 +1,15 @@
-package data
+package sample
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
+)
 
 func TestNew(t *testing.T) {
 	ds := New()
-	if ds.DynamicAddresses == nil {
-		t.Fatal("expected non-nil DynamicAddresses")
+	if ds.dynamicAddresses == nil {
+		t.Fatal("expected non-nil dynamicAddresses")
 	}
 }
 
@@ -34,13 +38,13 @@ func TestFindCustomerByEmail(t *testing.T) {
 
 func TestFindAddressesByCustomerID(t *testing.T) {
 	ds := New()
-	ds.Addresses = []CSVAddress{
+	ds.addresses = []csvAddress{
 		{ID: "addr_1", CustomerID: "cust_1", City: "NYC"},
 		{ID: "addr_2", CustomerID: "cust_1", City: "LA"},
 		{ID: "addr_3", CustomerID: "cust_2", City: "Chicago"},
 	}
 
-	addrs := ds.FindAddressesByCustomerID("cust_1")
+	addrs := ds.findAddressesByCustomerID("cust_1")
 	if len(addrs) != 2 {
 		t.Errorf("expected 2 addresses, got %d", len(addrs))
 	}
@@ -48,7 +52,7 @@ func TestFindAddressesByCustomerID(t *testing.T) {
 
 func TestFindDiscountByCode(t *testing.T) {
 	ds := New()
-	ds.Discounts = []CSVDiscount{
+	ds.discounts = []csvDiscount{
 		{Code: "10OFF", Type: "percentage", Value: 10, Description: "10% off"},
 	}
 
@@ -94,7 +98,7 @@ func TestFindPaymentInstrumentByToken(t *testing.T) {
 
 func TestGetShippingRatesForCountry(t *testing.T) {
 	ds := New()
-	ds.ShippingRates = []CSVShippingRate{
+	ds.shippingRates = []csvShippingRate{
 		{ID: "r1", CountryCode: "US", ServiceLevel: "standard", Price: 500, Title: "Standard US"},
 		{ID: "r2", CountryCode: "default", ServiceLevel: "standard", Price: 800, Title: "Standard Default"},
 		{ID: "r3", CountryCode: "default", ServiceLevel: "express", Price: 1500, Title: "Express Default"},
@@ -112,25 +116,9 @@ func TestGetShippingRatesForCountry(t *testing.T) {
 	}
 }
 
-func TestMatchExistingAddress(t *testing.T) {
-	addrs := []CSVAddress{
-		{ID: "addr_1", StreetAddress: "123 Main St", City: "NYC", State: "NY", PostalCode: "10001", Country: "US"},
-	}
-
-	matched := MatchExistingAddress(addrs, "123 main st", "nyc", "ny", "10001", "us")
-	if matched == nil || matched.ID != "addr_1" {
-		t.Error("expected case-insensitive address match")
-	}
-
-	matched = MatchExistingAddress(addrs, "456 Oak Ave", "LA", "CA", "90001", "US")
-	if matched != nil {
-		t.Error("expected nil for non-matching address")
-	}
-}
-
 func TestSaveDynamicAddress(t *testing.T) {
 	ds := New()
-	addr := CSVAddress{ID: "addr_dyn_1", StreetAddress: "456 Oak", City: "LA"}
+	addr := fulfillment.Address{ID: "addr_dyn_1", StreetAddress: "456 Oak", City: "LA"}
 	ds.SaveDynamicAddress("john@example.com", addr)
 
 	addrs := ds.FindAddressesForEmail("john@example.com")

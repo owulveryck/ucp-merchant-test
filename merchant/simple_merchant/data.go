@@ -1,20 +1,62 @@
 package main
 
 import (
-	idata "github.com/owulveryck/ucp-merchant-test/internal/data"
+	"fmt"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/jsondata"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
+	"github.com/owulveryck/ucp-merchant-test/internal/sample"
 )
 
-// CSVAddress alias used in store.go and tests.
-type CSVAddress = idata.CSVAddress
+// Address alias used in store.go and tests.
+type Address = fulfillment.Address
 
-var shopData = idata.New()
+// shopDataSource is the interface satisfied by both sample.DataSource and jsondata.DataSource.
+type shopDataSource interface {
+	discount.DiscountLookup
+	fulfillment.FulfillmentDataSource
+	ResetDynamicAddresses()
+}
 
-func loadFlowerShopData(dataDir string) error {
-	if err := shopData.Load(dataDir); err != nil {
+// shopDataLoader extends shopDataSource with data loading and product access.
+type shopDataLoader interface {
+	shopDataSource
+	Load(dataDir string) error
+	GetProducts() []Product
+}
+
+// csvLoader wraps sample.DataSource to satisfy shopDataLoader.
+type csvLoader struct{ *sample.DataSource }
+
+func (l csvLoader) GetProducts() []Product { return l.Products }
+
+// jsonLoader wraps jsondata.DataSource to satisfy shopDataLoader.
+type jsonLoader struct{ *jsondata.DataSource }
+
+func (l jsonLoader) GetProducts() []Product { return l.Products }
+
+var shopData shopDataSource
+
+func loadFlowerShopData(dataDir, dataFormat string) error {
+	var loader shopDataLoader
+	switch dataFormat {
+	case "csv":
+		loader = csvLoader{sample.New()}
+	case "json":
+		loader = jsonLoader{jsondata.New()}
+	default:
+		return fmt.Errorf("unknown data format: %s (use csv or json)", dataFormat)
+	}
+
+	if err := loader.Load(dataDir); err != nil {
 		return err
 	}
-	catalog = shopData.Products
-	catalogInstance.Products = shopData.Products
+
+	products := loader.GetProducts()
+	catalog = products
+	catalogInstance.Products = products
 	productSeq = len(catalog)
+	shopData = loader
 	return nil
 }

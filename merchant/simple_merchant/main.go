@@ -34,6 +34,7 @@ var (
 	tlsEnabled       bool
 	simulationSecret string
 	dataDir          string
+	dataFormat       string
 )
 
 // Global OAuth server instance.
@@ -104,7 +105,8 @@ func main() {
 	flag.StringVar(&certFile, "cert", "", "path to TLS certificate file")
 	flag.StringVar(&keyFile, "key", "", "path to TLS private key file")
 	flag.StringVar(&dbFile, "db", "", "path to JSON product database file (overrides built-in catalog)")
-	flag.StringVar(&dataDir, "data-dir", "", "path to directory with CSV test data (flower shop dataset)")
+	flag.StringVar(&dataDir, "data-dir", "", "path to directory with test data (flower shop dataset)")
+	flag.StringVar(&dataFormat, "data-format", "csv", "format of test data files: csv or json")
 	flag.StringVar(&simulationSecret, "simulation-secret", "", "secret for /testing/simulate-shipping endpoint")
 	flag.Parse()
 
@@ -112,7 +114,7 @@ func main() {
 	merchantName = generateMerchantName()
 
 	if dataDir != "" {
-		if err := loadFlowerShopData(dataDir); err != nil {
+		if err := loadFlowerShopData(dataDir, dataFormat); err != nil {
 			log.Fatalf("Failed to load flower shop data from %s: %v", dataDir, err)
 		}
 		log.Printf("Loaded %d products from %s", len(catalog), dataDir)

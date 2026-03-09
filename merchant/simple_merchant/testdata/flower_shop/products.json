@@ -1,0 +1,44 @@
+[
+  {
+    "id": "bouquet_roses",
+    "title": "Bouquet of Red Roses",
+    "price": 3500,
+    "image_url": "https://example.com/roses.jpg",
+    "quantity": 1000
+  },
+  {
+    "id": "pot_ceramic",
+    "title": "Ceramic Pot",
+    "price": 1500,
+    "image_url": "https://example.com/pot.jpg",
+    "quantity": 2000
+  },
+  {
+    "id": "bouquet_sunflowers",
+    "title": "Sunflower Bundle",
+    "price": 2500,
+    "image_url": "https://example.com/sunflowers.jpg",
+    "quantity": 500
+  },
+  {
+    "id": "bouquet_tulips",
+    "title": "Spring Tulips",
+    "price": 3000,
+    "image_url": "https://example.com/tulips.jpg",
+    "quantity": 1500
+  },
+  {
+    "id": "orchid_white",
+    "title": "White Orchid",
+    "price": 4500,
+    "image_url": "https://example.com/orchid.jpg",
+    "quantity": 800
+  },
+  {
+    "id": "gardenias",
+    "title": "Gardenias",
+    "price": 2000,
+    "image_url": "https://example.com/gardenias.jpg",
+    "quantity": 0
+  }
+]

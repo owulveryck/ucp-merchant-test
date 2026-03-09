@@ -1,15 +1,51 @@
 package fulfillment
 
 import (
+	"strings"
 	"sync"
 	"testing"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/data"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+type mockFulfillmentDS struct {
+	addresses     map[string][]Address
+	shippingRates []ShippingRate
+	promotions    []Promotion
+}
+
+func newMockDS() *mockFulfillmentDS {
+	return &mockFulfillmentDS{
+		addresses: make(map[string][]Address),
+	}
+}
+
+func (m *mockFulfillmentDS) FindAddressesForEmail(email string) []Address {
+	return m.addresses[strings.ToLower(email)]
+}
+
+func (m *mockFulfillmentDS) SaveDynamicAddress(email string, addr Address) string {
+	key := strings.ToLower(email)
+	m.addresses[key] = append(m.addresses[key], addr)
+	return addr.ID
+}
+
+func (m *mockFulfillmentDS) GetShippingRatesForCountry(country string) []ShippingRate {
+	var result []ShippingRate
+	for _, r := range m.shippingRates {
+		if strings.EqualFold(r.CountryCode, country) || r.CountryCode == "default" {
+			result = append(result, r)
+		}
+	}
+	return result
+}
+
+func (m *mockFulfillmentDS) GetPromotions() []Promotion {
+	return m.promotions
+}
+
 func TestParseFulfillmentNil(t *testing.T) {
-	ds := data.New()
+	ds := newMockDS()
 	counter := 0
 	var mu sync.Mutex
 	result := ParseFulfillment(map[string]interface{}{}, nil, nil, ds, nil, nil, &counter, &mu)
@@ -19,7 +55,7 @@ func TestParseFulfillmentNil(t *testing.T) {
 }
 
 func TestParseFulfillmentBasic(t *testing.T) {
-	ds := data.New()
+	ds := newMockDS()
 	counter := 0
 	var mu sync.Mutex
 
@@ -47,7 +83,7 @@ func TestParseFulfillmentBasic(t *testing.T) {
 }
 
 func TestParseDestination(t *testing.T) {
-	ds := data.New()
+	ds := newMockDS()
 	counter := 0
 	var mu sync.Mutex
 
@@ -138,8 +174,8 @@ func TestIsFulfillmentIncomplete(t *testing.T) {
 }
 
 func TestGenerateShippingOptions(t *testing.T) {
-	ds := data.New()
-	ds.ShippingRates = []data.CSVShippingRate{
+	ds := newMockDS()
+	ds.shippingRates = []ShippingRate{
 		{ID: "r1", CountryCode: "US", ServiceLevel: "standard", Price: 500, Title: "Standard"},
 		{ID: "r2", CountryCode: "US", ServiceLevel: "express", Price: 1500, Title: "Express"},
 	}
@@ -151,11 +187,11 @@ func TestGenerateShippingOptions(t *testing.T) {
 }
 
 func TestGenerateShippingOptionsFreeShipping(t *testing.T) {
-	ds := data.New()
-	ds.ShippingRates = []data.CSVShippingRate{
+	ds := newMockDS()
+	ds.shippingRates = []ShippingRate{
 		{ID: "r1", CountryCode: "US", ServiceLevel: "standard", Price: 500, Title: "Standard"},
 	}
-	ds.Promotions = []data.CSVPromotion{
+	ds.promotions = []Promotion{
 		{ID: "p1", Type: "free_shipping", MinSubtotal: 10000},
 	}
 
@@ -171,5 +207,21 @@ func TestGenerateShippingOptionsFreeShipping(t *testing.T) {
 	}
 	if options[0].Totals[0].Amount != 0 {
 		t.Errorf("expected free shipping (0), got %d", options[0].Totals[0].Amount)
+	}
+}
+
+func TestMatchExistingAddress(t *testing.T) {
+	addrs := []Address{
+		{ID: "addr_1", StreetAddress: "123 Main St", City: "NYC", State: "NY", PostalCode: "10001", Country: "US"},
+	}
+
+	matched := MatchExistingAddress(addrs, "123 main st", "nyc", "ny", "10001", "us")
+	if matched == nil || matched.ID != "addr_1" {
+		t.Error("expected case-insensitive address match")
+	}
+
+	matched = MatchExistingAddress(addrs, "456 Oak Ave", "LA", "CA", "90001", "US")
+	if matched != nil {
+		t.Error("expected nil for non-matching address")
 	}
 }

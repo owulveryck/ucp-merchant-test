@@ -1,0 +1,18 @@
+[
+  {
+    "id": "promo_1",
+    "type": "free_shipping",
+    "min_subtotal": 10000,
+    "eligible_item_ids": [],
+    "description": "Free Shipping on orders over $100"
+  },
+  {
+    "id": "promo_2",
+    "type": "free_shipping",
+    "min_subtotal": 0,
+    "eligible_item_ids": [
+      "bouquet_roses"
+    ],
+    "description": "Free Shipping on Rose Bouquets"
+  }
+]

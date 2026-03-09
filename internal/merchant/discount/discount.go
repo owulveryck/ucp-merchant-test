@@ -1,13 +1,20 @@
 package discount
 
 import (
-	"github.com/owulveryck/ucp-merchant-test/internal/data"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+// Discount represents a discount code with its type and value.
+type Discount struct {
+	Code        string
+	Type        string // "percentage" or "fixed_amount"
+	Value       int
+	Description string
+}
+
 // DiscountLookup provides access to discount code data.
 type DiscountLookup interface {
-	FindDiscountByCode(code string) *data.CSVDiscount
+	FindDiscountByCode(code string) *Discount
 }
 
 // ApplyDiscounts processes discount codes against line items.

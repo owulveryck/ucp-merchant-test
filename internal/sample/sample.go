@@ -1,4 +1,4 @@
-package data
+package sample
 
 import (
 	"encoding/csv"
@@ -11,6 +11,8 @@ import (
 	"sync"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/catalog"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
 )
 
 // CSVCustomer represents a test buyer identity loaded from customers.csv.
@@ -18,18 +20,6 @@ type CSVCustomer struct {
 	ID    string
 	Name  string
 	Email string
-}
-
-// CSVAddress represents a shipping destination loaded from addresses.csv,
-// linked to a customer by CustomerID.
-type CSVAddress struct {
-	ID            string
-	CustomerID    string
-	StreetAddress string
-	City          string
-	State         string
-	PostalCode    string
-	Country       string
 }
 
 // CSVPaymentInstrument represents a test payment method loaded from payment_instruments.csv.
@@ -42,18 +32,16 @@ type CSVPaymentInstrument struct {
 	HandlerID  string
 }
 
-// CSVDiscount represents a discount code loaded from discounts.csv, with type
-// ("percentage" or "fixed_amount") and value.
-type CSVDiscount struct {
+// csvDiscount is an internal CSV representation of a discount code.
+type csvDiscount struct {
 	Code        string
 	Type        string
 	Value       int
 	Description string
 }
 
-// CSVShippingRate represents a fulfillment cost loaded from shipping_rates.csv,
-// keyed by country code and service level.
-type CSVShippingRate struct {
+// csvShippingRate is an internal CSV representation of a shipping rate.
+type csvShippingRate struct {
 	ID           string
 	CountryCode  string
 	ServiceLevel string
@@ -61,14 +49,24 @@ type CSVShippingRate struct {
 	Title        string
 }
 
-// CSVPromotion represents an automatic discount rule loaded from promotions.csv,
-// such as free shipping for orders above a minimum subtotal.
-type CSVPromotion struct {
+// csvPromotion is an internal CSV representation of a promotion.
+type csvPromotion struct {
 	ID              string
 	Type            string
 	MinSubtotal     int
 	EligibleItemIDs []string
 	Description     string
+}
+
+// csvAddress is an internal CSV representation of an address.
+type csvAddress struct {
+	ID            string
+	CustomerID    string
+	StreetAddress string
+	City          string
+	State         string
+	PostalCode    string
+	Country       string
 }
 
 // ConformanceInput holds test expectations loaded from conformance_input.json,
@@ -95,21 +93,28 @@ type DataSource struct {
 	Mu                 sync.RWMutex
 	Products           []catalog.Product
 	Customers          []CSVCustomer
-	Addresses          []CSVAddress
+	addresses          []csvAddress
 	PaymentInstruments []CSVPaymentInstrument
-	Discounts          []CSVDiscount
-	ShippingRates      []CSVShippingRate
-	Promotions         []CSVPromotion
+	discounts          []csvDiscount
+	shippingRates      []csvShippingRate
+	promotions         []csvPromotion
 	ConformanceInput   *ConformanceInput
 
-	DynamicAddresses map[string][]CSVAddress
+	dynamicAddresses map[string][]fulfillment.Address
 }
 
 // New creates a new empty DataSource.
 func New() *DataSource {
 	return &DataSource{
-		DynamicAddresses: make(map[string][]CSVAddress),
+		dynamicAddresses: make(map[string][]fulfillment.Address),
 	}
+}
+
+// ResetDynamicAddresses clears the dynamic addresses map.
+func (ds *DataSource) ResetDynamicAddresses() {
+	ds.Mu.Lock()
+	ds.dynamicAddresses = make(map[string][]fulfillment.Address)
+	ds.Mu.Unlock()
 }
 
 // Load loads all flower shop data from a directory.
@@ -237,7 +242,7 @@ func (ds *DataSource) loadAddresses(dataDir string) error {
 		if len(row) < 7 {
 			continue
 		}
-		ds.Addresses = append(ds.Addresses, CSVAddress{
+		ds.addresses = append(ds.addresses, csvAddress{
 			ID:            row[0],
 			CustomerID:    row[1],
 			StreetAddress: row[2],
@@ -287,7 +292,7 @@ func (ds *DataSource) loadDiscounts(dataDir string) error {
 			continue
 		}
 		val, _ := strconv.Atoi(row[2])
-		ds.Discounts = append(ds.Discounts, CSVDiscount{
+		ds.discounts = append(ds.discounts, csvDiscount{
 			Code:        row[0],
 			Type:        row[1],
 			Value:       val,
@@ -310,7 +315,7 @@ func (ds *DataSource) loadShippingRates(dataDir string) error {
 			continue
 		}
 		price, _ := strconv.Atoi(row[3])
-		ds.ShippingRates = append(ds.ShippingRates, CSVShippingRate{
+		ds.shippingRates = append(ds.shippingRates, csvShippingRate{
 			ID:           row[0],
 			CountryCode:  row[1],
 			ServiceLevel: row[2],
@@ -341,7 +346,7 @@ func (ds *DataSource) loadPromotions(dataDir string) error {
 				eligible = items
 			}
 		}
-		ds.Promotions = append(ds.Promotions, CSVPromotion{
+		ds.promotions = append(ds.promotions, csvPromotion{
 			ID:              row[0],
 			Type:            row[1],
 			MinSubtotal:     minSub,
@@ -376,10 +381,9 @@ func (ds *DataSource) FindCustomerByEmail(email string) *CSVCustomer {
 	return nil
 }
 
-// FindAddressesByCustomerID returns all addresses for a customer.
-func (ds *DataSource) FindAddressesByCustomerID(customerID string) []CSVAddress {
-	var result []CSVAddress
-	for _, a := range ds.Addresses {
+func (ds *DataSource) findAddressesByCustomerID(customerID string) []csvAddress {
+	var result []csvAddress
+	for _, a := range ds.addresses {
 		if a.CustomerID == customerID {
 			result = append(result, a)
 		}
@@ -387,15 +391,29 @@ func (ds *DataSource) FindAddressesByCustomerID(customerID string) []CSVAddress 
 	return result
 }
 
+func csvAddressToAddress(a csvAddress) fulfillment.Address {
+	return fulfillment.Address{
+		ID:            a.ID,
+		CustomerID:    a.CustomerID,
+		StreetAddress: a.StreetAddress,
+		City:          a.City,
+		State:         a.State,
+		PostalCode:    a.PostalCode,
+		Country:       a.Country,
+	}
+}
+
 // FindAddressesForEmail returns stored addresses for an email (CSV + dynamic).
-func (ds *DataSource) FindAddressesForEmail(email string) []CSVAddress {
-	var result []CSVAddress
+func (ds *DataSource) FindAddressesForEmail(email string) []fulfillment.Address {
+	var result []fulfillment.Address
 	cust := ds.FindCustomerByEmail(email)
 	if cust != nil {
-		result = append(result, ds.FindAddressesByCustomerID(cust.ID)...)
+		for _, a := range ds.findAddressesByCustomerID(cust.ID) {
+			result = append(result, csvAddressToAddress(a))
+		}
 	}
 	ds.Mu.RLock()
-	if addrs, ok := ds.DynamicAddresses[strings.ToLower(email)]; ok {
+	if addrs, ok := ds.dynamicAddresses[strings.ToLower(email)]; ok {
 		result = append(result, addrs...)
 	}
 	ds.Mu.RUnlock()
@@ -403,10 +421,16 @@ func (ds *DataSource) FindAddressesForEmail(email string) []CSVAddress {
 }
 
 // FindDiscountByCode looks up a discount code.
-func (ds *DataSource) FindDiscountByCode(code string) *CSVDiscount {
-	for i := range ds.Discounts {
-		if strings.EqualFold(ds.Discounts[i].Code, code) {
-			return &ds.Discounts[i]
+func (ds *DataSource) FindDiscountByCode(code string) *discount.Discount {
+	for i := range ds.discounts {
+		if strings.EqualFold(ds.discounts[i].Code, code) {
+			d := ds.discounts[i]
+			return &discount.Discount{
+				Code:        d.Code,
+				Type:        d.Type,
+				Value:       d.Value,
+				Description: d.Description,
+			}
 		}
 	}
 	return nil
@@ -433,54 +457,61 @@ func (ds *DataSource) FindPaymentInstrumentByToken(token string) *CSVPaymentInst
 }
 
 // GetShippingRatesForCountry returns shipping rates applicable to a country.
-func (ds *DataSource) GetShippingRatesForCountry(country string) []CSVShippingRate {
-	var result []CSVShippingRate
-	for _, r := range ds.ShippingRates {
+func (ds *DataSource) GetShippingRatesForCountry(country string) []fulfillment.ShippingRate {
+	var result []csvShippingRate
+	for _, r := range ds.shippingRates {
 		if strings.EqualFold(r.CountryCode, country) || r.CountryCode == "default" {
 			result = append(result, r)
 		}
 	}
 	seen := map[string]bool{}
-	var deduped []CSVShippingRate
+	var deduped []fulfillment.ShippingRate
 	for _, r := range result {
 		if !strings.EqualFold(r.CountryCode, "default") {
 			seen[r.ServiceLevel] = true
-			deduped = append(deduped, r)
+			deduped = append(deduped, fulfillment.ShippingRate{
+				ID:           r.ID,
+				CountryCode:  r.CountryCode,
+				ServiceLevel: r.ServiceLevel,
+				Price:        r.Price,
+				Title:        r.Title,
+			})
 		}
 	}
 	for _, r := range result {
 		if strings.EqualFold(r.CountryCode, "default") && !seen[r.ServiceLevel] {
-			deduped = append(deduped, r)
+			deduped = append(deduped, fulfillment.ShippingRate{
+				ID:           r.ID,
+				CountryCode:  r.CountryCode,
+				ServiceLevel: r.ServiceLevel,
+				Price:        r.Price,
+				Title:        r.Title,
+			})
 		}
 	}
 	return deduped
 }
 
-// MatchExistingAddress checks if a submitted address matches an existing one.
-func MatchExistingAddress(addrs []CSVAddress, street, locality, region, postal, country string) *CSVAddress {
-	for i := range addrs {
-		a := &addrs[i]
-		if strings.EqualFold(a.StreetAddress, street) &&
-			strings.EqualFold(a.City, locality) &&
-			strings.EqualFold(a.State, region) &&
-			strings.EqualFold(a.PostalCode, postal) &&
-			strings.EqualFold(a.Country, country) {
-			return a
+// GetPromotions returns the loaded promotions.
+func (ds *DataSource) GetPromotions() []fulfillment.Promotion {
+	result := make([]fulfillment.Promotion, len(ds.promotions))
+	for i, p := range ds.promotions {
+		result[i] = fulfillment.Promotion{
+			ID:              p.ID,
+			Type:            p.Type,
+			MinSubtotal:     p.MinSubtotal,
+			EligibleItemIDs: p.EligibleItemIDs,
+			Description:     p.Description,
 		}
 	}
-	return nil
-}
-
-// GetPromotions returns the loaded promotions.
-func (ds *DataSource) GetPromotions() []CSVPromotion {
-	return ds.Promotions
+	return result
 }
 
 // SaveDynamicAddress stores a new address for a user email.
-func (ds *DataSource) SaveDynamicAddress(email string, addr CSVAddress) string {
+func (ds *DataSource) SaveDynamicAddress(email string, addr fulfillment.Address) string {
 	ds.Mu.Lock()
 	defer ds.Mu.Unlock()
 	key := strings.ToLower(email)
-	ds.DynamicAddresses[key] = append(ds.DynamicAddresses[key], addr)
+	ds.dynamicAddresses[key] = append(ds.dynamicAddresses[key], addr)
 	return addr.ID
 }

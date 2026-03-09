@@ -2,17 +2,61 @@ package fulfillment
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/data"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+// Address represents a shipping destination.
+type Address struct {
+	ID            string
+	CustomerID    string
+	StreetAddress string
+	City          string
+	State         string
+	PostalCode    string
+	Country       string
+}
+
+// ShippingRate represents a fulfillment cost keyed by country code and service level.
+type ShippingRate struct {
+	ID           string
+	CountryCode  string
+	ServiceLevel string
+	Price        int
+	Title        string
+}
+
+// Promotion represents an automatic discount rule such as free shipping.
+type Promotion struct {
+	ID              string
+	Type            string
+	MinSubtotal     int
+	EligibleItemIDs []string
+	Description     string
+}
+
 // FulfillmentDataSource provides access to address, shipping, and promotion data.
 type FulfillmentDataSource interface {
-	FindAddressesForEmail(email string) []data.CSVAddress
-	SaveDynamicAddress(email string, addr data.CSVAddress) string
-	GetShippingRatesForCountry(country string) []data.CSVShippingRate
-	GetPromotions() []data.CSVPromotion
+	FindAddressesForEmail(email string) []Address
+	SaveDynamicAddress(email string, addr Address) string
+	GetShippingRatesForCountry(country string) []ShippingRate
+	GetPromotions() []Promotion
+}
+
+// MatchExistingAddress checks if a submitted address matches an existing one.
+func MatchExistingAddress(addrs []Address, street, locality, region, postal, country string) *Address {
+	for i := range addrs {
+		a := &addrs[i]
+		if strings.EqualFold(a.StreetAddress, street) &&
+			strings.EqualFold(a.City, locality) &&
+			strings.EqualFold(a.State, region) &&
+			strings.EqualFold(a.PostalCode, postal) &&
+			strings.EqualFold(a.Country, country) {
+			return a
+		}
+	}
+	return nil
 }
 
 // ParseFulfillment parses fulfillment data from a request map.
@@ -229,7 +273,7 @@ func ParseDestination(
 		}
 		if email != "" {
 			existingAddrs := ds.FindAddressesForEmail(email)
-			matched := data.MatchExistingAddress(existingAddrs, dest.StreetAddress, dest.AddressLocality, dest.AddressRegion, dest.PostalCode, dest.AddressCountry)
+			matched := MatchExistingAddress(existingAddrs, dest.StreetAddress, dest.AddressLocality, dest.AddressRegion, dest.PostalCode, dest.AddressCountry)
 			if matched != nil {
 				dest.ID = matched.ID
 			} else {
@@ -237,7 +281,7 @@ func ParseDestination(
 				*addrSeqCounter++
 				dest.ID = fmt.Sprintf("addr_dyn_%d", *addrSeqCounter)
 				addrSeqMu.Unlock()
-				ds.SaveDynamicAddress(email, data.CSVAddress{
+				ds.SaveDynamicAddress(email, Address{
 					ID:            dest.ID,
 					StreetAddress: dest.StreetAddress,
 					City:          dest.AddressLocality,

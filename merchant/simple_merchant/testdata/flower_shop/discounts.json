@@ -1,0 +1,20 @@
+[
+  {
+    "code": "10OFF",
+    "type": "percentage",
+    "value": 10,
+    "description": "10% Off"
+  },
+  {
+    "code": "WELCOME20",
+    "type": "percentage",
+    "value": 20,
+    "description": "20% Off"
+  },
+  {
+    "code": "FIXED500",
+    "type": "fixed_amount",
+    "value": 500,
+    "description": "$5.00 Off"
+  }
+]

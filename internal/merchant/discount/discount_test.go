@@ -3,14 +3,27 @@ package discount
 import (
 	"testing"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/data"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+type mockDiscountLookup struct {
+	discounts []Discount
+}
+
+func (m *mockDiscountLookup) FindDiscountByCode(code string) *Discount {
+	for i := range m.discounts {
+		if m.discounts[i].Code == code {
+			return &m.discounts[i]
+		}
+	}
+	return nil
+}
+
 func TestApplyDiscountsPercentage(t *testing.T) {
-	ds := data.New()
-	ds.Discounts = []data.CSVDiscount{
-		{Code: "10OFF", Type: "percentage", Value: 10, Description: "10% off"},
+	dl := &mockDiscountLookup{
+		discounts: []Discount{
+			{Code: "10OFF", Type: "percentage", Value: 10, Description: "10% off"},
+		},
 	}
 
 	items := []model.LineItem{
@@ -21,7 +34,7 @@ func TestApplyDiscountsPercentage(t *testing.T) {
 		"codes": []interface{}{"10OFF"},
 	}
 
-	result := ApplyDiscounts(raw, items, ds)
+	result := ApplyDiscounts(raw, items, dl)
 	if result == nil {
 		t.Fatal("expected non-nil discounts")
 	}
@@ -34,9 +47,10 @@ func TestApplyDiscountsPercentage(t *testing.T) {
 }
 
 func TestApplyDiscountsFixed(t *testing.T) {
-	ds := data.New()
-	ds.Discounts = []data.CSVDiscount{
-		{Code: "FIXED500", Type: "fixed_amount", Value: 500, Description: "$5 off"},
+	dl := &mockDiscountLookup{
+		discounts: []Discount{
+			{Code: "FIXED500", Type: "fixed_amount", Value: 500, Description: "$5 off"},
+		},
 	}
 
 	items := []model.LineItem{
@@ -47,7 +61,7 @@ func TestApplyDiscountsFixed(t *testing.T) {
 		"codes": []interface{}{"FIXED500"},
 	}
 
-	result := ApplyDiscounts(raw, items, ds)
+	result := ApplyDiscounts(raw, items, dl)
 	if result == nil {
 		t.Fatal("expected non-nil discounts")
 	}
@@ -57,15 +71,15 @@ func TestApplyDiscountsFixed(t *testing.T) {
 }
 
 func TestApplyDiscountsNil(t *testing.T) {
-	ds := data.New()
-	result := ApplyDiscounts(nil, nil, ds)
+	dl := &mockDiscountLookup{}
+	result := ApplyDiscounts(nil, nil, dl)
 	if result != nil {
 		t.Error("expected nil for nil input")
 	}
 }
 
 func TestApplyDiscountsUnknownCode(t *testing.T) {
-	ds := data.New()
+	dl := &mockDiscountLookup{}
 
 	items := []model.LineItem{
 		{Totals: []model.Total{{Type: "subtotal", Amount: 10000}}},
@@ -75,7 +89,7 @@ func TestApplyDiscountsUnknownCode(t *testing.T) {
 		"codes": []interface{}{"UNKNOWN"},
 	}
 
-	result := ApplyDiscounts(raw, items, ds)
+	result := ApplyDiscounts(raw, items, dl)
 	if result == nil {
 		t.Fatal("expected non-nil result (codes are tracked even if invalid)")
 	}

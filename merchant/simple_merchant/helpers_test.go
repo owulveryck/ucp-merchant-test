@@ -28,15 +28,13 @@ func newTestServer(t *testing.T) *testServer {
 	resetStores()
 
 	loadOnce.Do(func() {
-		if err := loadFlowerShopData("testdata/flower_shop"); err != nil {
+		if err := loadFlowerShopData("testdata/flower_shop", "csv"); err != nil {
 			t.Fatalf("Failed to load test data: %v", err)
 		}
 	})
 
 	// Reset dynamic state after loading (loadOnce won't re-load, but we need clean dynamic data)
-	shopData.Mu.Lock()
-	shopData.DynamicAddresses = make(map[string][]CSVAddress)
-	shopData.Mu.Unlock()
+	shopData.ResetDynamicAddresses()
 
 	// Capture server logs: suppress during pass, dump on failure
 	var logBuf bytes.Buffer

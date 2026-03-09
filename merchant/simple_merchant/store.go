@@ -71,9 +71,9 @@ func resetStores() {
 	idempotencyStoreInstance.Reset()
 
 	// Dynamic addresses
-	shopData.Mu.Lock()
-	shopData.DynamicAddresses = make(map[string][]CSVAddress)
-	shopData.Mu.Unlock()
+	if shopData != nil {
+		shopData.ResetDynamicAddresses()
+	}
 
 	// Session counter
 	sessionMu.Lock()
