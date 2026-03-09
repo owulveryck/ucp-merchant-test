@@ -19,6 +19,12 @@ jobs:
           repository: Universal-Commerce-Protocol/conformance
           path: conformance
 
+      - name: Checkout UCP Python SDK
+        uses: actions/checkout@v4
+        with:
+          repository: Universal-Commerce-Protocol/python-sdk
+          path: sdk/python
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
