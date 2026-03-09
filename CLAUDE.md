@@ -8,12 +8,15 @@ UCP merchant test server written in Go. Implements the Universal Commerce Protoc
 
 ```bash
 # Build
-go build .
+go build ./merchant/simple_merchant
 
 # Run with flower shop test data
-go run . --port 8182 \
+go run ./merchant/simple_merchant --port 8182 \
   --data-dir /path/to/conformance/test_data/flower_shop \
   --simulation-secret super-secret-sim-key
+
+# Run Go tests
+go test -count=1 ./...
 
 # Run conformance tests (from the conformance directory)
 python3 <test_file>.py \
@@ -25,11 +28,14 @@ python3 <test_file>.py \
 
 ## Key Architecture
 
+The merchant server lives under `merchant/simple_merchant/`. Shared logic is in `internal/` packages.
+
 - **REST layer** (`rest.go`): All checkout session and order CRUD. Routes registered in `main.go`.
-- **Models** (`models.go`): Go structs matching UCP SDK Pydantic models. Prefix `Rest` on type names.
+- **Models** (`internal/model/`): UCP data types (`model.Checkout`, `model.Order`, etc.). All source files use qualified `model.X` names.
 - **Data** (`data.go`): CSV loading for flower shop dataset. Global `shopData` variable.
-- **MCP layer** (`handlers.go`): JSON-RPC tool handlers (separate from REST stores).
-- Two separate in-memory stores: `restCheckouts`/`restOrders` (REST) and `checkouts`/`orders` (MCP).
+- **MCP layer** (`handlers.go`): JSON-RPC tool handlers.
+- **Store** (`store.go`): Unified in-memory stores (`checkouts`, `orders`, `carts`) shared by both REST and MCP transports.
+- **Internal packages**: `discount`, `fulfillment`, `payment`, `pricing` under `internal/merchant/` contain the business logic extracted from the handlers.
 
 ## Conventions
 

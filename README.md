@@ -5,7 +5,7 @@ A Go-based merchant server implementing the [Universal Commerce Protocol (UCP)](
 ## Quick Start
 
 ```bash
-go run . --port 8182 \
+go run ./merchant/simple_merchant --port 8182 \
   --data-dir path/to/test_data/flower_shop \
   --simulation-secret super-secret-sim-key
 ```
@@ -26,7 +26,7 @@ Server starts on `http://localhost:8182`:
 | `--tls` | `false` | Enable TLS with self-signed certificate |
 | `--cert` | _(none)_ | TLS certificate file |
 | `--key` | _(none)_ | TLS key file |
-| `--products` | _(none)_ | JSON file with custom product catalog |
+| `--db` | _(none)_ | JSON file with custom product catalog |
 
 ## REST API Endpoints
 
@@ -59,7 +59,7 @@ The `--data-dir` flag points to a directory containing CSV files for the flower 
 
 ```bash
 # Start the merchant
-go run . --port 8182 \
+go run ./merchant/simple_merchant --port 8182 \
   --data-dir /path/to/conformance/test_data/flower_shop \
   --simulation-secret super-secret-sim-key
 
@@ -115,24 +115,39 @@ All 60 tests across 13 test files should pass:
 
 ```bash
 # Self-signed certificate
-go run . --tls
+go run ./merchant/simple_merchant --tls
 
 # With mkcert (trusted local cert)
 mkcert localhost 127.0.0.1
-go run . --tls --cert localhost+1.pem --key localhost+1-key.pem
+go run ./merchant/simple_merchant --tls --cert localhost+1.pem --key localhost+1-key.pem
 ```
 
 ## Project Structure
 
-| File | Purpose |
-|------|---------|
-| `main.go` | Server setup, routes, UCP discovery, MCP handler |
-| `rest.go` | REST API handlers for checkout sessions and orders |
-| `models.go` | UCP-compliant data models (checkout, order, fulfillment, payment, buyer) |
-| `data.go` | CSV data loading for flower shop dataset |
-| `idempotency.go` | Idempotency key tracking |
-| `webhooks.go` | Webhook event dispatch |
-| `handlers.go` | MCP tool handlers (JSON-RPC) |
-| `catalog.go` | Product catalog management |
-| `dashboard.go` | SSE event broadcasting |
-| `oauth.go` | OAuth2 server for identity linking |
+```
+merchant/simple_merchant/   # Merchant server binary
+  main.go                   # Server setup, routes, UCP discovery, MCP handler
+  rest.go                   # REST API handlers for checkout sessions and orders
+  handlers.go               # MCP tool handlers (JSON-RPC)
+  store.go                  # In-memory stores shared by REST and MCP
+  data.go                   # CSV data loading for flower shop dataset
+  catalog.go                # Product catalog interface
+  catalog_impl.go           # Catalog implementation (JSON DB, random generation)
+  dashboard.go              # SSE event broadcasting and web dashboard
+
+internal/                   # Shared library packages
+  model/                    # UCP data models (checkout, order, fulfillment, payment, etc.)
+  auth/                     # OAuth2 server for identity linking
+  catalog/                  # Catalog interface and utilities
+  data/                     # CSV data structures
+  idempotency/              # Idempotency key tracking
+  webhook/                  # Webhook event dispatch
+  event/                    # Event hub for SSE broadcasting
+  store/                    # Store interface
+  config/                   # Configuration types
+  merchant/
+    discount/               # Discount code application logic
+    fulfillment/            # Fulfillment parsing and shipping options
+    payment/                # Payment and buyer parsing
+    pricing/                # Line item and totals calculation
+```
