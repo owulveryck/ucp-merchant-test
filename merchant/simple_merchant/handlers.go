@@ -9,32 +9,6 @@ import (
 	"time"
 )
 
-// MCP-specific types for legacy order progression.
-type Shipment struct {
-	TrackingNumber string    `json:"tracking_number"`
-	Carrier        string    `json:"carrier"`
-	EstimatedDate  string    `json:"estimated_delivery,omitempty"`
-	ShippedAt      time.Time `json:"shipped_at,omitempty"`
-	DeliveredAt    time.Time `json:"delivered_at,omitempty"`
-}
-
-type ShippingOption struct {
-	ID            string `json:"id"`
-	Method        string `json:"method"`
-	Carrier       string `json:"carrier"`
-	EstimatedDays int    `json:"estimated_days"`
-	Price         int    `json:"price"`
-	DisplayText   string `json:"display_text"`
-}
-
-// MCP checkout wrapper that adds MCP-specific fields around the canonical Checkout.
-type MCPCheckoutState struct {
-	Checkout     *Checkout       `json:"-"`
-	OwnerID      string          `json:"-"`
-	CheckoutHash string          `json:"-"`
-	Shipping     *ShippingOption `json:"-"`
-}
-
 // In-memory MCP-specific state
 var (
 	mcpCheckoutStates = map[string]*MCPCheckoutState{}

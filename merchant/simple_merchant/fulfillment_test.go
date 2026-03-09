@@ -273,10 +273,10 @@ func TestKnownCustomerNewAddress(t *testing.T) {
 				"type": "shipping",
 				"destinations": []map[string]interface{}{
 					{
-						"id":               "dest_new",
-						"address_country":  "CA",
-						"postal_code":      "M5V 2H1",
-						"street_address":   "123 New St",
+						"id":              "dest_new",
+						"address_country": "CA",
+						"postal_code":     "M5V 2H1",
+						"street_address":  "123 New St",
 					},
 				},
 				"selected_destination_id": "dest_new",

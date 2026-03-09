@@ -60,14 +60,12 @@ func resetStores() {
 	mcpOrderOwners = map[string]string{}
 
 	// Idempotency store
-	idempotencyMu.Lock()
-	idempotencyStore = map[string]*IdempotencyEntry{}
-	idempotencyMu.Unlock()
+	idempotencyStoreInstance.Reset()
 
 	// Dynamic addresses
-	shopData.mu.Lock()
+	shopData.Mu.Lock()
 	shopData.DynamicAddresses = make(map[string][]CSVAddress)
-	shopData.mu.Unlock()
+	shopData.Mu.Unlock()
 
 	// Session counter
 	sessionMu.Lock()
@@ -75,9 +73,5 @@ func resetStores() {
 	sessionMu.Unlock()
 
 	// OAuth token state
-	oauthMu.Lock()
-	accessTokens = map[string]*tokenEntry{}
-	refreshTokens = map[string]*refreshEntry{}
-	authCodes = map[string]*authCode{}
-	oauthMu.Unlock()
+	oauthServer.Reset()
 }

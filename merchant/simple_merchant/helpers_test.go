@@ -34,9 +34,9 @@ func newTestServer(t *testing.T) *testServer {
 	})
 
 	// Reset dynamic state after loading (loadOnce won't re-load, but we need clean dynamic data)
-	shopData.mu.Lock()
+	shopData.Mu.Lock()
 	shopData.DynamicAddresses = make(map[string][]CSVAddress)
-	shopData.mu.Unlock()
+	shopData.Mu.Unlock()
 
 	// Capture server logs: suppress during pass, dump on failure
 	var logBuf bytes.Buffer

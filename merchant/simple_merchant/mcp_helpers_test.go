@@ -11,34 +11,16 @@ import (
 
 var mcpIDCounter int64
 
-// injectToken creates a Bearer token directly in the accessTokens map and returns the token string.
+// injectToken creates a Bearer token directly via the OAuth server and returns the token string.
 func (ts *testServer) injectToken(userID, country string) string {
 	ts.t.Helper()
-	token := randomHex(16)
-	oauthMu.Lock()
-	accessTokens[token] = &tokenEntry{
-		Token:     token,
-		UserID:    userID,
-		Country:   country,
-		ExpiresAt: time.Now().Add(1 * time.Hour),
-	}
-	oauthMu.Unlock()
-	return token
+	return oauthServer.InjectToken(userID, country, time.Now().Add(1*time.Hour))
 }
 
 // injectExpiredToken creates an already-expired Bearer token and returns the token string.
 func (ts *testServer) injectExpiredToken(userID, country string) string {
 	ts.t.Helper()
-	token := randomHex(16)
-	oauthMu.Lock()
-	accessTokens[token] = &tokenEntry{
-		Token:     token,
-		UserID:    userID,
-		Country:   country,
-		ExpiresAt: time.Now().Add(-1 * time.Hour),
-	}
-	oauthMu.Unlock()
-	return token
+	return oauthServer.InjectToken(userID, country, time.Now().Add(-1*time.Hour))
 }
 
 // mcpRequest sends a JSON-RPC 2.0 POST to /mcp and returns the parsed response.
