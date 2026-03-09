@@ -1,0 +1,11 @@
+# Binaries
+merchant
+ucp-merchant-test
+*.exe
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
