@@ -25,3 +25,52 @@ var (
 	addrSeqCounter int
 	addrSeqMu      sync.Mutex
 )
+
+func resetStores() {
+	storeMu.Lock()
+	checkouts = map[string]*Checkout{}
+	orders = map[string]*Order{}
+	carts = map[string]*Cart{}
+	checkoutSeq = 0
+	orderSeq = 0
+	cartSeq = 0
+	checkoutWebhooks = map[string]string{}
+	checkoutDestinations = map[string]*FulfillmentDestination{}
+	checkoutOptionTitles = map[string]string{}
+	storeMu.Unlock()
+
+	orderCancelChsMu.Lock()
+	for _, ch := range orderCancelChs {
+		select {
+		case <-ch:
+		default:
+			close(ch)
+		}
+	}
+	orderCancelChs = map[string]chan struct{}{}
+	orderCancelChsMu.Unlock()
+
+	addrSeqMu.Lock()
+	addrSeqCounter = 0
+	addrSeqMu.Unlock()
+
+	// MCP-specific state
+	mcpCheckoutStates = map[string]*MCPCheckoutState{}
+	mcpOrderShipments = map[string]*Shipment{}
+	mcpOrderOwners = map[string]string{}
+
+	// Idempotency store
+	idempotencyMu.Lock()
+	idempotencyStore = map[string]*IdempotencyEntry{}
+	idempotencyMu.Unlock()
+
+	// Dynamic addresses
+	shopData.mu.Lock()
+	shopData.DynamicAddresses = make(map[string][]CSVAddress)
+	shopData.mu.Unlock()
+
+	// Session counter
+	sessionMu.Lock()
+	sessionCounter = 0
+	sessionMu.Unlock()
+}

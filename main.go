@@ -83,6 +83,28 @@ func newSessionID() string {
 	return fmt.Sprintf("session-%04d", sessionCounter)
 }
 
+func newMux() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handleDashboard)
+	mux.HandleFunc("/events", handleSSE)
+	mux.HandleFunc("/api/products", handleAPIProducts)
+	mux.HandleFunc("/mcp", handleMCP)
+	mux.HandleFunc("/.well-known/ucp", handleUCPDiscovery)
+	mux.HandleFunc("/.well-known/oauth-authorization-server", handleOAuthMetadata)
+	mux.HandleFunc("/oauth2/authorize", handleOAuthAuthorize)
+	mux.HandleFunc("/oauth2/token", handleOAuthToken)
+	mux.HandleFunc("/oauth2/revoke", handleOAuthRevoke)
+
+	// REST API routes
+	mux.HandleFunc("/shopping-api/checkout-sessions/", restHandleCheckoutSessions)
+	mux.HandleFunc("/shopping-api/checkout-sessions", restHandleCheckoutSessions)
+	mux.HandleFunc("/orders/", restHandleOrders)
+	mux.HandleFunc("/testing/simulate-shipping/", restSimulateShipping)
+	mux.HandleFunc("/specs/", handleSpecsAndSchemas)
+	mux.HandleFunc("/schemas/", handleSpecsAndSchemas)
+	return mux
+}
+
 func main() {
 	var (
 		useTLS   bool
@@ -120,24 +142,7 @@ func main() {
 		simulationSecret = fmt.Sprintf("sim-%d", time.Now().UnixNano())
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleDashboard)
-	mux.HandleFunc("/events", handleSSE)
-	mux.HandleFunc("/api/products", handleAPIProducts)
-	mux.HandleFunc("/mcp", handleMCP)
-	mux.HandleFunc("/.well-known/ucp", handleUCPDiscovery)
-	mux.HandleFunc("/.well-known/oauth-authorization-server", handleOAuthMetadata)
-	mux.HandleFunc("/oauth2/authorize", handleOAuthAuthorize)
-	mux.HandleFunc("/oauth2/token", handleOAuthToken)
-	mux.HandleFunc("/oauth2/revoke", handleOAuthRevoke)
-
-	// REST API routes
-	mux.HandleFunc("/shopping-api/checkout-sessions/", restHandleCheckoutSessions)
-	mux.HandleFunc("/shopping-api/checkout-sessions", restHandleCheckoutSessions)
-	mux.HandleFunc("/orders/", restHandleOrders)
-	mux.HandleFunc("/testing/simulate-shipping/", restSimulateShipping)
-	mux.HandleFunc("/specs/", handleSpecsAndSchemas)
-	mux.HandleFunc("/schemas/", handleSpecsAndSchemas)
+	mux := newMux()
 
 	s := "http"
 	if tlsEnabled {
