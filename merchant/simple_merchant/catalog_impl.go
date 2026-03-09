@@ -291,6 +291,64 @@ func (c *catalogStore) CategoryCount() []icatalog.CategoryStat {
 	return result
 }
 
+func (c *catalogStore) Lookup(id string, shipsTo string) *icatalog.Product {
+	p := c.Find(id)
+	if p == nil {
+		return nil
+	}
+	if shipsTo != "" && len(p.AvailableCountries) > 0 {
+		if !icatalog.ContainsCountry(p.AvailableCountries, shipsTo) {
+			return nil
+		}
+	}
+	return p
+}
+
+func (c *catalogStore) Search(params icatalog.SearchParams) []icatalog.SearchResult {
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 300 {
+		limit = 300
+	}
+
+	query := strings.ToLower(params.Query)
+	var results []icatalog.SearchResult
+	for _, p := range c.Products {
+		if query != "" {
+			titleMatch := strings.Contains(strings.ToLower(p.Title), query)
+			descMatch := strings.Contains(strings.ToLower(p.Description), query)
+			catMatch := strings.Contains(strings.ToLower(p.Category), query)
+			if !titleMatch && !descMatch && !catMatch {
+				continue
+			}
+		}
+		if params.MinPrice > 0 && p.Price < params.MinPrice {
+			continue
+		}
+		if params.MaxPrice > 0 && p.Price > params.MaxPrice {
+			continue
+		}
+		if params.AvailableForSale && p.Quantity <= 0 {
+			continue
+		}
+		if params.ShipsTo != "" && len(p.AvailableCountries) > 0 {
+			if !icatalog.ContainsCountry(p.AvailableCountries, params.ShipsTo) {
+				continue
+			}
+		}
+		results = append(results, icatalog.SearchResult{
+			Product: p,
+			InStock: p.Quantity > 0,
+		})
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results
+}
+
 func (c *catalogStore) LoadFromFile(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {

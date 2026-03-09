@@ -25,11 +25,29 @@ type CategoryStat struct {
 	Count int    `json:"count"`
 }
 
+// SearchParams holds parameters for a catalog search (per Shopify Agent Catalog spec).
+type SearchParams struct {
+	Query            string
+	Limit            int
+	MinPrice         int // cents, 0 = no min
+	MaxPrice         int // cents, 0 = no max
+	AvailableForSale bool
+	ShipsTo          string // country code
+}
+
+// SearchResult wraps a product with computed availability metadata.
+type SearchResult struct {
+	Product Product `json:"product"`
+	InStock bool    `json:"in_stock"`
+}
+
 // Catalog is the read-only interface for catalog operations.
 type Catalog interface {
 	Find(id string) *Product
 	Filter(category, brand, query, usageType, country, currency, language string) []Product
 	CategoryCount() []CategoryStat
+	Lookup(id string, shipsTo string) *Product
+	Search(params SearchParams) []SearchResult
 }
 
 // ContainsCountry checks if a country code is in the list (case-insensitive).

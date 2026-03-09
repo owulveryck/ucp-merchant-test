@@ -412,6 +412,8 @@ func handleToolCall(w http.ResponseWriter, req model.JSONRPCRequest, userID, use
 	handlers := map[string]func(map[string]interface{}) (interface{}, error){
 		"list_products":        handleListProducts,
 		"get_product_details":  handleGetProductDetails,
+		"search_catalog":       handleSearchCatalog,
+		"lookup_product":       handleLookupProduct,
 		"create_cart":          handleCreateCart,
 		"get_cart":             handleGetCart,
 		"update_cart":          handleUpdateCart,
@@ -561,6 +563,32 @@ func getToolDefinitions() []model.ToolDef {
 				"type": "object",
 				"properties": map[string]interface{}{
 					"id": map[string]interface{}{"type": "string", "description": "Product SKU ID (e.g. SKU-001)"},
+				},
+				"required": []string{"id"},
+			},
+		},
+		{
+			Name:        "search_catalog",
+			Description: "Search the product catalog by keyword. Returns matching products with availability info. Supports price range filtering and in-stock filtering.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query":              map[string]interface{}{"type": "string", "description": "Search query string (matches title, description, category)"},
+					"limit":              map[string]interface{}{"type": "integer", "description": "Max results to return (1-300, default 10)"},
+					"min_price":          map[string]interface{}{"type": "integer", "description": "Minimum price in cents (0 = no minimum)"},
+					"max_price":          map[string]interface{}{"type": "integer", "description": "Maximum price in cents (0 = no maximum)"},
+					"available_for_sale": map[string]interface{}{"type": "boolean", "description": "If true, only return in-stock products"},
+				},
+				"required": []string{"query"},
+			},
+		},
+		{
+			Name:        "lookup_product",
+			Description: "Look up a single product by its ID. Returns full product details including description, price, stock, and available countries.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"id": map[string]interface{}{"type": "string", "description": "Product ID (e.g. SKU-001)"},
 				},
 				"required": []string{"id"},
 			},

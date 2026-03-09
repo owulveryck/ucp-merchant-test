@@ -29,6 +29,14 @@ func (c *exampleCatalog) CategoryCount() []catalog.CategoryStat {
 	return nil
 }
 
+func (c *exampleCatalog) Lookup(id string, shipsTo string) *catalog.Product {
+	return c.Find(id)
+}
+
+func (c *exampleCatalog) Search(params catalog.SearchParams) []catalog.SearchResult {
+	return nil
+}
+
 func ExampleBuildLineItems() {
 	cat := &exampleCatalog{
 		products: []catalog.Product{

@@ -171,6 +171,82 @@ func handleGetProductDetails(args map[string]interface{}) (interface{}, error) {
 	return result, nil
 }
 
+func handleSearchCatalog(args map[string]interface{}) (interface{}, error) {
+	query, _ := args["query"].(string)
+	if query == "" {
+		return nil, fmt.Errorf("query is required")
+	}
+
+	limit := 10
+	if l, ok := args["limit"].(float64); ok {
+		limit = int(l)
+	}
+
+	minPrice := 0
+	if mp, ok := args["min_price"].(float64); ok {
+		minPrice = int(mp)
+	}
+	maxPrice := 0
+	if mp, ok := args["max_price"].(float64); ok {
+		maxPrice = int(mp)
+	}
+	availableForSale := false
+	if afs, ok := args["available_for_sale"].(bool); ok {
+		availableForSale = afs
+	}
+	shipsTo := extractUserCountryFromArgs(args)
+
+	results := catalogInstance.Search(icatalog.SearchParams{
+		Query:            query,
+		Limit:            limit,
+		MinPrice:         minPrice,
+		MaxPrice:         maxPrice,
+		AvailableForSale: availableForSale,
+		ShipsTo:          shipsTo,
+	})
+
+	hub.Publish(model.DashboardEvent{Type: "catalog_searched", Summary: fmt.Sprintf("Catalog searched for %q (%d results)", query, len(results)), Timestamp: time.Now()})
+	return map[string]interface{}{
+		"results": results,
+		"total":   len(results),
+	}, nil
+}
+
+func handleLookupProduct(args map[string]interface{}) (interface{}, error) {
+	id, _ := args["id"].(string)
+	if id == "" {
+		return nil, fmt.Errorf("id is required")
+	}
+
+	shipsTo := extractUserCountryFromArgs(args)
+
+	p := catalogInstance.Lookup(id, shipsTo)
+	if p == nil {
+		return nil, fmt.Errorf("product not found: %s", id)
+	}
+
+	result := map[string]interface{}{
+		"id":          p.ID,
+		"title":       p.Title,
+		"category":    p.Category,
+		"brand":       p.Brand,
+		"price":       fmt.Sprintf("$%.2f", float64(p.Price)/100),
+		"price_cents": p.Price,
+		"in_stock":    p.Quantity > 0,
+		"quantity":    p.Quantity,
+		"rank":        p.Rank,
+		"image_url":   p.ImageURL,
+		"description": p.Description,
+		"usage_type":  p.UsageType,
+	}
+	if len(p.AvailableCountries) > 0 {
+		result["available_countries"] = p.AvailableCountries
+	}
+
+	hub.Publish(model.DashboardEvent{Type: "product_lookup", ID: p.ID, Summary: fmt.Sprintf("Product lookup: %s", p.Title), Timestamp: time.Now()})
+	return result, nil
+}
+
 func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 	storeMu.Lock()
 	defer storeMu.Unlock()

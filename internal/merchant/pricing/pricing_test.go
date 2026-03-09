@@ -28,6 +28,14 @@ func (c *testCatalog) CategoryCount() []catalog.CategoryStat {
 	return nil
 }
 
+func (c *testCatalog) Lookup(id string, shipsTo string) *catalog.Product {
+	return c.Find(id)
+}
+
+func (c *testCatalog) Search(params catalog.SearchParams) []catalog.SearchResult {
+	return nil
+}
+
 func TestBuildLineItems(t *testing.T) {
 	cat := &testCatalog{
 		products: []catalog.Product{
