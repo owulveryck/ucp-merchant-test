@@ -16,11 +16,14 @@ import (
 	"log"
 	"math/big"
 	mrand "math/rand"
+
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/auth"
 )
 
 // Merchant identity
@@ -30,6 +33,13 @@ var (
 	tlsEnabled       bool
 	simulationSecret string
 	dataDir          string
+)
+
+// Global OAuth server instance.
+var oauthServer = auth.NewOAuthServer(
+	"",
+	func() string { return scheme() },
+	func() int { return listenPort },
 )
 
 var adjectives = []string{"Swift", "Bright", "Golden", "Silver", "Crystal", "Noble", "Royal", "Grand", "Prime", "Elite"}
@@ -60,10 +70,16 @@ func newMux() *http.ServeMux {
 	mux.HandleFunc("/api/products", handleAPIProducts)
 	mux.HandleFunc("/mcp", handleMCP)
 	mux.HandleFunc("/.well-known/ucp", handleUCPDiscovery)
-	mux.HandleFunc("/.well-known/oauth-authorization-server", handleOAuthMetadata)
-	mux.HandleFunc("/oauth2/authorize", handleOAuthAuthorize)
-	mux.HandleFunc("/oauth2/token", handleOAuthToken)
-	mux.HandleFunc("/oauth2/revoke", handleOAuthRevoke)
+	mux.HandleFunc("/.well-known/oauth-authorization-server", func(w http.ResponseWriter, r *http.Request) {
+		oauthServer.MerchantName = merchantName
+		oauthServer.HandleMetadata(w, r)
+	})
+	mux.HandleFunc("/oauth2/authorize", func(w http.ResponseWriter, r *http.Request) {
+		oauthServer.MerchantName = merchantName
+		oauthServer.HandleAuthorize(w, r)
+	})
+	mux.HandleFunc("/oauth2/token", oauthServer.HandleToken)
+	mux.HandleFunc("/oauth2/revoke", oauthServer.HandleRevoke)
 
 	// REST API routes
 	mux.HandleFunc("/shopping-api/checkout-sessions/", restHandleCheckoutSessions)
@@ -307,7 +323,7 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for expired Bearer token — return 401 so platform can refresh
-	if isTokenExpired(r) {
+	if oauthServer.IsTokenExpired(r) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "token_expired"})
@@ -315,8 +331,8 @@ func handleMCP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract authenticated user (empty string = guest)
-	userID := extractUserFromToken(r)
-	userCountry := extractUserCountry(r)
+	userID := oauthServer.ExtractUserFromToken(r)
+	userCountry := oauthServer.ExtractUserCountry(r)
 
 	var req jsonRPCRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

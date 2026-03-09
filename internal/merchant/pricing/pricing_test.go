@@ -7,10 +7,32 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+type testCatalog struct {
+	products []catalog.Product
+}
+
+func (c *testCatalog) Find(id string) *catalog.Product {
+	for i := range c.products {
+		if c.products[i].ID == id {
+			return &c.products[i]
+		}
+	}
+	return nil
+}
+
+func (c *testCatalog) Filter(category, brand, query, usageType, country, currency, language string) []catalog.Product {
+	return nil
+}
+
+func (c *testCatalog) CategoryCount() []map[string]interface{} {
+	return nil
+}
+
 func TestBuildLineItems(t *testing.T) {
-	cat := catalog.New()
-	cat.Products = []catalog.Product{
-		{ID: "prod_1", Title: "Test Product", Price: 1000, Quantity: 10},
+	cat := &testCatalog{
+		products: []catalog.Product{
+			{ID: "prod_1", Title: "Test Product", Price: 1000, Quantity: 10},
+		},
 	}
 
 	req := map[string]interface{}{
@@ -38,9 +60,10 @@ func TestBuildLineItems(t *testing.T) {
 }
 
 func TestBuildLineItemsOutOfStock(t *testing.T) {
-	cat := catalog.New()
-	cat.Products = []catalog.Product{
-		{ID: "prod_1", Title: "Out of Stock", Price: 1000, Quantity: 0},
+	cat := &testCatalog{
+		products: []catalog.Product{
+			{ID: "prod_1", Title: "Out of Stock", Price: 1000, Quantity: 0},
+		},
 	}
 
 	req := map[string]interface{}{

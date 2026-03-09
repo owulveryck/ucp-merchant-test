@@ -1,4 +1,4 @@
-// Package catalog implements the product catalog for the UCP Shopping Service.
+// Package catalog defines the product catalog interface for the UCP Shopping Service.
 //
 // In the Universal Commerce Protocol, the Catalog capability
 // (dev.ucp.shopping.catalog) allows platforms to search and browse business
@@ -20,28 +20,26 @@
 // checkout line_items[].item.id. The variant ID from catalog retrieval matches
 // the item ID expected by the Checkout Capability.
 //
-// # Catalog Operations
+// # Catalog Interface
 //
-// The Catalog struct provides two core operations mapping to UCP capabilities:
+// The Catalog interface provides read-only operations mapping to UCP capabilities:
 //
 //   - Find: retrieves a product by ID (maps to dev.ucp.shopping.catalog.lookup).
 //     Returns nil if the product does not exist.
 //
 //   - Filter: searches products by category, brand, title substring, usage type,
-//     and availability (maps to dev.ucp.shopping.catalog.search). Supports the
-//     UCP search contract where an empty result set is not an error.
+//     country, currency, and language (maps to dev.ucp.shopping.catalog.search).
+//     Supports the UCP search contract where an empty result set is not an error.
 //
-// # Initialization
+//   - CategoryCount: returns a list of categories with their product counts.
 //
-// Products can be initialized either programmatically via Init (which generates
-// a template catalog with categories like Bouquets, Arrangements, Singles, etc.)
-// or loaded from CSV files via the data package. The Init method accepts a seed
-// for deterministic product generation in test environments.
+// Concrete implementations of the Catalog interface live in merchant packages
+// (e.g., merchant/simple_merchant).
 //
 // # Context and Localization
 //
 // UCP catalog operations accept optional Context signals (country, currency,
-// language) as provisional hints for relevance and localization. The
+// language) as Filter parameters for relevance and localization. The
 // ContainsCountry helper supports case-insensitive country code matching for
 // filtering products by shipping eligibility.
 package catalog

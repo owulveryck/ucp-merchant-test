@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
+	mpayment "github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
 )
 
 // In-memory MCP-specific state
@@ -64,7 +68,7 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 		offset = 0
 	}
 
-	filtered := filterCatalog(category, brand, query, usageType, userCountry)
+	filtered := catalogInstance.Filter(category, brand, query, usageType, userCountry, "", "")
 
 	sort.Slice(filtered, func(i, j int) bool {
 		if filtered[i].Rank != filtered[j].Rank {
@@ -73,7 +77,7 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 		return filtered[i].Title < filtered[j].Title
 	})
 
-	categories := categoryCount(catalog)
+	categories := catalogInstance.CategoryCount()
 
 	total := len(filtered)
 
@@ -136,7 +140,7 @@ func handleGetProductDetails(args map[string]interface{}) (interface{}, error) {
 	userCountry := extractUserCountryFromArgs(args)
 
 	storeMu.Lock()
-	p := findProduct(id)
+	p := catalogInstance.Find(id)
 	if p == nil {
 		storeMu.Unlock()
 		return nil, fmt.Errorf("product not found: %s", id)
@@ -157,7 +161,7 @@ func handleGetProductDetails(args map[string]interface{}) (interface{}, error) {
 	if len(p.AvailableCountries) > 0 {
 		result["available_countries"] = p.AvailableCountries
 		if userCountry != "" {
-			result["available_in_your_country"] = containsCountry(p.AvailableCountries, userCountry)
+			result["available_in_your_country"] = icatalog.ContainsCountry(p.AvailableCountries, userCountry)
 		}
 	}
 	storeMu.Unlock()
@@ -179,7 +183,7 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("cart must have at least one line item")
 	}
 
-	lineItems, err := buildLineItems(cartData)
+	lineItems, err := pricing.BuildLineItems(cartData, catalogInstance)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +194,7 @@ func handleCreateCart(args map[string]interface{}) (interface{}, error) {
 		OwnerID:   extractUserID(args),
 		LineItems: lineItems,
 		Currency:  "USD",
-		Totals:    calculateTotals(lineItems, 0, nil),
+		Totals:    pricing.CalculateTotals(lineItems, 0, nil),
 	}
 	carts[cart.ID] = cart
 	hub.Publish(DashboardEvent{Type: "cart_created", ID: cart.ID, Summary: fmt.Sprintf("Cart %s created with %d items, total %s", cart.ID, len(cart.LineItems), cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
@@ -225,12 +229,12 @@ func handleUpdateCart(args map[string]interface{}) (interface{}, error) {
 	}
 	rawItems, _ := cartData["line_items"].([]interface{})
 	if len(rawItems) > 0 {
-		lineItems, err := buildLineItems(cartData)
+		lineItems, err := pricing.BuildLineItems(cartData, catalogInstance)
 		if err != nil {
 			return nil, err
 		}
 		cart.LineItems = lineItems
-		cart.Totals = calculateTotals(lineItems, 0, nil)
+		cart.Totals = pricing.CalculateTotals(lineItems, 0, nil)
 	}
 	hub.Publish(DashboardEvent{Type: "cart_updated", ID: cart.ID, Summary: fmt.Sprintf("Cart %s updated, total %s", cart.ID, cart.Totals[len(cart.Totals)-1].DisplayText), Timestamp: time.Now(), Data: *cart})
 	return cart, nil
@@ -275,7 +279,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 			return nil, fmt.Errorf("checkout must have line_items or cart_id")
 		}
 		var err error
-		lineItems, err = buildLineItems(checkoutData)
+		lineItems, err = pricing.BuildLineItems(checkoutData, catalogInstance)
 		if err != nil {
 			return nil, err
 		}
@@ -285,8 +289,8 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 	userCountry := extractUserCountryFromArgs(args)
 	if userCountry != "" {
 		for _, li := range lineItems {
-			p := findProduct(li.Item.ID)
-			if p != nil && len(p.AvailableCountries) > 0 && !containsCountry(p.AvailableCountries, userCountry) {
+			p := catalogInstance.Find(li.Item.ID)
+			if p != nil && len(p.AvailableCountries) > 0 && !icatalog.ContainsCountry(p.AvailableCountries, userCountry) {
 				return nil, fmt.Errorf("product %s (%s) is not available in %s", p.ID, p.Title, userCountry)
 			}
 		}
@@ -302,8 +306,8 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 		Links:     []Link{{Type: "application/json", URL: fmt.Sprintf("http://localhost:%d/checkout/%s", listenPort, coID)}},
 		Currency:  "USD",
 		LineItems: lineItems,
-		Totals:    calculateTotals(lineItems, 0, nil),
-		Payment:   defaultPayment(),
+		Totals:    pricing.CalculateTotals(lineItems, 0, nil),
+		Payment:   mpayment.DefaultPayment(),
 	}
 
 	ownerID := extractUserID(args)
@@ -311,7 +315,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 	// Check for buyer info
 	if buyerData, ok := checkoutData["buyer"].(map[string]interface{}); ok {
 		checkoutData["buyer"] = buyerData
-		co.Buyer = parseBuyer(checkoutData)
+		co.Buyer = mpayment.ParseBuyer(checkoutData)
 	}
 
 	state := &MCPCheckoutState{
@@ -369,7 +373,7 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 
 	// Update line items if provided
 	if rawItems, ok := checkoutData["line_items"].([]interface{}); ok && len(rawItems) > 0 {
-		lineItems, err := buildLineItems(checkoutData)
+		lineItems, err := pricing.BuildLineItems(checkoutData, catalogInstance)
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +382,7 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 
 	// Update buyer if provided
 	if _, ok := checkoutData["buyer"]; ok {
-		co.Buyer = parseBuyer(checkoutData)
+		co.Buyer = mpayment.ParseBuyer(checkoutData)
 	}
 
 	// Update shipping option if provided (MCP-specific)
@@ -395,7 +399,7 @@ func handleUpdateCheckout(args map[string]interface{}) (interface{}, error) {
 	if state.Shipping != nil {
 		shippingCost = state.Shipping.Price
 	}
-	co.Totals = calculateTotals(co.LineItems, shippingCost, co.Discounts)
+	co.Totals = pricing.CalculateTotals(co.LineItems, shippingCost, co.Discounts)
 
 	state.CheckoutHash = computeCheckoutHash(co, state.Shipping)
 	hub.Publish(DashboardEvent{Type: "checkout_updated", ID: co.ID, Summary: fmt.Sprintf("Checkout %s updated, status: %s", co.ID, co.Status), Timestamp: time.Now()})
@@ -430,8 +434,8 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 	}
 	if country != "" {
 		for _, li := range co.LineItems {
-			p := findProduct(li.Item.ID)
-			if p != nil && len(p.AvailableCountries) > 0 && !containsCountry(p.AvailableCountries, country) {
+			p := catalogInstance.Find(li.Item.ID)
+			if p != nil && len(p.AvailableCountries) > 0 && !icatalog.ContainsCountry(p.AvailableCountries, country) {
 				return nil, fmt.Errorf("product %s (%s) is not available for delivery to %s", p.ID, p.Title, country)
 			}
 		}
@@ -453,7 +457,7 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 
 	// Recalculate totals with shipping if selected
 	if state.Shipping != nil {
-		co.Totals = calculateTotals(co.LineItems, state.Shipping.Price, co.Discounts)
+		co.Totals = pricing.CalculateTotals(co.LineItems, state.Shipping.Price, co.Discounts)
 	}
 
 	orderSeq++

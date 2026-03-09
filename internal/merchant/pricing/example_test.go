@@ -8,10 +8,32 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+type exampleCatalog struct {
+	products []catalog.Product
+}
+
+func (c *exampleCatalog) Find(id string) *catalog.Product {
+	for i := range c.products {
+		if c.products[i].ID == id {
+			return &c.products[i]
+		}
+	}
+	return nil
+}
+
+func (c *exampleCatalog) Filter(category, brand, query, usageType, country, currency, language string) []catalog.Product {
+	return nil
+}
+
+func (c *exampleCatalog) CategoryCount() []map[string]interface{} {
+	return nil
+}
+
 func ExampleBuildLineItems() {
-	cat := catalog.New()
-	cat.Products = []catalog.Product{
-		{ID: "sku_roses", Title: "Bouquet of Roses", Price: 4999, Quantity: 10},
+	cat := &exampleCatalog{
+		products: []catalog.Product{
+			{ID: "sku_roses", Title: "Bouquet of Roses", Price: 4999, Quantity: 10},
+		},
 	}
 
 	req := map[string]interface{}{

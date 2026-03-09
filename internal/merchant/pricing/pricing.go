@@ -8,7 +8,7 @@ import (
 )
 
 // BuildLineItems creates line items from a raw request map.
-func BuildLineItems(req map[string]interface{}, cat *catalog.Catalog) ([]model.LineItem, error) {
+func BuildLineItems(req map[string]interface{}, cat catalog.Catalog) ([]model.LineItem, error) {
 	rawItems, _ := req["line_items"].([]interface{})
 	if len(rawItems) == 0 {
 		return nil, fmt.Errorf("line_items is required")

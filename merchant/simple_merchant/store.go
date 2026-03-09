@@ -1,6 +1,10 @@
 package main
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
+)
 
 // Unified in-memory stores used by both REST and MCP transports.
 var (
@@ -24,6 +28,9 @@ var (
 	// Address sequence counter for dynamic addresses.
 	addrSeqCounter int
 	addrSeqMu      sync.Mutex
+
+	// Global idempotency store instance.
+	idempotencyStoreInstance = idempotency.NewStore()
 )
 
 func resetStores() {

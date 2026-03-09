@@ -8,6 +8,13 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
+	mfulfillment "github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
+	mpayment "github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
+	"github.com/owulveryck/ucp-merchant-test/internal/webhook"
 )
 
 func writeJSONResponse(w http.ResponseWriter, status int, v interface{}) {
@@ -46,8 +53,8 @@ func handleIdempotency(w http.ResponseWriter, r *http.Request, body []byte) bool
 	if key == "" {
 		return false
 	}
-	payloadHash := hashPayload(body)
-	entry, exists := checkIdempotency(key)
+	payloadHash := idempotency.HashPayload(body)
+	entry, exists := idempotencyStoreInstance.Check(key)
 	if !exists {
 		return false
 	}
@@ -66,7 +73,7 @@ func storeIdempotentResponse(r *http.Request, body []byte, statusCode int, respo
 	if key == "" {
 		return
 	}
-	storeIdempotency(key, hashPayload(body), statusCode, responseBody)
+	idempotencyStoreInstance.Store(key, idempotency.HashPayload(body), statusCode, responseBody)
 }
 
 func processAndRespond(w http.ResponseWriter, r *http.Request, reqBody []byte, status int, result interface{}) {
@@ -111,7 +118,7 @@ func restCreateCheckout(w http.ResponseWriter, r *http.Request) {
 	storeMu.Lock()
 	defer storeMu.Unlock()
 
-	lineItems, err := buildLineItems(req)
+	lineItems, err := pricing.BuildLineItems(req, catalogInstance)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -129,13 +136,13 @@ func restCreateCheckout(w http.ResponseWriter, r *http.Request) {
 		LineItems: lineItems,
 	}
 
-	co.Totals = calculateTotals(lineItems, 0, nil)
-	co.Payment = parsePayment(req)
-	co.Fulfillment = parseFulfillment(req, nil, co)
-	co.Buyer = parseBuyer(req)
+	co.Totals = pricing.CalculateTotals(lineItems, 0, nil)
+	co.Payment = mpayment.ParsePayment(req)
+	co.Fulfillment = mfulfillment.ParseFulfillment(req, nil, co, shopData, checkoutDestinations, checkoutOptionTitles, &addrSeqCounter, &addrSeqMu)
+	co.Buyer = mpayment.ParseBuyer(req)
 
 	// Store webhook URL from UCP-Agent header
-	webhookURL := resolveWebhookURL(r.Header.Get("UCP-Agent"))
+	webhookURL := webhook.ResolveWebhookURL(r.Header.Get("UCP-Agent"))
 	if webhookURL != "" {
 		checkoutWebhooks[coID] = webhookURL
 	}
@@ -218,7 +225,7 @@ func restUpdateCheckout(w http.ResponseWriter, r *http.Request) {
 
 	// Update line items if provided
 	if rawItems, ok := req["line_items"]; ok && rawItems != nil {
-		lineItems, err := buildLineItems(req)
+		lineItems, err := pricing.BuildLineItems(req, catalogInstance)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
@@ -228,28 +235,28 @@ func restUpdateCheckout(w http.ResponseWriter, r *http.Request) {
 
 	// Update buyer if provided
 	if _, ok := req["buyer"]; ok {
-		co.Buyer = parseBuyer(req)
+		co.Buyer = mpayment.ParseBuyer(req)
 	}
 
 	// Update payment if provided
 	if _, ok := req["payment"]; ok {
-		co.Payment = parsePayment(req)
+		co.Payment = mpayment.ParsePayment(req)
 	}
 
 	// Handle discounts
-	shippingCost := getCurrentShippingCost(co)
+	shippingCost := mfulfillment.GetCurrentShippingCost(co)
 	if discountsRaw, ok := req["discounts"]; ok && discountsRaw != nil {
-		co.Discounts = applyDiscounts(discountsRaw, co.LineItems)
+		co.Discounts = discount.ApplyDiscounts(discountsRaw, co.LineItems, shopData)
 	}
 
 	// Handle fulfillment
 	if fulfillmentRaw, ok := req["fulfillment"]; ok && fulfillmentRaw != nil {
-		co.Fulfillment = parseFulfillment(req, co.Buyer, co)
-		shippingCost = getCurrentShippingCost(co)
+		co.Fulfillment = mfulfillment.ParseFulfillment(req, co.Buyer, co, shopData, checkoutDestinations, checkoutOptionTitles, &addrSeqCounter, &addrSeqMu)
+		shippingCost = mfulfillment.GetCurrentShippingCost(co)
 	}
 
 	// Recalculate totals
-	co.Totals = calculateTotals(co.LineItems, shippingCost, co.Discounts)
+	co.Totals = pricing.CalculateTotals(co.LineItems, shippingCost, co.Discounts)
 
 	processAndRespond(w, r, body, http.StatusOK, co)
 }
@@ -302,7 +309,7 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate fulfillment is complete
-	if !isFulfillmentComplete(co) {
+	if !mfulfillment.IsFulfillmentComplete(co) {
 		writeError(w, http.StatusBadRequest, "Fulfillment address and option must be selected")
 		return
 	}
@@ -397,7 +404,7 @@ func restCompleteCheckout(w http.ResponseWriter, r *http.Request) {
 		orderJSON, _ := json.Marshal(order)
 		var orderMap map[string]interface{}
 		json.Unmarshal(orderJSON, &orderMap)
-		sendWebhookEvent(webhookURL, map[string]interface{}{
+		webhook.SendWebhookEvent(webhookURL, map[string]interface{}{
 			"event_type":  "order_placed",
 			"checkout_id": id,
 			"order":       orderMap,
@@ -601,7 +608,7 @@ func restSimulateShipping(w http.ResponseWriter, r *http.Request) {
 		orderJSON, _ := json.Marshal(order)
 		var orderMap map[string]interface{}
 		json.Unmarshal(orderJSON, &orderMap)
-		sendWebhookEvent(webhookURL, map[string]interface{}{
+		webhook.SendWebhookEvent(webhookURL, map[string]interface{}{
 			"event_type":  "order_shipped",
 			"checkout_id": order.CheckoutID,
 			"order":       orderMap,
@@ -612,6 +619,13 @@ func restSimulateShipping(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helper functions
+
+func stringOr(m map[string]interface{}, key, def string) string {
+	if v, ok := m[key].(string); ok && v != "" {
+		return v
+	}
+	return def
+}
 
 func extractPathParam(path, prefix string) string {
 	s := strings.TrimPrefix(path, prefix)
