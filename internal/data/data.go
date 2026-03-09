@@ -471,6 +471,11 @@ func MatchExistingAddress(addrs []CSVAddress, street, locality, region, postal, 
 	return nil
 }
 
+// GetPromotions returns the loaded promotions.
+func (ds *DataSource) GetPromotions() []CSVPromotion {
+	return ds.Promotions
+}
+
 // SaveDynamicAddress stores a new address for a user email.
 func (ds *DataSource) SaveDynamicAddress(email string, addr CSVAddress) string {
 	ds.Mu.Lock()

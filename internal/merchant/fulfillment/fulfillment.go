@@ -7,16 +7,27 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+// FulfillmentDataSource provides access to address, shipping, and promotion data.
+type FulfillmentDataSource interface {
+	FindAddressesForEmail(email string) []data.CSVAddress
+	SaveDynamicAddress(email string, addr data.CSVAddress) string
+	GetShippingRatesForCountry(country string) []data.CSVShippingRate
+	GetPromotions() []data.CSVPromotion
+}
+
 // ParseFulfillment parses fulfillment data from a request map.
 func ParseFulfillment(
 	req map[string]interface{},
 	buyer *model.Buyer,
 	co *model.Checkout,
-	ds *data.DataSource,
+	ds FulfillmentDataSource,
 	checkoutDestinations map[string]*model.FulfillmentDestination,
 	checkoutOptionTitles map[string]string,
 	addrSeqCounter *int,
-	addrSeqMu interface{ Lock(); Unlock() },
+	addrSeqMu interface {
+		Lock()
+		Unlock()
+	},
 ) *model.Fulfillment {
 	fulfillmentRaw, ok := req["fulfillment"]
 	if !ok || fulfillmentRaw == nil {
@@ -181,9 +192,12 @@ func ParseFulfillment(
 func ParseDestination(
 	dMap map[string]interface{},
 	buyer *model.Buyer,
-	ds *data.DataSource,
+	ds FulfillmentDataSource,
 	addrSeqCounter *int,
-	addrSeqMu interface{ Lock(); Unlock() },
+	addrSeqMu interface {
+		Lock()
+		Unlock()
+	},
 ) model.FulfillmentDestination {
 	dest := model.FulfillmentDestination{}
 	if v, ok := dMap["id"].(string); ok {
@@ -244,7 +258,7 @@ func ParseDestination(
 }
 
 // GenerateShippingOptions generates shipping options based on country and checkout.
-func GenerateShippingOptions(country string, co *model.Checkout, ds *data.DataSource) []model.FulfillmentOption {
+func GenerateShippingOptions(country string, co *model.Checkout, ds FulfillmentDataSource) []model.FulfillmentOption {
 	rates := ds.GetShippingRatesForCountry(country)
 	var options []model.FulfillmentOption
 
@@ -260,7 +274,7 @@ func GenerateShippingOptions(country string, co *model.Checkout, ds *data.DataSo
 			}
 			itemIDs = append(itemIDs, li.Item.ID)
 		}
-		for _, promo := range ds.Promotions {
+		for _, promo := range ds.GetPromotions() {
 			if promo.Type == "free_shipping" {
 				if promo.MinSubtotal > 0 && subtotal >= promo.MinSubtotal {
 					freeShipping = true

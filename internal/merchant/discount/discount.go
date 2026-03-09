@@ -5,8 +5,13 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
+// DiscountLookup provides access to discount code data.
+type DiscountLookup interface {
+	FindDiscountByCode(code string) *data.CSVDiscount
+}
+
 // ApplyDiscounts processes discount codes against line items.
-func ApplyDiscounts(discountsRaw interface{}, lineItems []model.LineItem, ds *data.DataSource) *model.Discounts {
+func ApplyDiscounts(discountsRaw interface{}, lineItems []model.LineItem, dl DiscountLookup) *model.Discounts {
 	dMap, ok := discountsRaw.(map[string]interface{})
 	if !ok {
 		return nil
@@ -34,7 +39,7 @@ func ApplyDiscounts(discountsRaw interface{}, lineItems []model.LineItem, ds *da
 		}
 		result.Codes = append(result.Codes, code)
 
-		d := ds.FindDiscountByCode(code)
+		d := dl.FindDiscountByCode(code)
 		if d == nil {
 			continue
 		}
