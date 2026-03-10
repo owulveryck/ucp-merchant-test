@@ -1,38 +1,55 @@
 // Package mcp implements the UCP Shopping Service MCP transport.
 //
-// It exposes a JSON-RPC 2.0 endpoint (MCP protocol version 2025-03-26)
-// that provides tool-based access to UCP shopping capabilities. The
-// transport handles protocol negotiation (initialize, tools/list),
-// session management (Mcp-Session-Id), argument parsing, checkout
-// hash management for buyer approval flows, and product image
-// encoding. All business logic is delegated to the merchant.Merchant
-// interface.
+// It wraps the mcp-go library to provide a JSON-RPC 2.0 / Streamable HTTP
+// endpoint with tool-based access to UCP shopping capabilities. All business
+// logic is delegated to the merchant.Merchant interface.
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"sync"
+	"sync/atomic"
+
+	"github.com/mark3labs/mcp-go/mcp"
+	mcpserver "github.com/mark3labs/mcp-go/server"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/auth"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant"
-	"github.com/owulveryck/ucp-merchant-test/internal/model"
 )
 
-// Server is the MCP (Model Context Protocol) transport for a
-// UCP-compliant merchant. It implements http.Handler and serves
-// JSON-RPC 2.0 requests at a single HTTP POST endpoint, translating
-// tool calls into merchant.Merchant method invocations.
+// permissiveSessionIDManager generates session IDs on initialize but
+// accepts any (or no) session ID on subsequent requests — matching the
+// previous hand-rolled implementation's behaviour.
+type permissiveSessionIDManager struct {
+	counter int64
+}
+
+func (m *permissiveSessionIDManager) Generate() string {
+	n := atomic.AddInt64(&m.counter, 1)
+	return fmt.Sprintf("session-%04d", n)
+}
+
+func (m *permissiveSessionIDManager) Validate(string) (bool, error)  { return false, nil }
+func (m *permissiveSessionIDManager) Terminate(string) (bool, error) { return false, nil }
+
+// contextKey is used for storing auth data in request context.
+type contextKey int
+
+const (
+	ctxUserID contextKey = iota
+	ctxUserCountry
+)
+
+// Server is the MCP transport for a UCP-compliant merchant.
 type Server struct {
+	mcpServer    *mcpserver.MCPServer
+	httpServer   *mcpserver.StreamableHTTPServer
 	merchant     merchant.Merchant
 	auth         *auth.OAuthServer
 	merchantName string
 	listenPort   func() int
-
-	mu             sync.Mutex
-	sessionCounter int
 }
 
 // Option configures a Server.
@@ -58,33 +75,35 @@ func New(m merchant.Merchant, authServer *auth.OAuthServer, opts ...Option) *Ser
 	for _, opt := range opts {
 		opt(s)
 	}
+
+	name := s.merchantName
+	if name == "" {
+		name = "UCP Merchant"
+	}
+
+	s.mcpServer = mcpserver.NewMCPServer(name, "1.0.0")
+	registerTools(s.mcpServer, s)
+
+	s.httpServer = mcpserver.NewStreamableHTTPServer(s.mcpServer,
+		mcpserver.WithHTTPContextFunc(s.contextFunc),
+		mcpserver.WithSessionIdManager(&permissiveSessionIDManager{}),
+	)
+
 	return s
+}
+
+// contextFunc extracts auth info from the HTTP request and stores it in the context.
+func (s *Server) contextFunc(ctx context.Context, r *http.Request) context.Context {
+	userID := s.auth.ExtractUserFromToken(r)
+	userCountry := s.auth.ExtractUserCountry(r)
+	ctx = context.WithValue(ctx, ctxUserID, userID)
+	ctx = context.WithValue(ctx, ctxUserCountry, userCountry)
+	return ctx
 }
 
 // Reset clears transport-specific state.
 func (s *Server) Reset() {
-	s.mu.Lock()
-	s.sessionCounter = 0
-	s.mu.Unlock()
-}
-
-func (s *Server) newSessionID() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.sessionCounter++
-	return fmt.Sprintf("session-%04d", s.sessionCounter)
-}
-
-func setCORSHeaders(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Mcp-Session-Id, Authorization")
-	w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
-}
-
-func writeJSON(w http.ResponseWriter, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
+	// mcp-go manages its own session state; nothing to reset here.
 }
 
 // ServeHTTP implements http.Handler for the MCP endpoint.
@@ -92,10 +111,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setCORSHeaders(w)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -107,149 +122,49 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := s.auth.ExtractUserFromToken(r)
-	userCountry := s.auth.ExtractUserCountry(r)
-
-	var req model.JSONRPCRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			Error:   &model.RPCError{Code: -32700, Message: "Parse error"},
-		})
-		return
-	}
-
-	// Assign session ID on initialize
-	if req.Method == "initialize" {
-		sid := s.newSessionID()
-		w.Header().Set("Mcp-Session-Id", sid)
-	} else if sid := r.Header.Get("Mcp-Session-Id"); sid != "" {
-		w.Header().Set("Mcp-Session-Id", sid)
-	}
-
-	switch req.Method {
-	case "initialize":
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Result: model.MCPInitializeResult{
-				ProtocolVersion: "2025-03-26",
-				Capabilities:    model.MCPCapabilities{Tools: map[string]any{}},
-				ServerInfo:      model.MCPServerInfo{Name: s.merchantName, Version: "1.0.0"},
-			},
-		})
-
-	case "notifications/initialized":
-		w.WriteHeader(http.StatusNoContent)
-
-	case "tools/list":
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Result: model.MCPToolsListResult{
-				Tools: getToolDefinitions(),
-			},
-		})
-
-	case "tools/call":
-		s.handleToolCall(w, req, userID, userCountry)
-
-	default:
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error:   &model.RPCError{Code: -32601, Message: fmt.Sprintf("Method not found: %s", req.Method)},
-		})
-	}
+	s.httpServer.ServeHTTP(w, r)
 }
 
-func (s *Server) handleToolCall(w http.ResponseWriter, req model.JSONRPCRequest, userID, userCountry string) {
-	var params struct {
-		Name      string                 `json:"name"`
-		Arguments map[string]interface{} `json:"arguments"`
-	}
-	if err := json.Unmarshal(req.Params, &params); err != nil {
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error:   &model.RPCError{Code: -32602, Message: "Invalid params"},
-		})
-		return
-	}
+func setCORSHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Mcp-Session-Id, Authorization")
+	w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
+}
 
-	handlers := map[string]func(map[string]interface{}, string, string) (interface{}, error){
-		"list_products":       s.handleListProducts,
-		"get_product_details": s.handleGetProductDetails,
-		"search_catalog":      s.handleSearchCatalog,
-		"lookup_product":      s.handleLookupProduct,
-		"create_cart":         s.handleCreateCart,
-		"get_cart":            s.handleGetCart,
-		"update_cart":         s.handleUpdateCart,
-		"cancel_cart":         s.handleCancelCart,
-		"create_checkout":     s.handleCreateCheckout,
-		"get_checkout":        s.handleGetCheckout,
-		"update_checkout":     s.handleUpdateCheckout,
-		"complete_checkout":   s.handleCompleteCheckout,
-		"cancel_checkout":     s.handleCancelCheckout,
-		"get_order":           s.handleGetOrder,
-		"list_orders":         s.handleListOrders,
-		"cancel_order":        s.handleCancelOrder,
-	}
+// toolResultFromError creates an error tool result for tool-level errors.
+func toolResultFromError(err error) *mcp.CallToolResult {
+	return mcp.NewToolResultError("Error: " + err.Error())
+}
 
-	handler, ok := handlers[params.Name]
-	if !ok {
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error:   &model.RPCError{Code: -32602, Message: fmt.Sprintf("Unknown tool: %s", params.Name)},
-		})
-		return
-	}
-
-	result, err := handler(params.Arguments, userID, userCountry)
-	if err != nil {
-		writeJSON(w, model.JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Result: model.MCPToolResult{
-				Content: []model.MCPContentBlock{
-					{Type: "text", Text: fmt.Sprintf("Error: %s", err.Error())},
-				},
-				IsError: true,
-			},
-		})
-		return
-	}
-
+// toolResultFromJSON creates a text tool result from a JSON-marshaled value,
+// optionally appending image content blocks.
+func toolResultFromJSON(result interface{}, imageURLs []string) *mcp.CallToolResult {
 	resultJSON, _ := json.MarshalIndent(result, "", "  ")
 
-	content := []model.MCPContentBlock{
-		{Type: "text", Text: string(resultJSON)},
+	content := []mcp.Content{
+		mcp.TextContent{
+			Type: "text",
+			Text: string(resultJSON),
+		},
 	}
 
-	// Extract image URLs and add as image content blocks (cap at 5)
-	imageURLs := extractImageURLs(result)
 	if len(imageURLs) > 5 {
 		imageURLs = imageURLs[:5]
 	}
 	for _, imgURL := range imageURLs {
 		data, mime, err := fetchAndEncodeImage(imgURL)
 		if err != nil {
-			log.Printf("Failed to fetch image %s: %v", imgURL, err)
 			continue
 		}
-		content = append(content, model.MCPContentBlock{
+		content = append(content, mcp.ImageContent{
 			Type:     "image",
 			Data:     data,
-			MimeType: mime,
+			MIMEType: mime,
 		})
 	}
 
-	writeJSON(w, model.JSONRPCResponse{
-		JSONRPC: "2.0",
-		ID:      req.ID,
-		Result: model.MCPToolResult{
-			Content: content,
-		},
-	})
+	return &mcp.CallToolResult{
+		Content: content,
+	}
 }

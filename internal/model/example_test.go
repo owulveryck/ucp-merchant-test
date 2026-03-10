@@ -107,16 +107,3 @@ func ExampleUCPDiscovery() {
 	// 2026-01-11
 	// https://ucp.dev/specs/shopping
 }
-
-func ExampleMCPToolResult() {
-	result := model.MCPToolResult{
-		Content: []model.MCPContentBlock{
-			{Type: "text", Text: "Operation completed successfully"},
-		},
-	}
-
-	b, _ := json.Marshal(result)
-	fmt.Println(string(b))
-	// Output:
-	// {"content":[{"type":"text","text":"Operation completed successfully"}]}
-}

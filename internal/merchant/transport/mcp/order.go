@@ -1,22 +1,32 @@
 package mcp
 
-import "fmt"
+import (
+	"context"
+	"fmt"
 
-func (s *Server) handleGetOrder(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+	"github.com/mark3labs/mcp-go/mcp"
+)
+
+func (s *Server) handleGetOrder(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	userID := userIDFromContext(ctx)
+
 	id, _ := args["id"].(string)
 
 	ord, err := s.merchant.GetOrder(id, userID)
 	if err != nil {
-		return nil, fmt.Errorf("order not found: %s", id)
+		return toolResultFromError(fmt.Errorf("order not found: %s", id)), nil
 	}
 
-	return ord, nil
+	return toolResultFromJSON(ord, nil), nil
 }
 
-func (s *Server) handleListOrders(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+func (s *Server) handleListOrders(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	userID := userIDFromContext(ctx)
+
 	orders, err := s.merchant.ListOrders(userID)
 	if err != nil {
-		return nil, err
+		return toolResultFromError(err), nil
 	}
 
 	type orderSummary struct {
@@ -43,16 +53,19 @@ func (s *Server) handleListOrders(args map[string]interface{}, userID, userCount
 		})
 	}
 
-	return map[string]interface{}{"orders": summaries}, nil
+	return toolResultFromJSON(map[string]interface{}{"orders": summaries}, nil), nil
 }
 
-func (s *Server) handleCancelOrder(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+func (s *Server) handleCancelOrder(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	userID := userIDFromContext(ctx)
+
 	id, _ := args["id"].(string)
 
 	err := s.merchant.CancelOrder(id, userID)
 	if err != nil {
-		return nil, fmt.Errorf("order not found: %s", id)
+		return toolResultFromError(fmt.Errorf("order not found: %s", id)), nil
 	}
 
-	return map[string]interface{}{"id": id, "status": "canceled", "message": "Order has been canceled"}, nil
+	return toolResultFromJSON(map[string]interface{}{"id": id, "status": "canceled", "message": "Order has been canceled"}, nil), nil
 }

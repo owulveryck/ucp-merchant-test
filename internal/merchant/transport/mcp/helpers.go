@@ -1,6 +1,20 @@
 package mcp
 
-import "github.com/owulveryck/ucp-merchant-test/internal/model"
+import (
+	"context"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/model"
+)
+
+func userIDFromContext(ctx context.Context) string {
+	v, _ := ctx.Value(ctxUserID).(string)
+	return v
+}
+
+func userCountryFromContext(ctx context.Context) string {
+	v, _ := ctx.Value(ctxUserCountry).(string)
+	return v
+}
 
 // parseLineItemRequests converts a raw map's "line_items" field to typed requests.
 func parseLineItemRequests(data map[string]interface{}) []model.LineItemRequest {

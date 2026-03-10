@@ -35,10 +35,27 @@ func TestMCP_Initialize(t *testing.T) {
 
 func TestMCP_NotificationsInitialized(t *testing.T) {
 	ts := newTestServer(t)
-	resp, _ := ts.mcpRequest("notifications/initialized", nil, "")
 
-	if resp.StatusCode != 204 {
-		t.Fatalf("expected 204, got %d", resp.StatusCode)
+	// Notifications must not include an "id" field per JSON-RPC 2.0 spec.
+	// mcp-go returns 202 Accepted for notifications.
+	reqBody := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"method":  "notifications/initialized",
+	}
+	b, _ := json.Marshal(reqBody)
+	req, err := http.NewRequest("POST", ts.URL+"/mcp", bytes.NewReader(b))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 202 {
+		t.Fatalf("expected 202, got %d", resp.StatusCode)
 	}
 }
 

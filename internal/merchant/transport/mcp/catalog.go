@@ -1,14 +1,20 @@
 package mcp
 
 import (
+	"context"
 	"fmt"
 	"sort"
+
+	"github.com/mark3labs/mcp-go/mcp"
 
 	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
 	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
-func (s *Server) handleListProducts(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+func (s *Server) handleListProducts(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	userCountry := userCountryFromContext(ctx)
+
 	category, _ := args["category"].(string)
 	brand, _ := args["brand"].(string)
 	query, _ := args["query"].(string)
@@ -75,7 +81,7 @@ func (s *Server) handleListProducts(args map[string]interface{}, userID, userCou
 		})
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"products": products,
 		"pagination": map[string]interface{}{
 			"total":    total,
@@ -84,18 +90,21 @@ func (s *Server) handleListProducts(args map[string]interface{}, userID, userCou
 			"has_more": end < total,
 		},
 		"categories": categories,
-	}, nil
+	}
+
+	return toolResultFromJSON(result, extractImageURLs(result)), nil
 }
 
-func (s *Server) handleGetProductDetails(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+func (s *Server) handleGetProductDetails(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
 	id, _ := args["id"].(string)
 	if id == "" {
-		return nil, fmt.Errorf("id is required")
+		return toolResultFromError(fmt.Errorf("id is required")), nil
 	}
 
 	p := s.merchant.Find(id)
 	if p == nil {
-		return nil, fmt.Errorf("product not found: %s", id)
+		return toolResultFromError(fmt.Errorf("product not found: %s", id)), nil
 	}
 	result := map[string]interface{}{
 		"id":          p.ID,
@@ -111,13 +120,16 @@ func (s *Server) handleGetProductDetails(args map[string]interface{}, userID, us
 		result["available_countries"] = p.AvailableCountries
 	}
 
-	return result, nil
+	return toolResultFromJSON(result, extractImageURLs(result)), nil
 }
 
-func (s *Server) handleSearchCatalog(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+func (s *Server) handleSearchCatalog(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	userCountry := userCountryFromContext(ctx)
+
 	query, _ := args["query"].(string)
 	if query == "" {
-		return nil, fmt.Errorf("query is required")
+		return toolResultFromError(fmt.Errorf("query is required")), nil
 	}
 
 	limit := 10
@@ -133,23 +145,28 @@ func (s *Server) handleSearchCatalog(args map[string]interface{}, userID, userCo
 		ShipsTo: shipsTo,
 	})
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"results": results,
 		"total":   len(results),
-	}, nil
+	}
+
+	return toolResultFromJSON(result, extractImageURLs(result)), nil
 }
 
-func (s *Server) handleLookupProduct(args map[string]interface{}, userID, userCountry string) (interface{}, error) {
+func (s *Server) handleLookupProduct(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	userCountry := userCountryFromContext(ctx)
+
 	id, _ := args["id"].(string)
 	if id == "" {
-		return nil, fmt.Errorf("id is required")
+		return toolResultFromError(fmt.Errorf("id is required")), nil
 	}
 
 	shipsTo := ucp.NewCountry(userCountry)
 
 	p := s.merchant.Lookup(id, shipsTo)
 	if p == nil {
-		return nil, fmt.Errorf("product not found: %s", id)
+		return toolResultFromError(fmt.Errorf("product not found: %s", id)), nil
 	}
 
 	result := map[string]interface{}{
@@ -166,5 +183,5 @@ func (s *Server) handleLookupProduct(args map[string]interface{}, userID, userCo
 		result["available_countries"] = p.AvailableCountries
 	}
 
-	return result, nil
+	return toolResultFromJSON(result, extractImageURLs(result)), nil
 }
