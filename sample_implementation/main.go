@@ -24,6 +24,7 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/mcp"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/rest"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // Merchant identity
@@ -296,8 +297,8 @@ func handleUCPDiscovery(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(model.UCPDiscovery{
 		UCP: model.UCPDiscoveryProfile{
 			Version: "2026-01-11",
-			Services: map[string]model.UCPServiceEntry{
-				"dev.ucp.shopping": {
+			Services: map[ucp.UCPService]model.UCPServiceEntry{
+				ucp.ServiceShopping: {
 					Version: "2026-01-11",
 					Spec:    base + "/specs/shopping",
 					REST: &model.UCPRESTConfig{

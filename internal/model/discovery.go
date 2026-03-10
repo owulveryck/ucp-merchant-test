@@ -1,5 +1,7 @@
 package model
 
+import "github.com/owulveryck/ucp-merchant-test/internal/ucp"
+
 // UCPDiscovery is the response body for /.well-known/ucp.
 type UCPDiscovery struct {
 	UCP     UCPDiscoveryProfile `json:"ucp"`
@@ -8,9 +10,9 @@ type UCPDiscovery struct {
 
 // UCPDiscoveryProfile describes the UCP services and capabilities.
 type UCPDiscoveryProfile struct {
-	Version      string                     `json:"version"`
-	Services     map[string]UCPServiceEntry `json:"services"`
-	Capabilities []UCPCapabilityEntry       `json:"capabilities"`
+	Version      string                             `json:"version"`
+	Services     map[ucp.UCPService]UCPServiceEntry `json:"services"`
+	Capabilities []UCPCapabilityEntry               `json:"capabilities"`
 }
 
 // UCPServiceEntry describes a single UCP service endpoint.

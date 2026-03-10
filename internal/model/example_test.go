@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 func ExampleCheckout() {
@@ -89,8 +90,8 @@ func ExampleUCPDiscovery() {
 	d := model.UCPDiscovery{
 		UCP: model.UCPDiscoveryProfile{
 			Version: "2026-01-11",
-			Services: map[string]model.UCPServiceEntry{
-				"dev.ucp.shopping": {
+			Services: map[ucp.UCPService]model.UCPServiceEntry{
+				ucp.ServiceShopping: {
 					Version: "2026-01-11",
 					Spec:    "https://ucp.dev/specs/shopping",
 					REST:    &model.UCPRESTConfig{Endpoint: "/api/shopping"},

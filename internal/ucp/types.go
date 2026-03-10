@@ -42,6 +42,15 @@ func (c Category) Matches(other Category) bool {
 	return strings.EqualFold(string(c), string(other))
 }
 
+// UCPService identifies a UCP service in the discovery profile.
+// Values use reverse-domain notation (e.g. "dev.ucp.shopping").
+type UCPService string
+
+// Official UCP service identifiers.
+const (
+	ServiceShopping UCPService = "dev.ucp.shopping"
+)
+
 // ContainsCountry reports whether c is present in countries. Both the list
 // entries and c must already be normalized via NewCountry (i.e. uppercase),
 // because the comparison uses simple ==. Returns false if countries is empty.
