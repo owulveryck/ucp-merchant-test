@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 func newTestServer() *OAuthServer {
@@ -17,7 +19,7 @@ func newTestServer() *OAuthServer {
 
 func TestInjectAndExtractToken(t *testing.T) {
 	s := newTestServer()
-	token := s.InjectToken("alice", "US", time.Now().Add(time.Hour))
+	token := s.InjectToken("alice", ucp.Country("US"), time.Now().Add(time.Hour))
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -35,7 +37,7 @@ func TestInjectAndExtractToken(t *testing.T) {
 
 func TestExpiredToken(t *testing.T) {
 	s := newTestServer()
-	token := s.InjectToken("alice", "US", time.Now().Add(-time.Hour))
+	token := s.InjectToken("alice", ucp.Country("US"), time.Now().Add(-time.Hour))
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -52,7 +54,7 @@ func TestExpiredToken(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	s := newTestServer()
-	s.InjectToken("alice", "US", time.Now().Add(time.Hour))
+	s.InjectToken("alice", ucp.Country("US"), time.Now().Add(time.Hour))
 	s.Reset()
 
 	if len(s.accessTokens) != 0 {
@@ -77,7 +79,7 @@ func TestHandleMetadata(t *testing.T) {
 
 func TestHandleRevoke(t *testing.T) {
 	s := newTestServer()
-	token := s.InjectToken("alice", "US", time.Now().Add(time.Hour))
+	token := s.InjectToken("alice", ucp.Country("US"), time.Now().Add(time.Hour))
 
 	form := url.Values{"token": {token}}
 	req := httptest.NewRequest("POST", "/oauth2/revoke", strings.NewReader(form.Encode()))

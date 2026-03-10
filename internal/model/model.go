@@ -1,5 +1,7 @@
 package model
 
+import "github.com/owulveryck/ucp-merchant-test/internal/ucp"
+
 // UCPEnvelope carries protocol metadata in checkout and order responses.
 //
 // The "ucp" field is always an object (never a plain string) containing the
@@ -34,7 +36,7 @@ type Checkout struct {
 	ID          string       `json:"id"`
 	UCP         UCPEnvelope  `json:"ucp"`
 	Status      string       `json:"status"`
-	Currency    string       `json:"currency"`
+	Currency    ucp.Currency `json:"currency"`
 	LineItems   []LineItem   `json:"line_items"`
 	Totals      []Total      `json:"totals"`
 	Links       []Link       `json:"links"`
@@ -131,13 +133,13 @@ type FulfillmentOption struct {
 // FulfillmentDestination is a shipping address within a fulfillment method.
 // Fields follow Schema.org PostalAddress naming (street_address, address_locality, etc.).
 type FulfillmentDestination struct {
-	ID              string `json:"id,omitempty"`
-	FullName        string `json:"full_name,omitempty"`
-	StreetAddress   string `json:"street_address,omitempty"`
-	AddressLocality string `json:"address_locality,omitempty"`
-	AddressRegion   string `json:"address_region,omitempty"`
-	PostalCode      string `json:"postal_code,omitempty"`
-	AddressCountry  string `json:"address_country,omitempty"`
+	ID              string      `json:"id,omitempty"`
+	FullName        string      `json:"full_name,omitempty"`
+	StreetAddress   string      `json:"street_address,omitempty"`
+	AddressLocality string      `json:"address_locality,omitempty"`
+	AddressRegion   string      `json:"address_region,omitempty"`
+	PostalCode      string      `json:"postal_code,omitempty"`
+	AddressCountry  ucp.Country `json:"address_country,omitempty"`
 }
 
 // Payment models payment configuration for a checkout session.
@@ -210,7 +212,7 @@ type Order struct {
 	LineItems    []OrderLineItem  `json:"line_items"`
 	Fulfillment  OrderFulfillment `json:"fulfillment"`
 	Adjustments  []Adjustment     `json:"adjustments,omitempty"`
-	Currency     string           `json:"currency"`
+	Currency     ucp.Currency     `json:"currency"`
 	Totals       []Total          `json:"totals"`
 }
 
@@ -287,12 +289,12 @@ type Adjustment struct {
 // purchase intent is established. Cart totals are estimates; accurate pricing
 // is computed at checkout.
 type Cart struct {
-	ID        string     `json:"id"`
-	OwnerID   string     `json:"owner_id,omitempty"`
-	LineItems []LineItem `json:"line_items"`
-	Currency  string     `json:"currency"`
-	Totals    []Total    `json:"totals"`
-	Messages  []Message  `json:"messages,omitempty"`
+	ID        string       `json:"id"`
+	OwnerID   string       `json:"owner_id,omitempty"`
+	LineItems []LineItem   `json:"line_items"`
+	Currency  ucp.Currency `json:"currency"`
+	Totals    []Total      `json:"totals"`
+	Messages  []Message    `json:"messages,omitempty"`
 }
 
 // Message communicates business outcomes using UCP severity levels:

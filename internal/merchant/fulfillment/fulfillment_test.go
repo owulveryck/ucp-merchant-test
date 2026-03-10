@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 type mockFulfillmentDS struct {
@@ -30,10 +31,10 @@ func (m *mockFulfillmentDS) SaveDynamicAddress(email string, addr Address) strin
 	return addr.ID
 }
 
-func (m *mockFulfillmentDS) GetShippingRatesForCountry(country string) []ShippingRate {
+func (m *mockFulfillmentDS) GetShippingRatesForCountry(country ucp.Country) []ShippingRate {
 	var result []ShippingRate
 	for _, r := range m.shippingRates {
-		if strings.EqualFold(r.CountryCode, country) || r.CountryCode == "default" {
+		if strings.EqualFold(r.CountryCode, string(country)) || r.CountryCode == "default" {
 			result = append(result, r)
 		}
 	}
@@ -175,7 +176,7 @@ func TestGenerateShippingOptions(t *testing.T) {
 		{ID: "r2", CountryCode: "US", ServiceLevel: "express", Price: 1500, Title: "Express"},
 	}
 
-	options := GenerateShippingOptions("US", nil, ds)
+	options := GenerateShippingOptions(ucp.Country("US"), nil, ds)
 	if len(options) != 2 {
 		t.Fatalf("expected 2 options, got %d", len(options))
 	}
@@ -196,7 +197,7 @@ func TestGenerateShippingOptionsFreeShipping(t *testing.T) {
 		},
 	}
 
-	options := GenerateShippingOptions("US", co, ds)
+	options := GenerateShippingOptions(ucp.Country("US"), co, ds)
 	if len(options) != 1 {
 		t.Fatalf("expected 1 option, got %d", len(options))
 	}

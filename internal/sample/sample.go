@@ -13,6 +13,7 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/catalog"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // CSVCustomer represents a test buyer identity loaded from customers.csv.
@@ -72,7 +73,7 @@ type csvAddress struct {
 // ConformanceInput holds test expectations loaded from conformance_input.json,
 // defining currency, available items, out-of-stock items, and non-existent item IDs.
 type ConformanceInput struct {
-	Currency string `json:"currency"`
+	Currency ucp.Currency `json:"currency"`
 	Items    []struct {
 		ID    string `json:"id"`
 		Title string `json:"title"`
@@ -398,7 +399,7 @@ func csvAddressToAddress(a csvAddress) fulfillment.Address {
 		City:          a.City,
 		State:         a.State,
 		PostalCode:    a.PostalCode,
-		Country:       a.Country,
+		Country:       ucp.NewCountry(a.Country),
 	}
 }
 
@@ -456,10 +457,10 @@ func (ds *DataSource) FindPaymentInstrumentByToken(token string) *CSVPaymentInst
 }
 
 // GetShippingRatesForCountry returns shipping rates applicable to a country.
-func (ds *DataSource) GetShippingRatesForCountry(country string) []fulfillment.ShippingRate {
+func (ds *DataSource) GetShippingRatesForCountry(country ucp.Country) []fulfillment.ShippingRate {
 	var result []csvShippingRate
 	for _, r := range ds.shippingRates {
-		if strings.EqualFold(r.CountryCode, country) || r.CountryCode == "default" {
+		if strings.EqualFold(r.CountryCode, string(country)) || r.CountryCode == "default" {
 			result = append(result, r)
 		}
 	}

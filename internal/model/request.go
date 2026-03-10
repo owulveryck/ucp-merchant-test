@@ -1,5 +1,7 @@
 package model
 
+import "github.com/owulveryck/ucp-merchant-test/internal/ucp"
+
 // CheckoutRequest represents the incoming JSON body for UCP checkout session
 // create (POST) and update (PUT) operations on the Shopping Service REST API.
 //
@@ -12,7 +14,7 @@ package model
 // be provided. PaymentData is only used during the checkout completion call
 // (POST .../complete) to submit the buyer's payment credential.
 type CheckoutRequest struct {
-	Currency    string              `json:"currency,omitempty"`
+	Currency    ucp.Currency        `json:"currency,omitempty"`
 	LineItems   []LineItemRequest   `json:"line_items,omitempty"`
 	Payment     *PaymentRequest     `json:"payment,omitempty"`
 	Buyer       *BuyerRequest       `json:"buyer,omitempty"`
@@ -143,13 +145,13 @@ type FulfillmentMethodRequest struct {
 // is generated and the address is saved for future lookups. When ID is provided,
 // it references a previously known address (e.g., from the buyer's address book).
 type FulfillmentDestinationRequest struct {
-	ID              string `json:"id,omitempty"`
-	FullName        string `json:"full_name,omitempty"`
-	StreetAddress   string `json:"street_address,omitempty"`
-	AddressLocality string `json:"address_locality,omitempty"`
-	AddressRegion   string `json:"address_region,omitempty"`
-	PostalCode      string `json:"postal_code,omitempty"`
-	AddressCountry  string `json:"address_country,omitempty"`
+	ID              string      `json:"id,omitempty"`
+	FullName        string      `json:"full_name,omitempty"`
+	StreetAddress   string      `json:"street_address,omitempty"`
+	AddressLocality string      `json:"address_locality,omitempty"`
+	AddressRegion   string      `json:"address_region,omitempty"`
+	PostalCode      string      `json:"postal_code,omitempty"`
+	AddressCountry  ucp.Country `json:"address_country,omitempty"`
 }
 
 // FulfillmentGroupRequest represents the platform's selection of a shipping

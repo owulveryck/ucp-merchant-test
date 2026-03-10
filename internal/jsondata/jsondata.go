@@ -11,6 +11,7 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/catalog"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // Customer represents a test buyer identity.
@@ -78,7 +79,7 @@ type jsonPromotion struct {
 
 // ConformanceInput holds test expectations loaded from conformance_input.json.
 type ConformanceInput struct {
-	Currency string `json:"currency"`
+	Currency ucp.Currency `json:"currency"`
 	Items    []struct {
 		ID    string `json:"id"`
 		Title string `json:"title"`
@@ -202,7 +203,7 @@ func jsonAddressToAddress(a jsonAddress) fulfillment.Address {
 		City:          a.City,
 		State:         a.State,
 		PostalCode:    a.PostalCode,
-		Country:       a.Country,
+		Country:       ucp.NewCountry(a.Country),
 	}
 }
 
@@ -260,10 +261,10 @@ func (ds *DataSource) FindPaymentInstrumentByToken(token string) *PaymentInstrum
 }
 
 // GetShippingRatesForCountry returns shipping rates applicable to a country.
-func (ds *DataSource) GetShippingRatesForCountry(country string) []fulfillment.ShippingRate {
+func (ds *DataSource) GetShippingRatesForCountry(country ucp.Country) []fulfillment.ShippingRate {
 	var result []jsonShippingRate
 	for _, r := range ds.shippingRates {
-		if strings.EqualFold(r.CountryCode, country) || r.CountryCode == "default" {
+		if strings.EqualFold(r.CountryCode, string(country)) || r.CountryCode == "default" {
 			result = append(result, r)
 		}
 	}

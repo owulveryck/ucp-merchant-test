@@ -38,7 +38,7 @@ func (s *Server) handleListProducts(ctx context.Context, request mcp.CallToolReq
 		offset = 0
 	}
 
-	filtered := s.merchant.Filter(ucp.Category(category), brand, query, ucp.NewCountry(userCountry), "", "")
+	filtered := s.merchant.Filter(ucp.Category(category), brand, query, userCountry, "", "")
 
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].Title < filtered[j].Title
@@ -137,7 +137,7 @@ func (s *Server) handleSearchCatalog(ctx context.Context, request mcp.CallToolRe
 		limit = int(l)
 	}
 
-	shipsTo := ucp.NewCountry(userCountry)
+	shipsTo := userCountry
 
 	results := s.merchant.Search(icatalog.SearchParams{
 		Query:   query,
@@ -162,7 +162,7 @@ func (s *Server) handleLookupProduct(ctx context.Context, request mcp.CallToolRe
 		return toolResultFromError(fmt.Errorf("id is required")), nil
 	}
 
-	shipsTo := ucp.NewCountry(userCountry)
+	shipsTo := userCountry
 
 	p := s.merchant.Lookup(id, shipsTo)
 	if p == nil {

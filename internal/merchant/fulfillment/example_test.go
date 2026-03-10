@@ -6,6 +6,7 @@ import (
 
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 type exampleFulfillmentDS struct {
@@ -21,10 +22,10 @@ func (m *exampleFulfillmentDS) SaveDynamicAddress(email string, addr fulfillment
 	return addr.ID
 }
 
-func (m *exampleFulfillmentDS) GetShippingRatesForCountry(country string) []fulfillment.ShippingRate {
+func (m *exampleFulfillmentDS) GetShippingRatesForCountry(country ucp.Country) []fulfillment.ShippingRate {
 	var result []fulfillment.ShippingRate
 	for _, r := range m.shippingRates {
-		if strings.EqualFold(r.CountryCode, country) {
+		if strings.EqualFold(r.CountryCode, string(country)) {
 			result = append(result, r)
 		}
 	}
@@ -43,7 +44,7 @@ func ExampleGenerateShippingOptions() {
 		},
 	}
 
-	options := fulfillment.GenerateShippingOptions("US", nil, ds)
+	options := fulfillment.GenerateShippingOptions(ucp.Country("US"), nil, ds)
 	for _, opt := range options {
 		fmt.Printf("%s: %d\n", opt.Title, opt.Totals[0].Amount)
 	}

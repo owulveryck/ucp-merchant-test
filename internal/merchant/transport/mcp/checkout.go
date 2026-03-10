@@ -7,6 +7,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 func (s *Server) handleCreateCheckout(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -20,7 +21,7 @@ func (s *Server) handleCreateCheckout(ctx context.Context, request mcp.CallToolR
 	}
 
 	req := &model.CheckoutRequest{
-		Currency: "USD",
+		Currency: ucp.Currency("USD"),
 	}
 
 	// Check if creating from a cart

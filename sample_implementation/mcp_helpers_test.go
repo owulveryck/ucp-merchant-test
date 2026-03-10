@@ -7,18 +7,20 @@ import (
 	"net/http"
 	"sync/atomic"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 var mcpIDCounter int64
 
 // injectToken creates a Bearer token directly via the OAuth server and returns the token string.
-func (ts *testServer) injectToken(userID, country string) string {
+func (ts *testServer) injectToken(userID string, country ucp.Country) string {
 	ts.t.Helper()
 	return oauthServer.InjectToken(userID, country, time.Now().Add(1*time.Hour))
 }
 
 // injectExpiredToken creates an already-expired Bearer token and returns the token string.
-func (ts *testServer) injectExpiredToken(userID, country string) string {
+func (ts *testServer) injectExpiredToken(userID string, country ucp.Country) string {
 	ts.t.Helper()
 	return oauthServer.InjectToken(userID, country, time.Now().Add(-1*time.Hour))
 }

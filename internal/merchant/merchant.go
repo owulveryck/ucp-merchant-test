@@ -46,6 +46,7 @@ package merchant
 import (
 	"github.com/owulveryck/ucp-merchant-test/internal/catalog"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // Cataloger exposes read-only product catalog operations.
@@ -89,10 +90,10 @@ type Carter interface {
 // CompleteCheckout validates the approval hash, processes payment, and
 // creates the resulting Order.
 type Checkouter interface {
-	CreateCheckout(ownerID, country string, req *model.CheckoutRequest) (*model.Checkout, string, error)
+	CreateCheckout(ownerID string, country ucp.Country, req *model.CheckoutRequest) (*model.Checkout, string, error)
 	GetCheckout(id, ownerID string) (*model.Checkout, string, error)
 	UpdateCheckout(id, ownerID string, req *model.CheckoutRequest) (*model.Checkout, string, error)
-	CompleteCheckout(id, ownerID, country, approvalHash string, req *model.CheckoutRequest) (*model.Checkout, *model.Order, string, error)
+	CompleteCheckout(id, ownerID string, country ucp.Country, approvalHash string, req *model.CheckoutRequest) (*model.Checkout, *model.Order, string, error)
 	CancelCheckout(id, ownerID string) (*model.Checkout, string, error)
 }
 

@@ -173,7 +173,7 @@ func (m *simpleMerchant) CancelCart(id, ownerID string) (*model.Cart, error) {
 // CreateCheckout creates a new checkout session per the UCP Shopping Checkout
 // capability (dev.ucp.shopping.checkout). Returns the checkout, its hash, and
 // any error.
-func (m *simpleMerchant) CreateCheckout(ownerID, country string, req *model.CheckoutRequest) (*model.Checkout, string, error) {
+func (m *simpleMerchant) CreateCheckout(ownerID string, country ucp.Country, req *model.CheckoutRequest) (*model.Checkout, string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -193,7 +193,7 @@ func (m *simpleMerchant) CreateCheckout(ownerID, country string, req *model.Chec
 	if country != "" {
 		for _, li := range lineItems {
 			p := m.catalog.Find(li.Item.ID)
-			if p != nil && len(p.AvailableCountries) > 0 && !ucp.ContainsCountry(p.AvailableCountries, ucp.NewCountry(country)) {
+			if p != nil && len(p.AvailableCountries) > 0 && !ucp.ContainsCountry(p.AvailableCountries, country) {
 				return nil, "", fmt.Errorf("product %s (%s) is not available in %s: %w", p.ID, p.Title, country, merchant.ErrBadRequest)
 			}
 		}
@@ -308,7 +308,7 @@ func (m *simpleMerchant) UpdateCheckout(id, ownerID string, req *model.CheckoutR
 // CompleteCheckout completes a checkout session. If approvalHash is non-empty,
 // it is validated against the current checkout state (MCP flow). Returns the
 // completed checkout and the created order.
-func (m *simpleMerchant) CompleteCheckout(id, ownerID, country, approvalHash string, req *model.CheckoutRequest) (*model.Checkout, *model.Order, string, error) {
+func (m *simpleMerchant) CompleteCheckout(id, ownerID string, country ucp.Country, approvalHash string, req *model.CheckoutRequest) (*model.Checkout, *model.Order, string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -339,7 +339,7 @@ func (m *simpleMerchant) CompleteCheckout(id, ownerID, country, approvalHash str
 	if effectiveCountry != "" {
 		for _, li := range co.LineItems {
 			p := m.catalog.Find(li.Item.ID)
-			if p != nil && len(p.AvailableCountries) > 0 && !ucp.ContainsCountry(p.AvailableCountries, ucp.NewCountry(effectiveCountry)) {
+			if p != nil && len(p.AvailableCountries) > 0 && !ucp.ContainsCountry(p.AvailableCountries, effectiveCountry) {
 				return nil, nil, "", fmt.Errorf("product %s (%s) is not available for delivery to %s: %w", p.ID, p.Title, effectiveCountry, merchant.ErrBadRequest)
 			}
 		}
@@ -590,7 +590,7 @@ func computeCheckoutHashImpl(co *model.Checkout) string {
 	type hashData struct {
 		ID        string         `json:"id"`
 		LineItems []hashLineItem `json:"line_items"`
-		Currency  string         `json:"currency"`
+		Currency  ucp.Currency   `json:"currency"`
 		Totals    []model.Total  `json:"totals"`
 	}
 	var items []hashLineItem

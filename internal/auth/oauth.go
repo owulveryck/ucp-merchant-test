@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 const (
@@ -26,7 +28,7 @@ const (
 type authCode struct {
 	Code          string
 	UserID        string
-	Country       string
+	Country       ucp.Country
 	CodeChallenge string
 	RedirectURI   string
 	ExpiresAt     time.Time
@@ -35,14 +37,14 @@ type authCode struct {
 type tokenEntry struct {
 	Token     string
 	UserID    string
-	Country   string
+	Country   ucp.Country
 	ExpiresAt time.Time
 }
 
 type refreshEntry struct {
 	Token   string
 	UserID  string
-	Country string
+	Country ucp.Country
 	Created time.Time
 }
 
@@ -152,7 +154,7 @@ func (s *OAuthServer) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	s.authCodes[code] = &authCode{
 		Code:          code,
 		UserID:        username,
-		Country:       country,
+		Country:       ucp.NewCountry(country),
 		CodeChallenge: codeChallengeForm,
 		RedirectURI:   redirectURIForm,
 		ExpiresAt:     time.Now().Add(AuthCodeDuration),
@@ -354,7 +356,7 @@ func (s *OAuthServer) ExtractUserFromToken(r *http.Request) string {
 }
 
 // ExtractUserCountry extracts the user's country from a Bearer token.
-func (s *OAuthServer) ExtractUserCountry(r *http.Request) string {
+func (s *OAuthServer) ExtractUserCountry(r *http.Request) ucp.Country {
 	auth := r.Header.Get("Authorization")
 	if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
 		return ""
@@ -393,7 +395,7 @@ func (s *OAuthServer) IsTokenExpired(r *http.Request) bool {
 }
 
 // InjectToken creates a token directly (for testing).
-func (s *OAuthServer) InjectToken(userID, country string, expiresAt time.Time) string {
+func (s *OAuthServer) InjectToken(userID string, country ucp.Country, expiresAt time.Time) string {
 	token := randomHex(16)
 	s.mu.Lock()
 	s.accessTokens[token] = &tokenEntry{

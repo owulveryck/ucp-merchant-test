@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 func TestNew(t *testing.T) {
@@ -104,7 +105,7 @@ func TestGetShippingRatesForCountry(t *testing.T) {
 		{ID: "r3", CountryCode: "default", ServiceLevel: "express", Price: 1500, Title: "Express Default"},
 	}
 
-	rates := ds.GetShippingRatesForCountry("US")
+	rates := ds.GetShippingRatesForCountry(ucp.Country("US"))
 	if len(rates) != 2 {
 		t.Fatalf("expected 2 rates (US standard + default express), got %d", len(rates))
 	}

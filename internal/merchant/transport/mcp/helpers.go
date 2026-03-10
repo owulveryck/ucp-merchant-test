@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 func userIDFromContext(ctx context.Context) string {
@@ -11,8 +12,8 @@ func userIDFromContext(ctx context.Context) string {
 	return v
 }
 
-func userCountryFromContext(ctx context.Context) string {
-	v, _ := ctx.Value(ctxUserCountry).(string)
+func userCountryFromContext(ctx context.Context) ucp.Country {
+	v, _ := ctx.Value(ctxUserCountry).(ucp.Country)
 	return v
 }
 

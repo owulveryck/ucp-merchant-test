@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // Address represents a known shipping destination from the merchant's address
@@ -18,7 +19,7 @@ type Address struct {
 	City          string
 	State         string
 	PostalCode    string
-	Country       string
+	Country       ucp.Country
 }
 
 // ShippingRate represents a fulfillment cost for a specific country and service
@@ -69,7 +70,7 @@ type FulfillmentDataSource interface {
 	SaveDynamicAddress(email string, addr Address) string
 	// GetShippingRatesForCountry returns available shipping rates (service
 	// levels and prices) for the given ISO country code.
-	GetShippingRatesForCountry(country string) []ShippingRate
+	GetShippingRatesForCountry(country ucp.Country) []ShippingRate
 	// GetPromotions returns all active promotion rules (e.g., free shipping
 	// thresholds and eligible item lists).
 	GetPromotions() []Promotion
@@ -83,14 +84,14 @@ type FulfillmentDataSource interface {
 //
 // Returns the first matching address, or nil if no match is found. All string
 // comparisons use case-insensitive folding per UCP conventions.
-func MatchExistingAddress(addrs []Address, street, locality, region, postal, country string) *Address {
+func MatchExistingAddress(addrs []Address, street, locality, region, postal string, country ucp.Country) *Address {
 	for i := range addrs {
 		a := &addrs[i]
 		if strings.EqualFold(a.StreetAddress, street) &&
 			strings.EqualFold(a.City, locality) &&
 			strings.EqualFold(a.State, region) &&
 			strings.EqualFold(a.PostalCode, postal) &&
-			strings.EqualFold(a.Country, country) {
+			strings.EqualFold(string(a.Country), string(country)) {
 			return a
 		}
 	}
@@ -209,7 +210,7 @@ func ParseFulfillment(
 				}
 			}
 
-			destCountry := ""
+			var destCountry ucp.Country
 			for _, d := range method.Destinations {
 				if d.ID == mData.SelectedDestinationID {
 					destCountry = d.AddressCountry
@@ -372,7 +373,7 @@ func ParseDestination(
 //
 // Per UCP rendering guidelines, title + totals is sufficient for a platform to
 // render any fulfillment option without understanding the specific method type.
-func GenerateShippingOptions(country string, co *model.Checkout, ds FulfillmentDataSource) []model.FulfillmentOption {
+func GenerateShippingOptions(country ucp.Country, co *model.Checkout, ds FulfillmentDataSource) []model.FulfillmentOption {
 	rates := ds.GetShippingRatesForCountry(country)
 	var options []model.FulfillmentOption
 
