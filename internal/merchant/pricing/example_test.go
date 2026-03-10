@@ -6,6 +6,7 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/internal/catalog"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 type exampleCatalog struct {
@@ -21,7 +22,7 @@ func (c *exampleCatalog) Find(id string) *catalog.Product {
 	return nil
 }
 
-func (c *exampleCatalog) Filter(category, brand, query, usageType, country, currency, language string) []catalog.Product {
+func (c *exampleCatalog) Filter(category ucp.Category, brand, query, usageType string, country ucp.Country, currency ucp.Currency, language ucp.Language) []catalog.Product {
 	return nil
 }
 
@@ -29,7 +30,7 @@ func (c *exampleCatalog) CategoryCount() []catalog.CategoryStat {
 	return nil
 }
 
-func (c *exampleCatalog) Lookup(id string, shipsTo string) *catalog.Product {
+func (c *exampleCatalog) Lookup(id string, shipsTo ucp.Country) *catalog.Product {
 	return c.Find(id)
 }
 

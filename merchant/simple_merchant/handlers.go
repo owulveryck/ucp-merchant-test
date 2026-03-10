@@ -12,6 +12,7 @@ import (
 	mpayment "github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // In-memory MCP-specific state
@@ -69,7 +70,7 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 		offset = 0
 	}
 
-	filtered := catalogInstance.Filter(category, brand, query, usageType, userCountry, "", "")
+	filtered := catalogInstance.Filter(ucp.Category(category), brand, query, usageType, ucp.NewCountry(userCountry), "", "")
 
 	sort.Slice(filtered, func(i, j int) bool {
 		if filtered[i].Rank != filtered[j].Rank {
@@ -92,16 +93,16 @@ func handleListProducts(args map[string]interface{}) (interface{}, error) {
 	page := filtered[offset:end]
 
 	type productInfo struct {
-		ID                 string   `json:"id"`
-		Title              string   `json:"title"`
-		Category           string   `json:"category"`
-		Brand              string   `json:"brand"`
-		Price              string   `json:"price"`
-		Rank               int      `json:"rank"`
-		InStock            bool     `json:"in_stock"`
-		ImageURL           string   `json:"image_url"`
-		UsageType          string   `json:"usage_type,omitempty"`
-		AvailableCountries []string `json:"available_countries,omitempty"`
+		ID                 string        `json:"id"`
+		Title              string        `json:"title"`
+		Category           ucp.Category  `json:"category"`
+		Brand              string        `json:"brand"`
+		Price              string        `json:"price"`
+		Rank               int           `json:"rank"`
+		InStock            bool          `json:"in_stock"`
+		ImageURL           string        `json:"image_url"`
+		UsageType          string        `json:"usage_type,omitempty"`
+		AvailableCountries []ucp.Country `json:"available_countries,omitempty"`
 	}
 	products := make([]productInfo, 0, len(page))
 	for _, p := range page {
@@ -162,7 +163,7 @@ func handleGetProductDetails(args map[string]interface{}) (interface{}, error) {
 	if len(p.AvailableCountries) > 0 {
 		result["available_countries"] = p.AvailableCountries
 		if userCountry != "" {
-			result["available_in_your_country"] = icatalog.ContainsCountry(p.AvailableCountries, userCountry)
+			result["available_in_your_country"] = ucp.ContainsCountry(p.AvailableCountries, ucp.NewCountry(userCountry))
 		}
 	}
 	storeMu.Unlock()
@@ -194,7 +195,7 @@ func handleSearchCatalog(args map[string]interface{}) (interface{}, error) {
 	if afs, ok := args["available_for_sale"].(bool); ok {
 		availableForSale = afs
 	}
-	shipsTo := extractUserCountryFromArgs(args)
+	shipsTo := ucp.NewCountry(extractUserCountryFromArgs(args))
 
 	results := catalogInstance.Search(icatalog.SearchParams{
 		Query:            query,
@@ -218,7 +219,7 @@ func handleLookupProduct(args map[string]interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("id is required")
 	}
 
-	shipsTo := extractUserCountryFromArgs(args)
+	shipsTo := ucp.NewCountry(extractUserCountryFromArgs(args))
 
 	p := catalogInstance.Lookup(id, shipsTo)
 	if p == nil {
@@ -368,7 +369,7 @@ func handleCreateCheckout(args map[string]interface{}) (interface{}, error) {
 	if userCountry != "" {
 		for _, li := range lineItems {
 			p := catalogInstance.Find(li.Item.ID)
-			if p != nil && len(p.AvailableCountries) > 0 && !icatalog.ContainsCountry(p.AvailableCountries, userCountry) {
+			if p != nil && len(p.AvailableCountries) > 0 && !ucp.ContainsCountry(p.AvailableCountries, ucp.NewCountry(userCountry)) {
 				return nil, fmt.Errorf("product %s (%s) is not available in %s", p.ID, p.Title, userCountry)
 			}
 		}
@@ -513,7 +514,7 @@ func handleCompleteCheckout(args map[string]interface{}) (interface{}, error) {
 	if country != "" {
 		for _, li := range co.LineItems {
 			p := catalogInstance.Find(li.Item.ID)
-			if p != nil && len(p.AvailableCountries) > 0 && !icatalog.ContainsCountry(p.AvailableCountries, country) {
+			if p != nil && len(p.AvailableCountries) > 0 && !ucp.ContainsCountry(p.AvailableCountries, ucp.NewCountry(country)) {
 				return nil, fmt.Errorf("product %s (%s) is not available for delivery to %s", p.ID, p.Title, country)
 			}
 		}

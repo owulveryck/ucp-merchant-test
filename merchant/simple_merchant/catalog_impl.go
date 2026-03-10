@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 type catalogStore struct {
@@ -24,10 +25,10 @@ func (c *catalogStore) Find(id string) *icatalog.Product {
 	return nil
 }
 
-func (c *catalogStore) Filter(category, brand, query, usageType, country, currency, language string) []icatalog.Product {
+func (c *catalogStore) Filter(category ucp.Category, brand, query, usageType string, country ucp.Country, currency ucp.Currency, language ucp.Language) []icatalog.Product {
 	var result []icatalog.Product
 	for _, p := range c.Products {
-		if category != "" && !strings.EqualFold(p.Category, category) {
+		if category != "" && !p.Category.Matches(category) {
 			continue
 		}
 		if brand != "" && !strings.EqualFold(p.Brand, brand) {
@@ -40,7 +41,7 @@ func (c *catalogStore) Filter(category, brand, query, usageType, country, curren
 			continue
 		}
 		if country != "" && len(p.AvailableCountries) > 0 {
-			if !icatalog.ContainsCountry(p.AvailableCountries, country) {
+			if !ucp.ContainsCountry(p.AvailableCountries, country) {
 				continue
 			}
 		}
@@ -50,8 +51,8 @@ func (c *catalogStore) Filter(category, brand, query, usageType, country, curren
 }
 
 func (c *catalogStore) CategoryCount() []icatalog.CategoryStat {
-	counts := map[string]int{}
-	order := []string{}
+	counts := map[ucp.Category]int{}
+	order := []ucp.Category{}
 	for _, p := range c.Products {
 		if _, seen := counts[p.Category]; !seen {
 			order = append(order, p.Category)
@@ -68,13 +69,13 @@ func (c *catalogStore) CategoryCount() []icatalog.CategoryStat {
 	return result
 }
 
-func (c *catalogStore) Lookup(id string, shipsTo string) *icatalog.Product {
+func (c *catalogStore) Lookup(id string, shipsTo ucp.Country) *icatalog.Product {
 	p := c.Find(id)
 	if p == nil {
 		return nil
 	}
 	if shipsTo != "" && len(p.AvailableCountries) > 0 {
-		if !icatalog.ContainsCountry(p.AvailableCountries, shipsTo) {
+		if !ucp.ContainsCountry(p.AvailableCountries, shipsTo) {
 			return nil
 		}
 	}
@@ -96,7 +97,7 @@ func (c *catalogStore) Search(params icatalog.SearchParams) []icatalog.SearchRes
 		if query != "" {
 			titleMatch := strings.Contains(strings.ToLower(p.Title), query)
 			descMatch := strings.Contains(strings.ToLower(p.Description), query)
-			catMatch := strings.Contains(strings.ToLower(p.Category), query)
+			catMatch := strings.Contains(strings.ToLower(string(p.Category)), query)
 			if !titleMatch && !descMatch && !catMatch {
 				continue
 			}
@@ -111,7 +112,7 @@ func (c *catalogStore) Search(params icatalog.SearchParams) []icatalog.SearchRes
 			continue
 		}
 		if params.ShipsTo != "" && len(p.AvailableCountries) > 0 {
-			if !icatalog.ContainsCountry(p.AvailableCountries, params.ShipsTo) {
+			if !ucp.ContainsCountry(p.AvailableCountries, params.ShipsTo) {
 				continue
 			}
 		}

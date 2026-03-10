@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/catalog"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 func ExampleContainsCountry() {
-	countries := []string{"US", "CA", "GB"}
+	countries := []ucp.Country{ucp.NewCountry("US"), ucp.NewCountry("CA"), ucp.NewCountry("GB")}
 
-	fmt.Println(catalog.ContainsCountry(countries, "us"))
-	fmt.Println(catalog.ContainsCountry(countries, "CA"))
-	fmt.Println(catalog.ContainsCountry(countries, "FR"))
+	fmt.Println(ucp.ContainsCountry(countries, ucp.NewCountry("us")))
+	fmt.Println(ucp.ContainsCountry(countries, ucp.NewCountry("CA")))
+	fmt.Println(ucp.ContainsCountry(countries, ucp.NewCountry("FR")))
 	// Output:
 	// true
 	// true

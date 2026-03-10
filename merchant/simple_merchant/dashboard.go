@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
+	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
 )
 
 // EventHub broadcasts events to SSE subscribers.
@@ -163,10 +164,14 @@ func handleAPIAddProduct(w http.ResponseWriter, r *http.Request) {
 
 	storeMu.Lock()
 	productSeq++
+	countries := make([]ucp.Country, len(input.AvailableCountries))
+	for i, c := range input.AvailableCountries {
+		countries[i] = ucp.NewCountry(c)
+	}
 	p := Product{
 		ID:                 fmt.Sprintf("SKU-%03d", productSeq),
 		Title:              input.Title,
-		Category:           input.Category,
+		Category:           ucp.Category(input.Category),
 		Brand:              input.Brand,
 		Price:              input.Price,
 		Quantity:           input.Quantity,
@@ -174,7 +179,7 @@ func handleAPIAddProduct(w http.ResponseWriter, r *http.Request) {
 		ImageURL:           input.ImageURL,
 		Description:        input.Description,
 		UsageType:          input.UsageType,
-		AvailableCountries: input.AvailableCountries,
+		AvailableCountries: countries,
 	}
 	catalog = append(catalog, p)
 	storeMu.Unlock()
@@ -228,7 +233,7 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		found.Title = input.Title
 	}
 	if input.Category != "" {
-		found.Category = input.Category
+		found.Category = ucp.Category(input.Category)
 	}
 	if input.Brand != "" {
 		found.Brand = input.Brand
@@ -252,7 +257,11 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		found.UsageType = input.UsageType
 	}
 	if input.AvailableCountries != nil {
-		found.AvailableCountries = input.AvailableCountries
+		c := make([]ucp.Country, len(input.AvailableCountries))
+		for i, v := range input.AvailableCountries {
+			c[i] = ucp.NewCountry(v)
+		}
+		found.AvailableCountries = c
 	}
 	updated := *found
 	storeMu.Unlock()
