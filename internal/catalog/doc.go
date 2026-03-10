@@ -34,7 +34,7 @@
 //   - CategoryCount: returns a list of CategoryStat with category names and product counts.
 //
 // Concrete implementations of the Catalog interface live in merchant packages
-// (e.g., merchant/simple_merchant).
+// (e.g., sample_implementation).
 //
 // # Query Semantics
 //

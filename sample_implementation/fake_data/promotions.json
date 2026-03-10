@@ -1,0 +1,18 @@
+[
+  {
+    "id": "promo_1",
+    "type": "free_shipping",
+    "min_subtotal": 15000,
+    "eligible_item_ids": [],
+    "description": "Free shipping on orders over $150"
+  },
+  {
+    "id": "promo_2",
+    "type": "free_shipping",
+    "min_subtotal": 0,
+    "eligible_item_ids": [
+      "gaming_monitor_samsung"
+    ],
+    "description": "Free shipping on Samsung gaming monitor"
+  }
+]

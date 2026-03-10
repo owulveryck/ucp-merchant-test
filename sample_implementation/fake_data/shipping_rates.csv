@@ -1,0 +1,4 @@
+id,country_code,service_level,price,title
+std-ship,default,standard,500,Standard Shipping (5-7 days)
+exp-ship-us,US,express,1500,Express Shipping US (2-3 days)
+exp-ship-intl,default,express,2500,Express International (5-10 days)

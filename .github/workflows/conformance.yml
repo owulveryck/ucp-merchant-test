@@ -44,13 +44,13 @@ jobs:
         run: uv sync
 
       - name: Build merchant server
-        run: go build -o merchant-server ./merchant/simple_merchant
+        run: go build -o merchant-server ./sample_implementation
 
       - name: Start merchant server
         run: |
           ./merchant-server \
             --port 8182 \
-            --data-dir ./merchant/simple_merchant/testdata/flower_shop \
+            --data-dir ./sample_implementation/testdata/flower_shop \
             --simulation-secret super-secret-sim-key &
           # Wait for server to be ready
           for i in $(seq 1 30); do

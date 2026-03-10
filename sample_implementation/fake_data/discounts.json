@@ -1,0 +1,20 @@
+[
+  {
+    "code": "SAVE10",
+    "type": "percentage",
+    "value": 10,
+    "description": "10% off your order"
+  },
+  {
+    "code": "WELCOME25",
+    "type": "percentage",
+    "value": 25,
+    "description": "25% off for new customers"
+  },
+  {
+    "code": "FLAT1000",
+    "type": "fixed_amount",
+    "value": 1000,
+    "description": "$10 off your order"
+  }
+]

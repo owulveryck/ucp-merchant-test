@@ -1,0 +1,18 @@
+{
+  "currency": "USD",
+  "items": [
+    {
+      "id": "foldsack_backpack",
+      "title": "Fjallraven - Foldsack No. 1 Backpack",
+      "price": 10995
+    }
+  ],
+  "out_of_stock_item": {
+    "id": "pierced_owl_earrings",
+    "title": "Pierced Owl Rose Gold Earrings"
+  },
+  "non_existent_item": {
+    "id": "rainbow_unicorn",
+    "title": "Rainbow Unicorn"
+  }
+}

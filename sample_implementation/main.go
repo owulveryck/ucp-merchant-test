@@ -21,9 +21,9 @@ import (
 
 	"github.com/owulveryck/ucp-merchant-test/internal/auth"
 	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/mcp"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/rest"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
-	"github.com/owulveryck/ucp-merchant-test/merchant/transport/mcp"
-	"github.com/owulveryck/ucp-merchant-test/merchant/transport/rest"
 )
 
 // Merchant identity

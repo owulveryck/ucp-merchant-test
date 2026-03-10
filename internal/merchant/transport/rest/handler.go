@@ -13,7 +13,7 @@ import (
 
 	"github.com/owulveryck/ucp-merchant-test/internal/auth"
 	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
-	"github.com/owulveryck/ucp-merchant-test/merchant"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant"
 )
 
 // Server is the REST transport for a UCP-compliant merchant.

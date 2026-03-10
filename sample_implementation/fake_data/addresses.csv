@@ -1,0 +1,5 @@
+id,customer_id,street_address,city,state,postal_code,country
+addr_1,cust_1,742 Evergreen Terrace,Springfield,IL,62704,US
+addr_2,cust_1,15 Oak Lane,Portland,OR,97201,US
+addr_3,cust_2,221B Baker Street,London,,W1U 6RS,GB
+addr_4,cust_3,10 Rue de Rivoli,Paris,,75001,FR

@@ -8,7 +8,7 @@ A Go-based merchant server implementing the [Universal Commerce Protocol (UCP)](
 ## Quick Start
 
 ```bash
-go run ./merchant/simple_merchant --port 8182 \
+go run ./sample_implementation --port 8182 \
   --data-dir path/to/test_data/flower_shop \
   --simulation-secret super-secret-sim-key
 ```
@@ -62,7 +62,7 @@ The `--data-dir` flag points to a directory containing CSV files for the flower 
 
 ```bash
 # Start the merchant
-go run ./merchant/simple_merchant --port 8182 \
+go run ./sample_implementation --port 8182 \
   --data-dir /path/to/conformance/test_data/flower_shop \
   --simulation-secret super-secret-sim-key
 
@@ -118,39 +118,39 @@ All 60 tests across 13 test files should pass:
 
 ```bash
 # Self-signed certificate
-go run ./merchant/simple_merchant --tls
+go run ./sample_implementation --tls
 
 # With mkcert (trusted local cert)
 mkcert localhost 127.0.0.1
-go run ./merchant/simple_merchant --tls --cert localhost+1.pem --key localhost+1-key.pem
+go run ./sample_implementation --tls --cert localhost+1.pem --key localhost+1-key.pem
 ```
 
 ## Project Structure
 
 ```
-merchant/simple_merchant/   # Merchant server binary
-  main.go                   # Server setup, routes, UCP discovery, MCP handler
-  rest.go                   # REST API handlers for checkout sessions and orders
-  handlers.go               # MCP tool handlers (JSON-RPC)
-  store.go                  # In-memory stores shared by REST and MCP
-  data.go                   # CSV data loading for flower shop dataset
-  catalog.go                # Product catalog interface
-  catalog_impl.go           # Catalog implementation (JSON DB, random generation)
-  dashboard.go              # SSE event broadcasting and web dashboard
+sample_implementation/          # UCP merchant server binary
+  main.go                       # Server setup, routes, UCP discovery
+  merchant_impl.go              # merchant.Merchant implementation
+  data.go                       # CSV/JSON data loading
+  catalog.go / catalog_impl.go  # Product catalog
+  dashboard.go                  # SSE dashboard
 
-internal/                   # Shared library packages
-  model/                    # UCP data models (checkout, order, fulfillment, payment, etc.)
-  auth/                     # OAuth2 server for identity linking
-  catalog/                  # Catalog interface and utilities
-  data/                     # CSV data structures
-  idempotency/              # Idempotency key tracking
-  webhook/                  # Webhook event dispatch
-  event/                    # Event hub for SSE broadcasting
-  store/                    # Store interface
-  config/                   # Configuration types
-  merchant/
-    discount/               # Discount code application logic
-    fulfillment/            # Fulfillment parsing and shipping options
-    payment/                # Payment and buyer parsing
-    pricing/                # Line item and totals calculation
+internal/
+  merchant/                     # Merchant interface and transport adapters
+    merchant.go                 # Merchant interface (Cataloger, Carter, Checkouter, Orderer)
+    errors.go                   # Sentinel errors for transport mapping
+    transport/rest/             # UCP REST transport (HTTP handlers)
+    transport/mcp/              # UCP MCP transport (JSON-RPC 2.0 handlers)
+    discount/                   # Discount code application logic
+    fulfillment/                # Fulfillment parsing and shipping options
+    payment/                    # Payment and buyer parsing
+    pricing/                    # Line item and totals calculation
+  model/                        # UCP data models
+  auth/                         # OAuth2 server
+  catalog/                      # Catalog interface
+  idempotency/                  # Idempotency key tracking
+  webhook/                      # Webhook dispatch
+  event/                        # SSE event hub
+  store/                        # Store interface
+  config/                       # Configuration types
 ```

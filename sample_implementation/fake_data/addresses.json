@@ -1,0 +1,38 @@
+[
+  {
+    "id": "addr_1",
+    "customer_id": "cust_1",
+    "street_address": "742 Evergreen Terrace",
+    "city": "Springfield",
+    "state": "IL",
+    "postal_code": "62704",
+    "country": "US"
+  },
+  {
+    "id": "addr_2",
+    "customer_id": "cust_1",
+    "street_address": "15 Oak Lane",
+    "city": "Portland",
+    "state": "OR",
+    "postal_code": "97201",
+    "country": "US"
+  },
+  {
+    "id": "addr_3",
+    "customer_id": "cust_2",
+    "street_address": "221B Baker Street",
+    "city": "London",
+    "state": "",
+    "postal_code": "W1U 6RS",
+    "country": "GB"
+  },
+  {
+    "id": "addr_4",
+    "customer_id": "cust_3",
+    "street_address": "10 Rue de Rivoli",
+    "city": "Paris",
+    "state": "",
+    "postal_code": "75001",
+    "country": "FR"
+  }
+]

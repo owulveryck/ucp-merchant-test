@@ -1,0 +1,142 @@
+[
+  {
+    "id": "foldsack_backpack",
+    "title": "Fjallraven - Foldsack No. 1 Backpack",
+    "price": 10995,
+    "image_url": "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_t.png",
+    "quantity": 120
+  },
+  {
+    "id": "premium_tshirts",
+    "title": "Mens Casual Premium Slim Fit T-Shirts",
+    "price": 2230,
+    "image_url": "https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_t.png",
+    "quantity": 200
+  },
+  {
+    "id": "cotton_jacket",
+    "title": "Mens Cotton Jacket",
+    "price": 5599,
+    "image_url": "https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_t.png",
+    "quantity": 75
+  },
+  {
+    "id": "casual_slim_fit",
+    "title": "Mens Casual Slim Fit",
+    "price": 1599,
+    "image_url": "https://fakestoreapi.com/img/71YXzeOuslL._AC_UY879_t.png",
+    "quantity": 150
+  },
+  {
+    "id": "naga_bracelet",
+    "title": "John Hardy Naga Gold & Silver Dragon Bracelet",
+    "price": 69500,
+    "image_url": "https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png",
+    "quantity": 15
+  },
+  {
+    "id": "gold_micropave",
+    "title": "Solid Gold Petite Micropave",
+    "price": 16800,
+    "image_url": "https://fakestoreapi.com/img/61sbMiUnoGL._AC_UL640_QL65_ML3_t.png",
+    "quantity": 30
+  },
+  {
+    "id": "white_gold_ring",
+    "title": "White Gold Plated Princess",
+    "price": 999,
+    "image_url": "https://fakestoreapi.com/img/71YAIFU48IL._AC_UL640_QL65_ML3_t.png",
+    "quantity": 100
+  },
+  {
+    "id": "pierced_owl_earrings",
+    "title": "Pierced Owl Rose Gold Earrings",
+    "price": 1099,
+    "image_url": "https://fakestoreapi.com/img/51UDEzMJVpL._AC_UL640_QL65_ML3_t.png",
+    "quantity": 0
+  },
+  {
+    "id": "wd_2tb_hdd",
+    "title": "WD 2TB Elements Portable External Hard Drive",
+    "price": 6400,
+    "image_url": "https://fakestoreapi.com/img/61IBBVJvSDL._AC_SY879_t.png",
+    "quantity": 80
+  },
+  {
+    "id": "sandisk_ssd_1tb",
+    "title": "SanDisk SSD PLUS 1TB Internal SSD",
+    "price": 10900,
+    "image_url": "https://fakestoreapi.com/img/61U7T1koQqL._AC_SX679_t.png",
+    "quantity": 60
+  },
+  {
+    "id": "silicon_power_ssd",
+    "title": "Silicon Power 256GB SSD",
+    "price": 10900,
+    "image_url": "https://fakestoreapi.com/img/71kWymZ+c+L._AC_SX679_t.png",
+    "quantity": 90
+  },
+  {
+    "id": "wd_4tb_gaming",
+    "title": "WD 4TB Gaming Drive",
+    "price": 11400,
+    "image_url": "https://fakestoreapi.com/img/61mtL65D4cL._AC_SX679_t.png",
+    "quantity": 45
+  },
+  {
+    "id": "acer_monitor",
+    "title": "Acer SB220Q 21.5 inches Full HD Monitor",
+    "price": 59900,
+    "image_url": "https://fakestoreapi.com/img/81QpkIctqPL._AC_SX679_t.png",
+    "quantity": 25
+  },
+  {
+    "id": "gaming_monitor_samsung",
+    "title": "Samsung 49-Inch Curved Gaming Monitor",
+    "price": 99999,
+    "image_url": "https://fakestoreapi.com/img/81Zt42ioCgL._AC_SX679_t.png",
+    "quantity": 10
+  },
+  {
+    "id": "snowboard_jacket",
+    "title": "BIYLACLESEN Women's 3-in-1 Snowboard Jacket",
+    "price": 5699,
+    "image_url": "https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png",
+    "quantity": 55
+  },
+  {
+    "id": "moto_jacket",
+    "title": "Lock and Love Women's Moto Biker Jacket",
+    "price": 2995,
+    "image_url": "https://fakestoreapi.com/img/81XH0e8fefL._AC_UY879_t.png",
+    "quantity": 70
+  },
+  {
+    "id": "rain_jacket",
+    "title": "Rain Jacket Women Windbreaker",
+    "price": 3999,
+    "image_url": "https://fakestoreapi.com/img/71HblAHs5xL._AC_UY879_-2t.png",
+    "quantity": 85
+  },
+  {
+    "id": "boat_neck_top",
+    "title": "MBJ Women's Solid Short Sleeve Boat Neck V",
+    "price": 985,
+    "image_url": "https://fakestoreapi.com/img/71z3kpMAYsL._AC_UY879_t.png",
+    "quantity": 180
+  },
+  {
+    "id": "moisture_shirt",
+    "title": "Opna Women's Short Sleeve Moisture",
+    "price": 795,
+    "image_url": "https://fakestoreapi.com/img/51eg55uWmdL._AC_UX679_t.png",
+    "quantity": 160
+  },
+  {
+    "id": "danvouy_tshirt",
+    "title": "DANVOUY Womens T Shirt Casual Cotton Short",
+    "price": 1299,
+    "image_url": "https://fakestoreapi.com/img/61pHAEJ4NML._AC_UX679_t.png",
+    "quantity": 140
+  }
+]

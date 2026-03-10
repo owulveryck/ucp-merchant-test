@@ -11,13 +11,13 @@ import (
 	"sync"
 
 	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
 	mfulfillment "github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
 	mpayment "github.com/owulveryck/ucp-merchant-test/internal/merchant/payment"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/pricing"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
-	"github.com/owulveryck/ucp-merchant-test/merchant"
 )
 
 // simpleMerchant is the concrete merchant.Merchant implementation used by

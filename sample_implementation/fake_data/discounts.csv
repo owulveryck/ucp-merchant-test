@@ -1,0 +1,4 @@
+code,type,value,description
+SAVE10,percentage,10,10% off your order
+WELCOME25,percentage,25,25% off for new customers
+FLAT1000,fixed_amount,1000,$10 off your order

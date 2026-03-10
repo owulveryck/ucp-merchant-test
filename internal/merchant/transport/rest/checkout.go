@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
 	"github.com/owulveryck/ucp-merchant-test/internal/webhook"
-	"github.com/owulveryck/ucp-merchant-test/merchant"
 )
 
 // handleCheckoutSessions is the main router for /shopping-api/checkout-sessions.

@@ -17,8 +17,8 @@ import (
 	"sync"
 
 	"github.com/owulveryck/ucp-merchant-test/internal/auth"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant"
 	"github.com/owulveryck/ucp-merchant-test/internal/model"
-	"github.com/owulveryck/ucp-merchant-test/merchant"
 )
 
 // Server is the MCP (Model Context Protocol) transport for a

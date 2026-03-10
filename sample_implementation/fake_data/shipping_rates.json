@@ -1,0 +1,23 @@
+[
+  {
+    "id": "std-ship",
+    "country_code": "default",
+    "service_level": "standard",
+    "price": 500,
+    "title": "Standard Shipping (5-7 days)"
+  },
+  {
+    "id": "exp-ship-us",
+    "country_code": "US",
+    "service_level": "express",
+    "price": 1500,
+    "title": "Express Shipping US (2-3 days)"
+  },
+  {
+    "id": "exp-ship-intl",
+    "country_code": "default",
+    "service_level": "express",
+    "price": 2500,
+    "title": "Express International (5-10 days)"
+  }
+]
