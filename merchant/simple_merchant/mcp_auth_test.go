@@ -89,7 +89,7 @@ func TestMCP_UserScopingCheckout(t *testing.T) {
 	// User B cannot update User A's checkout
 	_, isErr = ts.mcpToolCall("update_checkout", map[string]interface{}{
 		"id":       checkoutID,
-		"checkout": map[string]interface{}{"shipping_option_id": "standard"},
+		"checkout": map[string]interface{}{"buyer": map[string]interface{}{"name": "Test"}},
 	}, tokenB)
 	if !isErr {
 		t.Error("expected error when User B updates User A's checkout")

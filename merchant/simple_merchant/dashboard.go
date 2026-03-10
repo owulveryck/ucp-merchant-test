@@ -73,21 +73,7 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send initial snapshot
-	storeMu.Lock()
-	productsCopy := make([]Product, len(catalog))
-	copy(productsCopy, catalog)
-	snapshot := map[string]interface{}{
-		"type":           "snapshot",
-		"cart_count":     len(carts),
-		"checkout_count": countActiveCheckouts(),
-		"order_count":    len(orders),
-		"product_count":  len(catalog),
-		"products":       productsCopy,
-		"carts":          mapValues(carts),
-		"checkouts":      mapValues(checkouts),
-		"orders":         mapValues(orders),
-	}
-	storeMu.Unlock()
+	snapshot := getSSESnapshot()
 
 	data, _ := json.Marshal(snapshot)
 	fmt.Fprintf(w, "data: %s\n\n", data)
@@ -129,10 +115,10 @@ func handleAPIProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAPIListProducts(w http.ResponseWriter, r *http.Request) {
-	storeMu.Lock()
+	catalogMu.Lock()
 	products := make([]Product, len(catalog))
 	copy(products, catalog)
-	storeMu.Unlock()
+	catalogMu.Unlock()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(products)
 }
@@ -144,10 +130,8 @@ func handleAPIAddProduct(w http.ResponseWriter, r *http.Request) {
 		Brand              string   `json:"brand"`
 		Price              int      `json:"price"`
 		Quantity           int      `json:"quantity"`
-		Rank               int      `json:"rank"`
 		ImageURL           string   `json:"image_url"`
 		Description        string   `json:"description"`
-		UsageType          string   `json:"usage_type"`
 		AvailableCountries []string `json:"available_countries"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -158,11 +142,7 @@ func handleAPIAddProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "title is required", http.StatusBadRequest)
 		return
 	}
-	if input.Rank == 0 {
-		input.Rank = 100
-	}
-
-	storeMu.Lock()
+	catalogMu.Lock()
 	productSeq++
 	countries := make([]ucp.Country, len(input.AvailableCountries))
 	for i, c := range input.AvailableCountries {
@@ -175,14 +155,12 @@ func handleAPIAddProduct(w http.ResponseWriter, r *http.Request) {
 		Brand:              input.Brand,
 		Price:              input.Price,
 		Quantity:           input.Quantity,
-		Rank:               input.Rank,
 		ImageURL:           input.ImageURL,
 		Description:        input.Description,
-		UsageType:          input.UsageType,
 		AvailableCountries: countries,
 	}
 	catalog = append(catalog, p)
-	storeMu.Unlock()
+	catalogMu.Unlock()
 
 	hub.Publish(model.DashboardEvent{
 		Type:      "product_added",
@@ -205,10 +183,8 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		Brand              string   `json:"brand"`
 		Price              *int     `json:"price"`
 		Quantity           *int     `json:"quantity"`
-		Rank               *int     `json:"rank"`
 		ImageURL           string   `json:"image_url"`
 		Description        string   `json:"description"`
-		UsageType          string   `json:"usage_type"`
 		AvailableCountries []string `json:"available_countries"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -216,7 +192,7 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storeMu.Lock()
+	catalogMu.Lock()
 	var found *Product
 	for i := range catalog {
 		if catalog[i].ID == input.ID {
@@ -225,7 +201,7 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if found == nil {
-		storeMu.Unlock()
+		catalogMu.Unlock()
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
 	}
@@ -244,17 +220,11 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 	if input.Quantity != nil {
 		found.Quantity = *input.Quantity
 	}
-	if input.Rank != nil {
-		found.Rank = *input.Rank
-	}
 	if input.ImageURL != "" {
 		found.ImageURL = input.ImageURL
 	}
 	if input.Description != "" {
 		found.Description = input.Description
-	}
-	if input.UsageType != "" {
-		found.UsageType = input.UsageType
 	}
 	if input.AvailableCountries != nil {
 		c := make([]ucp.Country, len(input.AvailableCountries))
@@ -264,7 +234,7 @@ func handleAPIUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		found.AvailableCountries = c
 	}
 	updated := *found
-	storeMu.Unlock()
+	catalogMu.Unlock()
 
 	hub.Publish(model.DashboardEvent{
 		Type:      "product_updated",
@@ -285,7 +255,7 @@ func handleAPIDeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storeMu.Lock()
+	catalogMu.Lock()
 	idx := -1
 	var removed Product
 	for i := range catalog {
@@ -296,12 +266,12 @@ func handleAPIDeleteProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if idx == -1 {
-		storeMu.Unlock()
+		catalogMu.Unlock()
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
 	}
 	catalog = append(catalog[:idx], catalog[idx+1:]...)
-	storeMu.Unlock()
+	catalogMu.Unlock()
 
 	hub.Publish(model.DashboardEvent{
 		Type:      "product_removed",
@@ -316,8 +286,11 @@ func handleAPIDeleteProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func countActiveCheckouts() int {
+	if merchantInstance == nil {
+		return 0
+	}
 	count := 0
-	for _, co := range checkouts {
+	for _, co := range merchantInstance.checkouts {
 		if co.Status != "completed" && co.Status != "canceled" {
 			count++
 		}
@@ -331,6 +304,49 @@ func mapValues[K comparable, V any](m map[K]V) []V {
 		vals = append(vals, v)
 	}
 	return vals
+}
+
+func getSSESnapshot() map[string]interface{} {
+	catalogMu.Lock()
+	productsCopy := make([]Product, len(catalog))
+	copy(productsCopy, catalog)
+	catalogMu.Unlock()
+
+	var cartCount, checkoutCount, orderCount int
+	var cartsList, checkoutsList, ordersList interface{}
+	if merchantInstance != nil {
+		merchantInstance.mu.Lock()
+		cartCount = len(merchantInstance.carts)
+		checkoutCount = countActiveCheckoutsLocked()
+		orderCount = len(merchantInstance.orders)
+		cartsList = mapValues(merchantInstance.carts)
+		checkoutsList = mapValues(merchantInstance.checkouts)
+		ordersList = mapValues(merchantInstance.orders)
+		merchantInstance.mu.Unlock()
+	}
+
+	return map[string]interface{}{
+		"type":           "snapshot",
+		"cart_count":     cartCount,
+		"checkout_count": checkoutCount,
+		"order_count":    orderCount,
+		"product_count":  len(productsCopy),
+		"products":       productsCopy,
+		"carts":          cartsList,
+		"checkouts":      checkoutsList,
+		"orders":         ordersList,
+	}
+}
+
+// countActiveCheckoutsLocked must be called with merchantInstance.mu held.
+func countActiveCheckoutsLocked() int {
+	count := 0
+	for _, co := range merchantInstance.checkouts {
+		if co.Status != "completed" && co.Status != "canceled" {
+			count++
+		}
+	}
+	return count
 }
 
 func getDashboardHTML() string {
@@ -483,11 +499,7 @@ td{padding:8px 12px;border-bottom:1px solid var(--bg-hover)}
 .status-out_for_delivery{background:rgba(251,146,60,.15);color:var(--orange)}
 .status-delivered{background:rgba(34,197,94,.15);color:var(--green)}
 
-/* ── Usage/country badges ── */
-.usage-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
-.usage-intensive{background:rgba(239,68,68,.15);color:var(--red)}
-.usage-occasional{background:rgba(59,130,246,.15);color:var(--blue)}
-.usage-versatile{background:rgba(34,197,94,.15);color:var(--green)}
+/* ── Country badges ── */
 .country-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
 .country-worldwide{background:rgba(34,197,94,.15);color:var(--green)}
 .country-restricted{background:rgba(245,158,11,.15);color:var(--amber)}
@@ -686,13 +698,12 @@ td{padding:8px 12px;border-bottom:1px solid var(--bg-hover)}
       <div class="toolbar" id="products-toolbar">
         <input type="text" id="product-search" placeholder="Search products...">
         <select id="product-category-filter"><option value="">All Categories</option></select>
-        <select id="product-usage-filter"><option value="">All Usage</option><option value="intensive">Intensive</option><option value="occasional">Occasional</option><option value="versatile">Versatile</option></select>
         <div style="flex:1"></div>
         <button class="btn btn-primary btn-sm" id="add-product-btn" onclick="showProductModal()">+ Add Product</button>
       </div>
       <div class="panel-body" style="max-height:calc(100vh - 260px)">
         <table>
-          <thead><tr><th style="width:50px"></th><th>Product</th><th>Brand</th><th>Price</th><th>Usage</th><th>Stock</th><th>Rank</th><th style="width:120px">Actions</th></tr></thead>
+          <thead><tr><th style="width:50px"></th><th>Product</th><th>Brand</th><th>Price</th><th>Stock</th><th style="width:120px">Actions</th></tr></thead>
           <tbody id="products-table"></tbody>
         </table>
         <div class="empty" id="products-empty">No products</div>
@@ -760,7 +771,7 @@ function formatCents(c){return '$'+(c/100).toFixed(2)}
 function getTotal(totals){const t=totals?.find(t=>t.type==='total');return t?formatCents(t.amount):'--'}
 function getTotalAmount(totals){const t=totals?.find(t=>t.type==='total');return t?t.amount:0}
 function statusBadge(s){return '<span class="status status-'+s+'">'+s.replace(/_/g,' ')+'</span>'}
-function usageBadge(t){if(!t)return '--';return '<span class="usage-badge usage-'+t+'">'+t+'</span>'}
+
 function countriesBadge(c){if(!c||!c.length)return '<span class="country-badge country-worldwide">Worldwide</span>';if(c.length<=3)return '<span class="country-badge country-restricted">'+c.join(', ')+'</span>';return '<span class="country-badge country-restricted">'+c.slice(0,3).join(', ')+' +'+String(c.length-3)+'</span>'}
 function userBadge(ownerId){
   if(ownerId)return '<span class="user-badge authenticated"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '+escapeHTML(ownerId)+'</span>';
@@ -900,11 +911,9 @@ function renderOverview(){
 function getFilteredProducts(){
   const search=($('product-search')?.value||'').toLowerCase();
   const cat=$('product-category-filter')?.value||'';
-  const usage=$('product-usage-filter')?.value||'';
   return productsState.filter(p=>{
     if(search&&!p.title.toLowerCase().includes(search)&&!p.id.toLowerCase().includes(search)&&!(p.brand||'').toLowerCase().includes(search))return false;
     if(cat&&p.category!==cat)return false;
-    if(usage&&p.usage_type!==usage)return false;
     return true;
   });
 }
@@ -933,9 +942,7 @@ function renderProducts(){
       +'<td><div class="cell-stack"><span class="primary">'+escapeHTML(p.title)+'</span><span class="secondary">'+escapeHTML(p.category||'')+'</span></div></td>'
       +'<td>'+escapeHTML(p.brand||'')+'</td>'
       +'<td>'+formatCents(p.price)+'</td>'
-      +'<td>'+usageBadge(p.usage_type)+'</td>'
       +'<td class="'+stockClass+'"><button class="qty-btn" onclick="event.stopPropagation();changeQty(\''+p.id+'\',-1)">-</button> '+p.quantity+' <button class="qty-btn" onclick="event.stopPropagation();changeQty(\''+p.id+'\',1)">+</button></td>'
-      +'<td><button class="qty-btn" onclick="event.stopPropagation();changeRank(\''+p.id+'\',-10)">&#9650;</button> '+p.rank+' <button class="qty-btn" onclick="event.stopPropagation();changeRank(\''+p.id+'\',10)">&#9660;</button></td>'
       +'<td><button class="btn btn-sm" onclick="event.stopPropagation();showProductModal(\''+p.id+'\')">Edit</button> <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteProduct(\''+p.id+'\')">Del</button></td>';
     tr.onclick=()=>showDetailModal('product',p);
     tb.appendChild(tr);
@@ -945,7 +952,7 @@ function renderProducts(){
 // Product search debounce
 $('product-search')?.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(renderProducts,300)});
 $('product-category-filter')?.addEventListener('change',renderProducts);
-$('product-usage-filter')?.addEventListener('change',renderProducts);
+
 
 // Product add/edit modal
 function showProductModal(editId){
@@ -954,7 +961,6 @@ function showProductModal(editId){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
-  const usageOpts=['','intensive','occasional','versatile'].map(v=>'<option value="'+v+'"'+((p?.usage_type||'')===v?' selected':'')+'>'+(v||'-- None --')+'</option>').join('');
   overlay.innerHTML='<div class="modal-card"><div class="modal-header"><h2>'+(isEdit?'Edit Product':'Add Product')+'</h2><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">&#10005;</button></div>'
     +'<div class="modal-body"><div class="form-grid">'
     +'<div class="form-group"><label>Title</label><input type="text" id="pm-title" value="'+escapeHTML(p?.title||'')+'"></div>'
@@ -962,8 +968,6 @@ function showProductModal(editId){
     +'<div class="form-group"><label>Brand</label><input type="text" id="pm-brand" value="'+escapeHTML(p?.brand||'')+'"></div>'
     +'<div class="form-group"><label>Price (cents)</label><input type="number" id="pm-price" value="'+(p?.price||0)+'"></div>'
     +'<div class="form-group"><label>Stock</label><input type="number" id="pm-qty" value="'+(p?.quantity||0)+'"></div>'
-    +'<div class="form-group"><label>Rank</label><input type="number" id="pm-rank" value="'+(p?.rank||100)+'"></div>'
-    +'<div class="form-group"><label>Usage Type</label><select id="pm-usage">'+usageOpts+'</select></div>'
     +'<div class="form-group"><label>Countries</label><input type="text" id="pm-countries" value="'+escapeHTML((p?.available_countries||[]).join(', '))+'" placeholder="US, FR, DE (empty=worldwide)"></div>'
     +'<div class="form-group full"><label>Image URL</label><input type="text" id="pm-image" value="'+escapeHTML(p?.image_url||'')+'">'+(p?.image_url?'<img class="img-preview" src="'+escapeHTML(p.image_url)+'" onerror="this.style.display=\'none\'">':'')+'</div>'
     +'<div class="form-group full"><label>Description</label><textarea id="pm-desc">'+escapeHTML(p?.description||'')+'</textarea></div>'
@@ -979,14 +983,12 @@ async function saveProductModal(editId){
   const brand=$('pm-brand').value.trim();
   const price=parseInt($('pm-price').value)||0;
   const qty=parseInt($('pm-qty').value)||0;
-  const rank=parseInt($('pm-rank').value)||100;
-  const usage=$('pm-usage').value;
   const countriesRaw=$('pm-countries').value.trim();
   const countries=countriesRaw?countriesRaw.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean):[];
   const image=$('pm-image').value.trim();
   const desc=$('pm-desc').value.trim();
   if(!title){alert('Title is required');return}
-  const body={title,category,brand,price,quantity:qty,rank,image_url:image,usage_type:usage,description:desc,available_countries:countries.length?countries:null};
+  const body={title,category,brand,price,quantity:qty,image_url:image,description:desc,available_countries:countries.length?countries:null};
   if(editId)body.id=editId;
   const res=await fetch('/api/products',{method:editId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(res.ok){document.querySelector('.modal-overlay')?.remove()}
@@ -996,10 +998,6 @@ async function saveProductModal(editId){
 async function changeQty(id,delta){
   const p=productsState.find(x=>x.id===id);if(!p)return;
   await fetch('/api/products',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,quantity:Math.max(0,p.quantity+delta)})});
-}
-async function changeRank(id,delta){
-  const p=productsState.find(x=>x.id===id);if(!p)return;
-  await fetch('/api/products',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,rank:Math.max(1,p.rank+delta)})});
 }
 async function deleteProduct(id){
   if(!confirm('Delete product '+id+'?'))return;
@@ -1150,8 +1148,6 @@ function showDetailModal(type, data){
     body+='<div class="detail-row"><span class="label">Brand</span><span class="val">'+escapeHTML(data.brand||'')+'</span></div>';
     body+='<div class="detail-row"><span class="label">Price</span><span class="val">'+formatCents(data.price)+'</span></div>';
     body+='<div class="detail-row"><span class="label">Stock</span><span class="val">'+data.quantity+'</span></div>';
-    body+='<div class="detail-row"><span class="label">Rank</span><span class="val">'+data.rank+'</span></div>';
-    body+='<div class="detail-row"><span class="label">Usage</span><span class="val">'+usageBadge(data.usage_type)+'</span></div>';
     body+='<div class="detail-row"><span class="label">Availability</span><span class="val">'+countriesBadge(data.available_countries)+'</span></div></div>';
     if(data.description)body+='<div class="section"><div class="section-title">Description</div><div style="font-size:13px;line-height:1.5;color:#ccc">'+escapeHTML(data.description)+'</div></div>';
     if(data.image_url)body+='<div class="section"><div class="section-title">Image</div><img src="'+escapeHTML(data.image_url)+'" style="max-width:200px;border-radius:8px" onerror="this.style.display=\'none\'"></div>';

@@ -6,16 +6,17 @@ import (
 
 // Product represents an item in the merchant's catalog.
 type Product struct {
-	ID                 string        `json:"id"`
-	Title              string        `json:"title"`
-	Category           ucp.Category  `json:"category"`
-	Brand              string        `json:"brand"`
-	Price              int           `json:"price"`
-	Quantity           int           `json:"quantity"`
-	Rank               int           `json:"rank"`
-	ImageURL           string        `json:"image_url,omitempty"`
+	ID       string       `json:"id"`
+	Title    string       `json:"title"`
+	Category ucp.Category `json:"category"`
+	// Brand is the free-text manufacturer or brand name (e.g. "Rose Garden Co.").
+	Brand    string `json:"brand"`
+	Price    int    `json:"price"`
+	Quantity int    `json:"quantity"`
+	ImageURL string `json:"image_url,omitempty"`
+	// Description is an optional long-form product description used for
+	// keyword search matching.
 	Description        string        `json:"description,omitempty"`
-	UsageType          string        `json:"usage_type,omitempty"`
 	AvailableCountries []ucp.Country `json:"available_countries,omitempty"`
 }
 
@@ -27,18 +28,21 @@ type CategoryStat struct {
 
 // SearchParams holds parameters for a catalog search (per Shopify Agent Catalog spec).
 type SearchParams struct {
-	Query            string
-	Limit            int
-	MinPrice         int // cents, 0 = no min
-	MaxPrice         int // cents, 0 = no max
-	AvailableForSale bool
-	ShipsTo          ucp.Country // country code
+	// Query is a free-text search string matched case-insensitively against
+	// product title, description, and category. Matching is plain substring
+	// comparison — no boolean operators, field syntax, or wildcards are
+	// supported.
+	Query string
+	// Limit is the maximum number of results to return. Defaults to 10 if
+	// zero; capped at 300.
+	Limit int
+	// ShipsTo filters products by shipping destination country code.
+	ShipsTo ucp.Country
 }
 
 // SearchResult wraps a product with computed availability metadata.
 type SearchResult struct {
 	Product Product `json:"product"`
-	InStock bool    `json:"in_stock"`
 }
 
 // Catalog is the read-only interface for catalog operations.
@@ -47,7 +51,16 @@ type Catalog interface {
 	Find(id string) *Product
 	// Filter returns products matching the given criteria. Empty/zero-value
 	// parameters are ignored. All comparisons are case-insensitive.
-	Filter(category ucp.Category, brand, query, usageType string, country ucp.Country, currency ucp.Currency, language ucp.Language) []Product
+	//
+	// Parameters:
+	//   - category: matches Product.Category via case-insensitive comparison.
+	//   - brand: case-insensitive exact match against Product.Brand.
+	//   - query: plain case-insensitive substring match against Product.Title
+	//     (no boolean operators, field syntax, or wildcards).
+	//   - country: filters to products whose AvailableCountries includes this code.
+	//   - currency: reserved for future price-currency filtering (currently unused).
+	//   - language: reserved for future localization (currently unused).
+	Filter(category ucp.Category, brand, query string, country ucp.Country, currency ucp.Currency, language ucp.Language) []Product
 	// CategoryCount returns the number of products per category, preserving
 	// insertion order.
 	CategoryCount() []CategoryStat

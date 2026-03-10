@@ -120,7 +120,7 @@ func (ts *testServer) mcpToolCallRaw(toolName string, args map[string]interface{
 	return ts.mcpRequest("tools/call", params, token)
 }
 
-// mcpCreateAndCompleteCheckout creates a checkout, selects shipping, and completes it.
+// mcpCreateAndCompleteCheckout creates a checkout and completes it.
 // Returns (checkoutID, orderID).
 func (ts *testServer) mcpCreateAndCompleteCheckout(token string) (string, string) {
 	ts.t.Helper()
@@ -140,26 +140,7 @@ func (ts *testServer) mcpCreateAndCompleteCheckout(token string) (string, string
 		ts.t.Fatalf("mcpCreateAndCompleteCheckout: create_checkout failed: %v", createResult)
 	}
 	checkoutID := createResult["id"].(string)
-
-	// Get shipping options
-	_, isErr = ts.mcpToolCall("get_shipping_options", map[string]interface{}{
-		"checkout_id": checkoutID,
-	}, token)
-	if isErr {
-		ts.t.Fatalf("mcpCreateAndCompleteCheckout: get_shipping_options failed")
-	}
-
-	// Update with shipping
-	updateResult, isErr := ts.mcpToolCall("update_checkout", map[string]interface{}{
-		"id": checkoutID,
-		"checkout": map[string]interface{}{
-			"shipping_option_id": "standard",
-		},
-	}, token)
-	if isErr {
-		ts.t.Fatalf("mcpCreateAndCompleteCheckout: update_checkout failed: %v", updateResult)
-	}
-	checkoutHash := updateResult["checkout_hash"].(string)
+	checkoutHash := createResult["checkout_hash"].(string)
 
 	// Complete with hash
 	completeResult, isErr := ts.mcpToolCall("complete_checkout", map[string]interface{}{

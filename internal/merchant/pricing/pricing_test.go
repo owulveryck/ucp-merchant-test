@@ -21,7 +21,7 @@ func (c *testCatalog) Find(id string) *catalog.Product {
 	return nil
 }
 
-func (c *testCatalog) Filter(category ucp.Category, brand, query, usageType string, country ucp.Country, currency ucp.Currency, language ucp.Language) []catalog.Product {
+func (c *testCatalog) Filter(category ucp.Category, brand, query string, country ucp.Country, currency ucp.Currency, language ucp.Language) []catalog.Product {
 	return nil
 }
 

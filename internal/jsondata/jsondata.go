@@ -144,7 +144,6 @@ func (ds *DataSource) Load(dataDir string) error {
 			Price:    p.Price,
 			ImageURL: p.ImageURL,
 			Quantity: p.Quantity,
-			Rank:     100,
 		})
 	}
 

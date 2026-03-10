@@ -25,7 +25,7 @@ func (c *catalogStore) Find(id string) *icatalog.Product {
 	return nil
 }
 
-func (c *catalogStore) Filter(category ucp.Category, brand, query, usageType string, country ucp.Country, currency ucp.Currency, language ucp.Language) []icatalog.Product {
+func (c *catalogStore) Filter(category ucp.Category, brand, query string, country ucp.Country, currency ucp.Currency, language ucp.Language) []icatalog.Product {
 	var result []icatalog.Product
 	for _, p := range c.Products {
 		if category != "" && !p.Category.Matches(category) {
@@ -35,9 +35,6 @@ func (c *catalogStore) Filter(category ucp.Category, brand, query, usageType str
 			continue
 		}
 		if query != "" && !strings.Contains(strings.ToLower(p.Title), strings.ToLower(query)) {
-			continue
-		}
-		if usageType != "" && !strings.EqualFold(p.UsageType, usageType) {
 			continue
 		}
 		if country != "" && len(p.AvailableCountries) > 0 {
@@ -102,15 +99,6 @@ func (c *catalogStore) Search(params icatalog.SearchParams) []icatalog.SearchRes
 				continue
 			}
 		}
-		if params.MinPrice > 0 && p.Price < params.MinPrice {
-			continue
-		}
-		if params.MaxPrice > 0 && p.Price > params.MaxPrice {
-			continue
-		}
-		if params.AvailableForSale && p.Quantity <= 0 {
-			continue
-		}
 		if params.ShipsTo != "" && len(p.AvailableCountries) > 0 {
 			if !ucp.ContainsCountry(p.AvailableCountries, params.ShipsTo) {
 				continue
@@ -118,7 +106,6 @@ func (c *catalogStore) Search(params icatalog.SearchParams) []icatalog.SearchRes
 		}
 		results = append(results, icatalog.SearchResult{
 			Product: p,
-			InStock: p.Quantity > 0,
 		})
 		if len(results) >= limit {
 			break

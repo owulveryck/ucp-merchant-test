@@ -158,67 +158,6 @@ func TestMCP_UpdateCheckoutBuyer(t *testing.T) {
 	}
 }
 
-func TestMCP_UpdateCheckoutShipping(t *testing.T) {
-	ts := newTestServer(t)
-	createResult, _ := ts.mcpToolCall("create_checkout", map[string]interface{}{
-		"checkout": map[string]interface{}{
-			"line_items": []interface{}{
-				map[string]interface{}{
-					"item":     map[string]interface{}{"id": "bouquet_roses", "title": "Bouquet of Roses"},
-					"quantity": 1,
-				},
-			},
-		},
-	}, "")
-	checkoutID := createResult["id"].(string)
-
-	result, isErr := ts.mcpToolCall("update_checkout", map[string]interface{}{
-		"id": checkoutID,
-		"checkout": map[string]interface{}{
-			"shipping_option_id": "express",
-		},
-	}, "")
-	if isErr {
-		t.Fatalf("expected success: %v", result)
-	}
-	if result["selected_shipping"] == nil {
-		t.Error("expected selected_shipping in response")
-	}
-	shipping := result["selected_shipping"].(map[string]interface{})
-	if shipping["id"] != "express" {
-		t.Errorf("expected shipping id express, got %v", shipping["id"])
-	}
-}
-
-func TestMCP_GetShippingOptions(t *testing.T) {
-	ts := newTestServer(t)
-	createResult, _ := ts.mcpToolCall("create_checkout", map[string]interface{}{
-		"checkout": map[string]interface{}{
-			"line_items": []interface{}{
-				map[string]interface{}{
-					"item":     map[string]interface{}{"id": "bouquet_roses", "title": "Bouquet of Roses"},
-					"quantity": 1,
-				},
-			},
-		},
-	}, "")
-	checkoutID := createResult["id"].(string)
-
-	result, isErr := ts.mcpToolCall("get_shipping_options", map[string]interface{}{
-		"checkout_id": checkoutID,
-	}, "")
-	if isErr {
-		t.Fatalf("expected success: %v", result)
-	}
-	options, ok := result["options"].([]interface{})
-	if !ok {
-		t.Fatal("expected options array")
-	}
-	if len(options) != 3 {
-		t.Errorf("expected 3 shipping options, got %d", len(options))
-	}
-}
-
 func TestMCP_CompleteCheckout(t *testing.T) {
 	ts := newTestServer(t)
 	checkoutID, orderID := ts.mcpCreateAndCompleteCheckout("")

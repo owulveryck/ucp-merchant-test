@@ -49,21 +49,3 @@ func TestNewSessionID(t *testing.T) {
 		t.Errorf("expected session-0001, got %s", id1)
 	}
 }
-
-func TestResetClosesOrderCancelChannels(t *testing.T) {
-	s := New()
-	ch := make(chan struct{})
-	s.OrderCancelChs["ord_1"] = ch
-
-	s.Reset()
-
-	// Channel should be closed
-	select {
-	case <-ch:
-	default:
-		t.Error("expected cancel channel to be closed after reset")
-	}
-	if len(s.OrderCancelChs) != 0 {
-		t.Error("expected empty cancel channels after reset")
-	}
-}

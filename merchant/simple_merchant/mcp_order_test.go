@@ -51,23 +51,6 @@ func TestMCP_CancelOrder(t *testing.T) {
 	}
 }
 
-func TestMCP_TrackShipment(t *testing.T) {
-	ts := newTestServer(t)
-	_, orderID := ts.mcpCreateAndCompleteCheckout("")
-
-	result, isErr := ts.mcpToolCall("track_shipment", map[string]interface{}{"order_id": orderID}, "")
-	if isErr {
-		t.Fatalf("expected success: %v", result)
-	}
-	if result["order_id"] != orderID {
-		t.Errorf("expected order_id %s, got %v", orderID, result["order_id"])
-	}
-	// Initially the order is confirmed, shipment may not exist yet
-	if result["status"] == nil {
-		t.Error("expected status in track_shipment response")
-	}
-}
-
 func TestMCP_OrderOwnership(t *testing.T) {
 	ts := newTestServer(t)
 	tokenA := ts.injectToken("order_owner_a", "US")

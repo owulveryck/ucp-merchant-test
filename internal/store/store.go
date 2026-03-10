@@ -26,12 +26,7 @@ type Store struct {
 
 	// MCP-specific state
 	MCPCheckoutStates map[string]*model.MCPCheckoutState
-	MCPOrderShipments map[string]*model.Shipment
 	MCPOrderOwners    map[string]string
-
-	// MCP order cancel channels (keyed by order ID).
-	OrderCancelChs   map[string]chan struct{}
-	OrderCancelChsMu sync.Mutex
 
 	// Address sequence counter for dynamic addresses.
 	AddrSeqCounter int
@@ -52,9 +47,7 @@ func New() *Store {
 		CheckoutDestinations: map[string]*model.FulfillmentDestination{},
 		CheckoutOptionTitles: map[string]string{},
 		MCPCheckoutStates:    map[string]*model.MCPCheckoutState{},
-		MCPOrderShipments:    map[string]*model.Shipment{},
 		MCPOrderOwners:       map[string]string{},
-		OrderCancelChs:       map[string]chan struct{}{},
 	}
 }
 
@@ -86,23 +79,11 @@ func (s *Store) Reset() {
 	s.CheckoutOptionTitles = map[string]string{}
 	s.mu.Unlock()
 
-	s.OrderCancelChsMu.Lock()
-	for _, ch := range s.OrderCancelChs {
-		select {
-		case <-ch:
-		default:
-			close(ch)
-		}
-	}
-	s.OrderCancelChs = map[string]chan struct{}{}
-	s.OrderCancelChsMu.Unlock()
-
 	s.AddrSeqMu.Lock()
 	s.AddrSeqCounter = 0
 	s.AddrSeqMu.Unlock()
 
 	s.MCPCheckoutStates = map[string]*model.MCPCheckoutState{}
-	s.MCPOrderShipments = map[string]*model.Shipment{}
 	s.MCPOrderOwners = map[string]string{}
 
 	s.SessionMu.Lock()

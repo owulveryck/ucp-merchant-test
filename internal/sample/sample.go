@@ -179,7 +179,6 @@ func (ds *DataSource) loadProducts(dataDir string) error {
 			Price:    price,
 			ImageURL: row[3],
 			Quantity: 0,
-			Rank:     100,
 		})
 	}
 	return nil
