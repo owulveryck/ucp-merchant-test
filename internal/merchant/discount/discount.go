@@ -26,6 +26,8 @@ type Discount struct {
 // when the code is not recognized. Code matching should be case-insensitive
 // per UCP conventions.
 type DiscountLookup interface {
+	// FindDiscountByCode looks up a discount definition by its code string
+	// (case-insensitive). Returns nil when the code is not recognized.
 	FindDiscountByCode(code string) *Discount
 }
 

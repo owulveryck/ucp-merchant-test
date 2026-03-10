@@ -16,13 +16,17 @@ type Address = fulfillment.Address
 type shopDataSource interface {
 	discount.DiscountLookup
 	fulfillment.FulfillmentDataSource
+	// ResetDynamicAddresses clears all dynamically saved addresses, restoring
+	// the address book to its initial loaded state.
 	ResetDynamicAddresses()
 }
 
 // shopDataLoader extends shopDataSource with data loading and product access.
 type shopDataLoader interface {
 	shopDataSource
+	// Load loads product catalog and reference data from the given data directory.
 	Load(dataDir string) error
+	// GetProducts returns the loaded product catalog as a slice.
 	GetProducts() []Product
 }
 

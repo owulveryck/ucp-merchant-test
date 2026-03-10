@@ -43,10 +43,22 @@ type SearchResult struct {
 
 // Catalog is the read-only interface for catalog operations.
 type Catalog interface {
+	// Find finds a product by its ID. Returns nil if not found.
 	Find(id string) *Product
+	// Filter returns products matching the given criteria. Empty string
+	// parameters are ignored. All comparisons are case-insensitive.
 	Filter(category, brand, query, usageType, country, currency, language string) []Product
+	// CategoryCount returns the number of products per category, preserving
+	// insertion order.
 	CategoryCount() []CategoryStat
+	// Lookup finds a product by ID, additionally filtering by shipping
+	// destination country. Returns nil if the product doesn't exist or is not
+	// available in the given country. Unlike Find, this enforces geographic
+	// availability.
 	Lookup(id string, shipsTo string) *Product
+	// Search searches the catalog by keyword (matching title, description,
+	// category) with optional price range, stock, and country filters. Returns
+	// up to params.Limit results (default 10, max 300).
 	Search(params SearchParams) []SearchResult
 }
 

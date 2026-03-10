@@ -61,9 +61,17 @@ type Promotion struct {
 //   - Country-specific shipping rate retrieval
 //   - Promotion rule retrieval for free shipping evaluation
 type FulfillmentDataSource interface {
+	// FindAddressesForEmail returns all known shipping addresses for the given
+	// buyer email. Used to pre-populate destinations during checkout.
 	FindAddressesForEmail(email string) []Address
+	// SaveDynamicAddress persists a new address submitted during checkout for
+	// the given buyer email. Returns the assigned address ID.
 	SaveDynamicAddress(email string, addr Address) string
+	// GetShippingRatesForCountry returns available shipping rates (service
+	// levels and prices) for the given ISO country code.
 	GetShippingRatesForCountry(country string) []ShippingRate
+	// GetPromotions returns all active promotion rules (e.g., free shipping
+	// thresholds and eligible item lists).
 	GetPromotions() []Promotion
 }
 
