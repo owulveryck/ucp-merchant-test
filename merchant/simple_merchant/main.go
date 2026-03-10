@@ -98,14 +98,12 @@ func main() {
 		useTLS   bool
 		certFile string
 		keyFile  string
-		dbFile   string
 	)
 	flag.IntVar(&listenPort, "port", 8081, "port to listen on")
 	flag.BoolVar(&useTLS, "tls", false, "enable TLS (auto-generates self-signed cert if --cert/--key not provided)")
 	flag.StringVar(&certFile, "cert", "", "path to TLS certificate file")
 	flag.StringVar(&keyFile, "key", "", "path to TLS private key file")
-	flag.StringVar(&dbFile, "db", "", "path to JSON product database file (overrides built-in catalog)")
-	flag.StringVar(&dataDir, "data-dir", "", "path to directory with test data (flower shop dataset)")
+	flag.StringVar(&dataDir, "data-dir", "", "path to directory with test data (required)")
 	flag.StringVar(&dataFormat, "data-format", "csv", "format of test data files: csv or json")
 	flag.StringVar(&simulationSecret, "simulation-secret", "", "secret for /testing/simulate-shipping endpoint")
 	flag.Parse()
@@ -113,19 +111,13 @@ func main() {
 	tlsEnabled = useTLS
 	merchantName = generateMerchantName()
 
-	if dataDir != "" {
-		if err := loadFlowerShopData(dataDir, dataFormat); err != nil {
-			log.Fatalf("Failed to load flower shop data from %s: %v", dataDir, err)
-		}
-		log.Printf("Loaded %d products from %s", len(catalog), dataDir)
-	} else if dbFile != "" {
-		if err := loadCatalogFromFile(dbFile); err != nil {
-			log.Fatalf("Failed to load product database %s: %v", dbFile, err)
-		}
-		log.Printf("Loaded %d products from %s", len(catalog), dbFile)
-	} else {
-		initCatalog(time.Now().UnixNano())
+	if dataDir == "" {
+		log.Fatalf("--data-dir is required")
 	}
+	if err := loadFlowerShopData(dataDir, dataFormat); err != nil {
+		log.Fatalf("Failed to load data from %s: %v", dataDir, err)
+	}
+	log.Printf("Loaded %d products from %s", len(catalog), dataDir)
 
 	if simulationSecret == "" {
 		simulationSecret = fmt.Sprintf("sim-%d", time.Now().UnixNano())
