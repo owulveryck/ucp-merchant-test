@@ -35,10 +35,22 @@
 //   - HandleToken: exchanges authorization codes for access/refresh tokens
 //     (grant_type=authorization_code) and refreshes expired access tokens
 //     (grant_type=refresh_token). Validates PKCE code_verifier against the stored
-//     code_challenge using SHA-256
+//     code_challenge using SHA-256. Requires client authentication (see below).
 //
 //   - HandleRevoke: revokes access or refresh tokens per RFC 7009. Revoking a
-//     refresh token also revokes all associated access tokens for the same user
+//     refresh token also revokes all associated access tokens for the same user.
+//     Requires client authentication (see below).
+//
+// # Client Authentication
+//
+// The token and revocation endpoints require client authentication using the
+// client_secret_basic method (RFC 6749 §2.3.1). The platform sends its
+// credentials in the HTTP Authorization header as Basic base64(client_id:client_secret).
+// The expected credentials are [OAuthClientID] and [OAuthClientSecret]. Requests
+// without valid client credentials receive an invalid_client error (HTTP 401).
+//
+// The server metadata advertises this requirement via
+// token_endpoint_auth_methods_supported: ["client_secret_basic"].
 //
 // # Scopes and Capabilities
 //

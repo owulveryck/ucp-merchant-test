@@ -6,10 +6,8 @@
     "brand": "TrailMark",
     "price": 8995,
     "quantity": 75,
-    "rank": 10,
     "image_url": "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_t.png",
     "description": "Compact daypack with a padded laptop compartment and water-resistant shell. Ideal for urban commutes and light hiking. Adjustable chest strap and breathable mesh back panel.",
-    "usage_type": "versatile",
     "available_countries": []
   },
   {
@@ -19,10 +17,8 @@
     "brand": "UrbanThread",
     "price": 2499,
     "quantity": 200,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_t.png",
     "description": "Soft-touch cotton henley with contrast raglan sleeves and a three-button placket. Relaxed fit for layering or standalone wear. Pre-washed for a broken-in feel from day one.",
-    "usage_type": "versatile"
   },
   {
     "id": "SKU-003",
@@ -31,10 +27,8 @@
     "brand": "UrbanThread",
     "price": 6499,
     "quantity": 60,
-    "rank": 10,
     "image_url": "https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_t.png",
     "description": "Water-repellent cotton-blend jacket with a flannel-lined interior. Four utility pockets and adjustable cuffs. Built for transitional seasons and rugged everyday wear.",
-    "usage_type": "intensive"
   },
   {
     "id": "SKU-004",
@@ -43,10 +37,8 @@
     "brand": "UrbanThread",
     "price": 3899,
     "quantity": 150,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/71YXzeOuslL._AC_UY879_t.png",
     "description": "Slim-fit chinos with 2% elastane for all-day comfort. Flat-front design with hidden coin pocket. Machine washable and wrinkle-resistant for easy care.",
-    "usage_type": "versatile"
   },
   {
     "id": "SKU-005",
@@ -55,10 +47,8 @@
     "brand": "Lumière",
     "price": 72900,
     "quantity": 15,
-    "rank": 10,
     "image_url": "https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png",
     "description": "Hand-finished serpent chain in 18k gold and sterling silver. Lobster clasp with 2-inch extender. Comes in a velvet-lined gift box with certificate of authenticity.",
-    "usage_type": "occasional",
     "available_countries": ["US", "FR", "IT", "GB"]
   },
   {
@@ -68,10 +58,8 @@
     "brand": "Lumière",
     "price": 18500,
     "quantity": 30,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/61sbMiUnoGL._AC_UL640_QL65_ML3_t.png",
     "description": "14k gold micropavé studs with 0.25ct total diamond weight. Push-back closure for secure wear. Timeless design suitable for daily elegance or special occasions.",
-    "usage_type": "versatile",
     "available_countries": ["US", "FR", "IT", "GB"]
   },
   {
@@ -81,10 +69,8 @@
     "brand": "Lumière",
     "price": 1299,
     "quantity": 100,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/71YAIFU48IL._AC_UL640_QL65_ML3_t.png",
     "description": "White gold-plated ring featuring a brilliant-cut cubic zirconia. Comfort-fit band in sizes 5-10. An affordable keepsake for engagements, anniversaries, or self-gifting.",
-    "usage_type": "occasional"
   },
   {
     "id": "SKU-008",
@@ -93,10 +79,8 @@
     "brand": "Lumière",
     "price": 1399,
     "quantity": 80,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/51UDEzMJVpL._AC_UL640_QL65_ML3_t.png",
     "description": "Rose gold-plated 316L surgical steel double-flared plugs. Hypoallergenic and tarnish-resistant. Available in 8mm, 10mm, and 12mm gauges.",
-    "usage_type": "occasional"
   },
   {
     "id": "SKU-009",
@@ -105,10 +89,8 @@
     "brand": "VaultDrive",
     "price": 7200,
     "quantity": 45,
-    "rank": 10,
     "image_url": "https://fakestoreapi.com/img/61IBBVJvSDL._AC_SY879_t.png",
     "description": "Compact external SSD with USB 3.2 Gen 2 interface delivering up to 1050MB/s reads. Shock-resistant aluminum enclosure with AES-256 hardware encryption. Pocket-sized for on-the-go professionals.",
-    "usage_type": "intensive",
     "available_countries": ["US", "CA", "GB", "DE", "FR"]
   },
   {
@@ -118,10 +100,8 @@
     "brand": "VaultDrive",
     "price": 9800,
     "quantity": 90,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/61U7T1koQqL._AC_SX679_t.png",
     "description": "M.2 2280 NVMe drive with sequential reads up to 3500MB/s. SLC caching and DRAM buffer for sustained workloads. 5-year warranty with 600TBW endurance rating.",
-    "usage_type": "intensive",
     "available_countries": ["US", "CA", "GB", "DE", "FR"]
   },
   {
@@ -131,10 +111,8 @@
     "brand": "VaultDrive",
     "price": 5400,
     "quantity": 120,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/71kWymZ+c+L._AC_SX679_t.png",
     "description": "2.5-inch SATA III SSD with 3D NAND and SLC cache for burst performance. Slim 7mm form factor fits ultrabooks and desktop bays. TRIM and ECC support for long-term reliability.",
-    "usage_type": "versatile"
   },
   {
     "id": "SKU-012",
@@ -143,10 +121,8 @@
     "brand": "VaultDrive",
     "price": 11900,
     "quantity": 55,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/61mtL65D4cL._AC_SX679_t.png",
     "description": "High-capacity portable drive formatted for PS5 and Xbox. USB 3.0 with plug-and-play setup. Sleek matte finish with LED activity indicator. 3-year limited warranty.",
-    "usage_type": "versatile"
   },
   {
     "id": "SKU-013",
@@ -155,10 +131,8 @@
     "brand": "ViewPeak",
     "price": 54900,
     "quantity": 25,
-    "rank": 10,
     "image_url": "https://fakestoreapi.com/img/81QpkIctqPL._AC_SX679_t.png",
     "description": "Full HD 1920x1080 IPS panel with 75Hz refresh rate and FreeSync. Ultra-thin bezel for multi-monitor setups. HDMI and VGA inputs with 4ms response time and 250-nit brightness.",
-    "usage_type": "versatile"
   },
   {
     "id": "SKU-014",
@@ -167,10 +141,8 @@
     "brand": "ViewPeak",
     "price": 109900,
     "quantity": 10,
-    "rank": 10,
     "image_url": "https://fakestoreapi.com/img/81Zt42ioCgL._AC_SX679_t.png",
     "description": "32:9 QLED curved panel with 144Hz refresh rate and 1ms response. HDR600 certified with quantum dot color accuracy. Dual HDMI 2.0 and DisplayPort 1.4 inputs for multi-source setups.",
-    "usage_type": "intensive",
     "available_countries": ["US", "CA", "GB", "DE", "JP"]
   },
   {
@@ -180,10 +152,8 @@
     "brand": "NorthBound",
     "price": 7999,
     "quantity": 40,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png",
     "description": "Waterproof hardshell with removable fleece liner for layered warmth. Adjustable storm hood and zippered hand pockets. Suitable for skiing, snowboarding, and cold-weather commutes.",
-    "usage_type": "intensive"
   },
   {
     "id": "SKU-016",
@@ -192,10 +162,8 @@
     "brand": "NorthBound",
     "price": 3495,
     "quantity": 70,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/81XH0e8fefL._AC_UY879_t.png",
     "description": "Vegan leather biker jacket with removable hood and quilted lining. Asymmetric zip closure with snap-button waist detail. A go-to layer for cool evenings and casual outings.",
-    "usage_type": "occasional"
   },
   {
     "id": "SKU-017",
@@ -204,10 +172,8 @@
     "brand": "NorthBound",
     "price": 4299,
     "quantity": 85,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/71HblAHs5xL._AC_UY879_-2t.png",
     "description": "Packable rain jacket with sealed seams and an adjustable drawstring waist. Two side pockets and a lined hood. Rolls into its own pocket for easy storage in any bag.",
-    "usage_type": "occasional"
   },
   {
     "id": "SKU-018",
@@ -216,10 +182,8 @@
     "brand": "UrbanThread",
     "price": 1295,
     "quantity": 300,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/71z3kpMAYsL._AC_UY879_t.png",
     "description": "Soft rayon-spandex blend with a flattering boat-neck cut. Double-stitched hem for durability. Available in 12 colors, perfect for building a capsule wardrobe.",
-    "usage_type": "versatile"
   },
   {
     "id": "SKU-019",
@@ -228,10 +192,8 @@
     "brand": "FlexFit",
     "price": 1095,
     "quantity": 180,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/51eg55uWmdL._AC_UX679_t.png",
     "description": "100% cationic polyester interlock with four-way stretch. Quick-dry fabric pulls sweat away from skin. UPF 30 sun protection for outdoor training and gym sessions.",
-    "usage_type": "intensive"
   },
   {
     "id": "SKU-020",
@@ -240,9 +202,7 @@
     "brand": "UrbanThread",
     "price": 1599,
     "quantity": 220,
-    "rank": 100,
     "image_url": "https://fakestoreapi.com/img/61pHAEJ4NML._AC_UX679_t.png",
     "description": "Relaxed-fit cotton tee with original screen-printed artwork. Pre-shrunk fabric with reinforced collar. Unisex sizing from XS to 3XL for an inclusive fit.",
-    "usage_type": "occasional"
   }
 ]

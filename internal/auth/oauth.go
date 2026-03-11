@@ -19,6 +19,8 @@ import (
 const (
 	// OAuthClientID is the expected OAuth 2.0 client identifier for UCP platforms.
 	OAuthClientID = "agentflowui"
+	// OAuthClientSecret is the expected OAuth 2.0 client secret for UCP platforms.
+	OAuthClientSecret = "super-secret-client-key"
 	// AccessTokenDuration is the validity period for issued access tokens (1 hour).
 	AccessTokenDuration = 1 * time.Hour
 	// AuthCodeDuration is the validity period for authorization codes (5 minutes).
@@ -103,8 +105,9 @@ func (s *OAuthServer) HandleMetadata(w http.ResponseWriter, r *http.Request) {
 		"revocation_endpoint":                   base + "/oauth2/revoke",
 		"response_types_supported":              []string{"code"},
 		"grant_types_supported":                 []string{"authorization_code", "refresh_token"},
-		"token_endpoint_auth_methods_supported": []string{"none"},
+		"token_endpoint_auth_methods_supported": []string{"client_secret_basic"},
 		"code_challenge_methods_supported":      []string{"S256"},
+		"scopes_supported":                      []string{"ucp:scopes:checkout_session"},
 	})
 }
 
@@ -179,6 +182,10 @@ func (s *OAuthServer) HandleToken(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !s.validateClientCredentials(w, r) {
 		return
 	}
 
@@ -303,6 +310,10 @@ func (s *OAuthServer) HandleRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !s.validateClientCredentials(w, r) {
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -413,6 +424,23 @@ func setCORSHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Mcp-Session-Id, Authorization")
 	w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
+}
+
+// validateClientCredentials checks HTTP Basic Auth credentials on the request.
+// Returns true if valid, false if it wrote an error response.
+func (s *OAuthServer) validateClientCredentials(w http.ResponseWriter, r *http.Request) bool {
+	clientID, clientSecret, ok := r.BasicAuth()
+	if !ok {
+		w.Header().Set("WWW-Authenticate", `Basic realm="oauth"`)
+		writeOAuthError(w, "invalid_client", "Missing client credentials", http.StatusUnauthorized)
+		return false
+	}
+	if clientID != OAuthClientID || clientSecret != OAuthClientSecret {
+		w.Header().Set("WWW-Authenticate", `Basic realm="oauth"`)
+		writeOAuthError(w, "invalid_client", "Invalid client credentials", http.StatusUnauthorized)
+		return false
+	}
+	return true
 }
 
 func writeOAuthError(w http.ResponseWriter, code, description string, status int) {

@@ -63,11 +63,12 @@ func TestDiscovery(t *testing.T) {
 	// Verify capabilities
 	capabilities := ucp["capabilities"].([]interface{})
 	expectedCaps := map[string]bool{
-		"dev.ucp.shopping.checkout":      false,
-		"dev.ucp.shopping.order":         false,
-		"dev.ucp.shopping.discount":      false,
-		"dev.ucp.shopping.fulfillment":   false,
-		"dev.ucp.shopping.buyer_consent": false,
+		"dev.ucp.shopping.checkout":       false,
+		"dev.ucp.shopping.order":          false,
+		"dev.ucp.shopping.discount":       false,
+		"dev.ucp.shopping.fulfillment":    false,
+		"dev.ucp.shopping.buyer_consent":  false,
+		"dev.ucp.common.identity_linking": false,
 	}
 	for _, cap := range capabilities {
 		capMap := cap.(map[string]interface{})
@@ -119,39 +120,28 @@ func TestDiscovery(t *testing.T) {
 
 	// Verify shopping service
 	services := ucp["services"].(map[string]interface{})
-	bindings, ok := services["dev.ucp.shopping"].([]interface{})
-	if !ok || len(bindings) == 0 {
+	shopping, ok := services["dev.ucp.shopping"].(map[string]interface{})
+	if !ok {
 		t.Fatal("Shopping service not found")
 	}
-	// Find the REST binding
-	var restBinding map[string]interface{}
-	for _, b := range bindings {
-		bm := b.(map[string]interface{})
-		if bm["transport"] == "rest" {
-			restBinding = bm
-			break
-		}
+	if shopping["version"] != "2026-01-11" {
+		t.Fatalf("Shopping service version mismatch: %v", shopping["version"])
 	}
-	if restBinding == nil {
+	// Verify REST transport binding
+	restBinding, ok := shopping["rest"].(map[string]interface{})
+	if !ok {
 		t.Fatal("REST binding not found for shopping service")
 	}
-	if restBinding["version"] != "2026-01-11" {
-		t.Fatalf("Shopping service version mismatch: %v", restBinding["version"])
-	}
 	if restBinding["endpoint"] == nil || restBinding["endpoint"] == "" {
-		t.Fatal("Endpoint not found for shopping service")
+		t.Fatal("Endpoint not found for REST binding")
 	}
-	// Verify MCP binding exists
-	var mcpFound bool
-	for _, b := range bindings {
-		bm := b.(map[string]interface{})
-		if bm["transport"] == "mcp" {
-			mcpFound = true
-			break
-		}
-	}
-	if !mcpFound {
+	// Verify MCP transport binding
+	mcpBinding, ok := shopping["mcp"].(map[string]interface{})
+	if !ok {
 		t.Fatal("MCP binding not found for shopping service")
+	}
+	if mcpBinding["endpoint"] == nil || mcpBinding["endpoint"] == "" {
+		t.Fatal("Endpoint not found for MCP binding")
 	}
 }
 

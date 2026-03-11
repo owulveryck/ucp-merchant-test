@@ -84,6 +84,7 @@ func TestHandleRevoke(t *testing.T) {
 	form := url.Values{"token": {token}}
 	req := httptest.NewRequest("POST", "/oauth2/revoke", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(OAuthClientID, OAuthClientSecret)
 	w := httptest.NewRecorder()
 	s.HandleRevoke(w, req)
 
@@ -158,6 +159,7 @@ func TestTokenExchangeFlow(t *testing.T) {
 	}
 	req = httptest.NewRequest("POST", "/oauth2/token", strings.NewReader(tokenForm.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(OAuthClientID, OAuthClientSecret)
 	w = httptest.NewRecorder()
 	s.HandleToken(w, req)
 	if w.Code != http.StatusOK {

@@ -40,21 +40,17 @@ func (s *Server) HandleDiscovery(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(model.UCPDiscovery{
 		UCP: model.UCPDiscoveryProfile{
 			Version: "2026-01-11",
-			Services: map[ucp.UCPService][]model.UCPServiceBinding{
+			Services: map[ucp.UCPService]model.UCPServiceEntry{
 				ucp.ServiceShopping: {
-					{
-						Version:   "2026-01-11",
-						Transport: "rest",
-						Endpoint:  base + "/shopping-api",
-						Spec:      base + "/specs/shopping",
-						Schema:    base + "/schemas/shopping/rest.json",
+					Version: "2026-01-11",
+					Spec:    base + "/specs/shopping",
+					Rest: &model.UCPTransportBinding{
+						Schema:   base + "/schemas/shopping/rest.json",
+						Endpoint: base + "/shopping-api",
 					},
-					{
-						Version:   "2026-01-11",
-						Transport: "mcp",
-						Endpoint:  base + "/mcp",
-						Spec:      base + "/specs/shopping",
-						Schema:    base + "/schemas/shopping/mcp.openrpc.json",
+					MCP: &model.UCPTransportBinding{
+						Schema:   base + "/schemas/shopping/mcp.openrpc.json",
+						Endpoint: base + "/mcp",
 					},
 				},
 			},
@@ -64,6 +60,7 @@ func (s *Server) HandleDiscovery(w http.ResponseWriter, r *http.Request) {
 				{Name: "dev.ucp.shopping.discount", Version: "2026-01-11", Spec: base + "/specs/shopping/discount", Schema: base + "/schemas/shopping/discount.json"},
 				{Name: "dev.ucp.shopping.fulfillment", Version: "2026-01-11", Spec: base + "/specs/shopping/fulfillment", Schema: base + "/schemas/shopping/fulfillment.json"},
 				{Name: "dev.ucp.shopping.buyer_consent", Version: "2026-01-11", Spec: base + "/specs/shopping/buyer_consent", Schema: base + "/schemas/shopping/buyer_consent.json"},
+				{Name: "dev.ucp.common.identity_linking", Version: "2026-01-11", Spec: base + "/specs/identity_linking", Schema: base + "/schemas/identity_linking.json"},
 			},
 		},
 		Payment: model.UCPPaymentProfile{
