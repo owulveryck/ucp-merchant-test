@@ -20,6 +20,7 @@ import (
 
 	"github.com/owulveryck/ucp-merchant-test/internal/auth"
 	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
+	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/a2a"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/discovery"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/mcp"
 	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/rest"
@@ -51,6 +52,7 @@ var merchantInstance *simpleMerchant
 // Global transport instances — initialized in newMux or main.
 var restServer *rest.Server
 var mcpServer *mcp.Server
+var a2aServer *a2a.Server
 
 var adjectives = []string{"Swift", "Bright", "Golden", "Silver", "Crystal", "Noble", "Royal", "Grand", "Prime", "Elite"}
 var nouns = []string{"Falcon", "Coral", "Harbor", "Summit", "Valley", "Atlas", "Phoenix", "Horizon", "Crest", "Bridge"}
@@ -80,6 +82,12 @@ func newMux() *http.ServeMux {
 		mcp.WithListenPort(func() int { return listenPort }),
 	)
 
+	a2aServer = a2a.New(merchantInstance, oauthServer,
+		a2a.WithMerchantName(merchantName),
+		a2a.WithListenPort(func() int { return listenPort }),
+		a2a.WithScheme(func() string { return scheme() }),
+	)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleDashboard)
 	mux.HandleFunc("/events", handleSSE)
@@ -87,6 +95,10 @@ func newMux() *http.ServeMux {
 
 	// MCP transport
 	mux.Handle("/mcp", mcpServer)
+
+	// A2A transport
+	mux.Handle("/a2a", a2aServer)
+	mux.HandleFunc("/.well-known/agent-card.json", a2aServer.HandleAgentCard)
 
 	// Discovery and OAuth
 	disc := discovery.New(func() string {
@@ -131,6 +143,9 @@ func handleReset(w http.ResponseWriter, r *http.Request) {
 	if mcpServer != nil {
 		mcpServer.Reset()
 	}
+	if a2aServer != nil {
+		a2aServer.Reset()
+	}
 	oauthServer.Reset()
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "reset"})
@@ -145,6 +160,9 @@ func resetStores() {
 	}
 	if mcpServer != nil {
 		mcpServer.Reset()
+	}
+	if a2aServer != nil {
+		a2aServer.Reset()
 	}
 	idempotencyStoreInstance.Reset()
 	oauthServer.Reset()
@@ -191,6 +209,8 @@ func main() {
 	log.Printf("Dashboard:     %s://localhost:%d/", s, listenPort)
 	log.Printf("MCP endpoint:  %s://localhost:%d/mcp", s, listenPort)
 	log.Printf("REST endpoint: %s://localhost:%d/shopping-api", s, listenPort)
+	log.Printf("A2A endpoint:  %s://localhost:%d/a2a", s, listenPort)
+	log.Printf("Agent Card:    %s://localhost:%d/.well-known/agent-card.json", s, listenPort)
 	log.Printf("UCP profile:   %s://localhost:%d/.well-known/ucp", s, listenPort)
 
 	if !tlsEnabled {

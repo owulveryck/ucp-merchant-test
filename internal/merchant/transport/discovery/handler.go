@@ -52,6 +52,9 @@ func (s *Server) HandleDiscovery(w http.ResponseWriter, r *http.Request) {
 						Schema:   base + "/schemas/shopping/mcp.openrpc.json",
 						Endpoint: base + "/mcp",
 					},
+					A2A: &model.UCPTransportBinding{
+						Endpoint: base + "/.well-known/agent-card.json",
+					},
 				},
 			},
 			Capabilities: []model.UCPCapabilityEntry{

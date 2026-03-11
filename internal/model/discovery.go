@@ -21,6 +21,7 @@ type UCPServiceEntry struct {
 	Spec    string               `json:"spec,omitempty"`
 	Rest    *UCPTransportBinding `json:"rest,omitempty"`
 	MCP     *UCPTransportBinding `json:"mcp,omitempty"`
+	A2A     *UCPTransportBinding `json:"a2a,omitempty"`
 }
 
 // UCPTransportBinding describes a transport endpoint for a UCP service.
