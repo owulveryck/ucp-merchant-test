@@ -1,0 +1,37 @@
+[
+  {
+    "id": "wireless_audio_headphones",
+    "title": "Wireless Audio Headphones",
+    "price": 7999,
+    "image_url": "https://example.com/audio_headphones.jpg",
+    "quantity": 60
+  },
+  {
+    "id": "usbc_cord",
+    "title": "USB-C Cord",
+    "price": 1199,
+    "image_url": "https://example.com/cord.jpg",
+    "quantity": 350
+  },
+  {
+    "id": "portable_speaker",
+    "title": "Portable Speaker",
+    "price": 3999,
+    "image_url": "https://example.com/portable_speaker.jpg",
+    "quantity": 180
+  },
+  {
+    "id": "phone_grip",
+    "title": "Phone Grip",
+    "price": 1499,
+    "image_url": "https://example.com/grip.jpg",
+    "quantity": 400
+  },
+  {
+    "id": "fast_charger",
+    "title": "Fast Charger",
+    "price": 1999,
+    "image_url": "https://example.com/fast_charger.jpg",
+    "quantity": 0
+  }
+]

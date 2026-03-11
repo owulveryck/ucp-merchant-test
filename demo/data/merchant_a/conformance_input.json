@@ -1,0 +1,18 @@
+{
+  "currency": "USD",
+  "items": [
+    {
+      "id": "wireless_headphones",
+      "title": "Wireless Headphones",
+      "price": 8999
+    }
+  ],
+  "out_of_stock_item": {
+    "id": "screen_protector",
+    "title": "Screen Protector"
+  },
+  "non_existent_item": {
+    "id": "pink_wumpus",
+    "title": "Pink Wumpus"
+  }
+}

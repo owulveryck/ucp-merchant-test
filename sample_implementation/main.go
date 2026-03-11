@@ -18,12 +18,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/auth"
-	"github.com/owulveryck/ucp-merchant-test/internal/idempotency"
-	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/a2a"
-	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/discovery"
-	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/mcp"
-	"github.com/owulveryck/ucp-merchant-test/internal/merchant/transport/rest"
+	"github.com/owulveryck/ucp-merchant-test/pkg/auth"
+	"github.com/owulveryck/ucp-merchant-test/pkg/idempotency"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/a2a"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/discovery"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/mcp"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/rest"
 )
 
 // Merchant identity
@@ -180,11 +180,14 @@ func main() {
 	flag.StringVar(&keyFile, "key", "", "path to TLS private key file")
 	flag.StringVar(&dataDir, "data-dir", "", "path to directory with test data (required)")
 	flag.StringVar(&dataFormat, "data-format", "csv", "format of test data files: csv or json")
+	flag.StringVar(&merchantName, "merchant-name", "", "merchant display name (random if empty)")
 	flag.StringVar(&simulationSecret, "simulation-secret", "", "secret for /testing/simulate-shipping endpoint")
 	flag.Parse()
 
 	tlsEnabled = useTLS
-	merchantName = generateMerchantName()
+	if merchantName == "" {
+		merchantName = generateMerchantName()
+	}
 
 	if dataDir == "" {
 		log.Fatalf("--data-dir is required")

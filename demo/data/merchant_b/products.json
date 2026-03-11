@@ -1,0 +1,37 @@
+[
+  {
+    "id": "bt_headset_pro",
+    "title": "Bluetooth Headset Pro",
+    "price": 8499,
+    "image_url": "https://example.com/headset.jpg",
+    "quantity": 80
+  },
+  {
+    "id": "usb_cable",
+    "title": "USB Cable",
+    "price": 1499,
+    "image_url": "https://example.com/usb.jpg",
+    "quantity": 400
+  },
+  {
+    "id": "smart_speaker",
+    "title": "Smart Speaker",
+    "price": 5999,
+    "image_url": "https://example.com/smart_speaker.jpg",
+    "quantity": 120
+  },
+  {
+    "id": "tablet_stand",
+    "title": "Tablet Stand",
+    "price": 2499,
+    "image_url": "https://example.com/stand.jpg",
+    "quantity": 250
+  },
+  {
+    "id": "wireless_charger",
+    "title": "Wireless Charger",
+    "price": 3499,
+    "image_url": "https://example.com/charger.jpg",
+    "quantity": 0
+  }
+]

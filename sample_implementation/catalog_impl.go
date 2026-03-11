@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
-	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
-	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
+	icatalog "github.com/owulveryck/ucp-merchant-test/pkg/catalog"
+	"github.com/owulveryck/ucp-merchant-test/pkg/ucp"
 )
 
 type catalogStore struct {

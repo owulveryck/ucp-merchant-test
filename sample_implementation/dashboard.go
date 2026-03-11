@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/model"
-	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
+	"github.com/owulveryck/ucp-merchant-test/pkg/model"
+	"github.com/owulveryck/ucp-merchant-test/pkg/ucp"
 )
 
 // EventHub broadcasts events to SSE subscribers.

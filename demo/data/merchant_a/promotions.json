@@ -1,0 +1,9 @@
+[
+  {
+    "id": "promo_1",
+    "type": "free_shipping",
+    "min_subtotal": 10000,
+    "eligible_item_ids": [],
+    "description": "Free Shipping on orders over $100"
+  }
+]

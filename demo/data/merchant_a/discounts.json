@@ -1,0 +1,14 @@
+[
+  {
+    "code": "SAVE10",
+    "type": "percentage",
+    "value": 10,
+    "description": "10% Off"
+  },
+  {
+    "code": "WELCOME15",
+    "type": "percentage",
+    "value": 15,
+    "description": "15% Off"
+  }
+]

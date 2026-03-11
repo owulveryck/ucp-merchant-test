@@ -1,0 +1,16 @@
+[
+  {
+    "id": "std-ship",
+    "country_code": "default",
+    "service_level": "standard",
+    "price": 799,
+    "title": "Standard Shipping"
+  },
+  {
+    "id": "exp-ship",
+    "country_code": "default",
+    "service_level": "express",
+    "price": 1999,
+    "title": "Express Shipping"
+  }
+]

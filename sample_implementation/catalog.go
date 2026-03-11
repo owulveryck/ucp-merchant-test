@@ -3,7 +3,7 @@ package main
 import (
 	"sync"
 
-	icatalog "github.com/owulveryck/ucp-merchant-test/internal/catalog"
+	icatalog "github.com/owulveryck/ucp-merchant-test/pkg/catalog"
 )
 
 // Product is an alias for the internal catalog.Product type.

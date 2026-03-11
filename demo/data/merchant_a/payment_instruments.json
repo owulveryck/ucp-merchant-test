@@ -1,0 +1,18 @@
+[
+  {
+    "id": "instr_1",
+    "type": "card",
+    "brand": "Visa",
+    "last_digits": "1234",
+    "token": "success_token",
+    "handler_id": "mock_payment_handler"
+  },
+  {
+    "id": "instr_fail",
+    "type": "card",
+    "brand": "Visa",
+    "last_digits": "0000",
+    "token": "fail_token",
+    "handler_id": "mock_payment_handler"
+  }
+]

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/jsondata"
-	"github.com/owulveryck/ucp-merchant-test/internal/merchant/discount"
-	"github.com/owulveryck/ucp-merchant-test/internal/merchant/fulfillment"
-	"github.com/owulveryck/ucp-merchant-test/internal/sample"
+	"github.com/owulveryck/ucp-merchant-test/pkg/jsondata"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/discount"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/fulfillment"
+	"github.com/owulveryck/ucp-merchant-test/pkg/sample"
 )
 
 // Address alias used in store.go and tests.

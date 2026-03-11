@@ -1,0 +1,44 @@
+[
+  {
+    "id": "wireless_headphones",
+    "title": "Wireless Headphones",
+    "price": 8999,
+    "image_url": "https://example.com/headphones.jpg",
+    "quantity": 100
+  },
+  {
+    "id": "usbc_cable",
+    "title": "USB-C Cable",
+    "price": 1299,
+    "image_url": "https://example.com/usbc.jpg",
+    "quantity": 500
+  },
+  {
+    "id": "bt_speaker",
+    "title": "Bluetooth Speaker",
+    "price": 4999,
+    "image_url": "https://example.com/speaker.jpg",
+    "quantity": 200
+  },
+  {
+    "id": "phone_case",
+    "title": "Phone Case",
+    "price": 1999,
+    "image_url": "https://example.com/case.jpg",
+    "quantity": 300
+  },
+  {
+    "id": "power_bank",
+    "title": "Power Bank",
+    "price": 2999,
+    "image_url": "https://example.com/powerbank.jpg",
+    "quantity": 150
+  },
+  {
+    "id": "screen_protector",
+    "title": "Screen Protector",
+    "price": 999,
+    "image_url": "https://example.com/protector.jpg",
+    "quantity": 0
+  }
+]

@@ -1,0 +1,23 @@
+merchants:
+  - id: supershop
+    name: SuperShop
+    endpoint: http://localhost:8182
+    score: 85
+    discount_hints:
+      - SAVE10
+      - WELCOME15
+
+  - id: megamart
+    name: MegaMart
+    endpoint: http://localhost:8183
+    score: 80
+    discount_hints:
+      - MEGA10
+
+  - id: budgetbuy
+    name: BudgetBuy
+    endpoint: http://localhost:8184
+    score: 90
+    discount_hints:
+      - BUDGET20
+      - SAVE5

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "addr_1",
+    "customer_id": "cust_1",
+    "street_address": "123 Main St",
+    "city": "Springfield",
+    "state": "IL",
+    "postal_code": "62704",
+    "country": "US"
+  },
+  {
+    "id": "addr_2",
+    "customer_id": "cust_1",
+    "street_address": "456 Oak Ave",
+    "city": "Metropolis",
+    "state": "NY",
+    "postal_code": "10012",
+    "country": "US"
+  },
+  {
+    "id": "addr_3",
+    "customer_id": "cust_2",
+    "street_address": "789 Pine Ln",
+    "city": "Smallville",
+    "state": "KS",
+    "postal_code": "66002",
+    "country": "US"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "code": "BUDGET20",
+    "type": "percentage",
+    "value": 20,
+    "description": "20% Off"
+  },
+  {
+    "code": "SAVE5",
+    "type": "fixed_amount",
+    "value": 500,
+    "description": "$5.00 Off"
+  }
+]

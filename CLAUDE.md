@@ -28,19 +28,21 @@ python3 <test_file>.py \
 
 ## Key Architecture
 
-The merchant server binary lives under `sample_implementation/`. The `merchant.Merchant` interface, sentinel errors, and transport adapters (REST, MCP) are in `internal/merchant/`. Business logic sub-packages are in `internal/merchant/` as well.
+The merchant server binary lives under `sample_implementation/`. The `merchant.Merchant` interface, sentinel errors, and transport adapters (REST, MCP) are in `pkg/merchant/`. Business logic sub-packages are in `pkg/merchant/` as well.
 
-- **REST transport** (`internal/merchant/transport/rest/`): HTTP handlers for checkout sessions, orders, simulation.
-- **MCP transport** (`internal/merchant/transport/mcp/`): JSON-RPC 2.0 tool handlers.
-- **Models** (`internal/model/`): UCP data types (`model.Checkout`, `model.Order`, etc.). All source files use qualified `model.X` names.
+- **REST transport** (`pkg/merchant/transport/rest/`): HTTP handlers for checkout sessions, orders, simulation.
+- **MCP transport** (`pkg/merchant/transport/mcp/`): JSON-RPC 2.0 tool handlers.
+- **A2A transport** (`pkg/merchant/transport/a2a/`): A2A JSON-RPC agent transport.
+- **Models** (`pkg/model/`): UCP data types (`model.Checkout`, `model.Order`, etc.). All source files use qualified `model.X` names.
 - **Data** (`data.go`): CSV loading for flower shop dataset. Global `shopData` variable.
-- **Merchant interface** (`internal/merchant/merchant.go`): `Cataloger`, `Carter`, `Checkouter`, `Orderer` interfaces.
-- **Internal packages**: `discount`, `fulfillment`, `payment`, `pricing` under `internal/merchant/` contain the business logic.
+- **Merchant interface** (`pkg/merchant/merchant.go`): `Cataloger`, `Carter`, `Checkouter`, `Orderer` interfaces.
+- **Internal packages**: `discount`, `fulfillment`, `payment`, `pricing` under `pkg/merchant/` contain the business logic.
+- **Demo** (`demo/`): Multi-agent shopping demo with Shopping Graph, Client Agent (Gemini), and Observability Hub.
 
 ## Conventions
 
 - After modifying any `.go` file, run `goimports -w <file>` to fix imports.
-- Module: `github.com/owulveryck/ucp-merchant-test`, Go 1.22, no external dependencies.
+- Module: `github.com/owulveryck/ucp-merchant-test`, Go 1.24, workspace (`go.work`) includes `demo/` module.
 - Error responses use JSON format: `{"detail": "message"}`.
 - UCP version is `2026-01-11` everywhere (discovery, checkout `ucp` field, order `ucp` field).
 - Totals types must be one of: `items_discount`, `subtotal`, `discount`, `fulfillment`, `tax`, `fee`, `total`. Never use `shipping`.

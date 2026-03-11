@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/owulveryck/ucp-merchant-test/internal/ucp"
+	"github.com/owulveryck/ucp-merchant-test/pkg/ucp"
 )
 
 var mcpIDCounter int64
