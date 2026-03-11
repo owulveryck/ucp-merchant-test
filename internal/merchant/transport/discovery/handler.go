@@ -40,13 +40,21 @@ func (s *Server) HandleDiscovery(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(model.UCPDiscovery{
 		UCP: model.UCPDiscoveryProfile{
 			Version: "2026-01-11",
-			Services: map[ucp.UCPService]model.UCPServiceEntry{
+			Services: map[ucp.UCPService][]model.UCPServiceBinding{
 				ucp.ServiceShopping: {
-					Version: "2026-01-11",
-					Spec:    base + "/specs/shopping",
-					REST: &model.UCPRESTConfig{
-						Endpoint: base + "/shopping-api",
-						Schema:   base + "/schemas/shopping/rest.json",
+					{
+						Version:   "2026-01-11",
+						Transport: "rest",
+						Endpoint:  base + "/shopping-api",
+						Spec:      base + "/specs/shopping",
+						Schema:    base + "/schemas/shopping/rest.json",
+					},
+					{
+						Version:   "2026-01-11",
+						Transport: "mcp",
+						Endpoint:  base + "/mcp",
+						Spec:      base + "/specs/shopping",
+						Schema:    base + "/schemas/shopping/mcp.openrpc.json",
 					},
 				},
 			},

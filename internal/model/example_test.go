@@ -90,11 +90,10 @@ func ExampleUCPDiscovery() {
 	d := model.UCPDiscovery{
 		UCP: model.UCPDiscoveryProfile{
 			Version: "2026-01-11",
-			Services: map[ucp.UCPService]model.UCPServiceEntry{
+			Services: map[ucp.UCPService][]model.UCPServiceBinding{
 				ucp.ServiceShopping: {
-					Version: "2026-01-11",
-					Spec:    "https://ucp.dev/specs/shopping",
-					REST:    &model.UCPRESTConfig{Endpoint: "/api/shopping"},
+					{Version: "2026-01-11", Transport: "rest", Endpoint: "/api/shopping", Spec: "https://ucp.dev/specs/shopping"},
+					{Version: "2026-01-11", Transport: "mcp", Endpoint: "/mcp", Spec: "https://ucp.dev/specs/shopping"},
 				},
 			},
 			Capabilities: []model.UCPCapabilityEntry{},
@@ -103,7 +102,7 @@ func ExampleUCPDiscovery() {
 	}
 
 	fmt.Println(d.UCP.Version)
-	fmt.Println(d.UCP.Services["dev.ucp.shopping"].Spec)
+	fmt.Println(d.UCP.Services["dev.ucp.shopping"][0].Spec)
 	// Output:
 	// 2026-01-11
 	// https://ucp.dev/specs/shopping

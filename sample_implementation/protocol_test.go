@@ -119,19 +119,39 @@ func TestDiscovery(t *testing.T) {
 
 	// Verify shopping service
 	services := ucp["services"].(map[string]interface{})
-	shopping, ok := services["dev.ucp.shopping"].(map[string]interface{})
-	if !ok {
+	bindings, ok := services["dev.ucp.shopping"].([]interface{})
+	if !ok || len(bindings) == 0 {
 		t.Fatal("Shopping service not found")
 	}
-	if shopping["version"] != "2026-01-11" {
-		t.Fatalf("Shopping service version mismatch: %v", shopping["version"])
+	// Find the REST binding
+	var restBinding map[string]interface{}
+	for _, b := range bindings {
+		bm := b.(map[string]interface{})
+		if bm["transport"] == "rest" {
+			restBinding = bm
+			break
+		}
 	}
-	rest, ok := shopping["rest"].(map[string]interface{})
-	if !ok {
-		t.Fatal("REST config not found for shopping service")
+	if restBinding == nil {
+		t.Fatal("REST binding not found for shopping service")
 	}
-	if rest["endpoint"] == nil || rest["endpoint"] == "" {
+	if restBinding["version"] != "2026-01-11" {
+		t.Fatalf("Shopping service version mismatch: %v", restBinding["version"])
+	}
+	if restBinding["endpoint"] == nil || restBinding["endpoint"] == "" {
 		t.Fatal("Endpoint not found for shopping service")
+	}
+	// Verify MCP binding exists
+	var mcpFound bool
+	for _, b := range bindings {
+		bm := b.(map[string]interface{})
+		if bm["transport"] == "mcp" {
+			mcpFound = true
+			break
+		}
+	}
+	if !mcpFound {
+		t.Fatal("MCP binding not found for shopping service")
 	}
 }
 

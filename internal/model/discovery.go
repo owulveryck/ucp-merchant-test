@@ -10,22 +10,19 @@ type UCPDiscovery struct {
 
 // UCPDiscoveryProfile describes the UCP services and capabilities.
 type UCPDiscoveryProfile struct {
-	Version      string                             `json:"version"`
-	Services     map[ucp.UCPService]UCPServiceEntry `json:"services"`
-	Capabilities []UCPCapabilityEntry               `json:"capabilities"`
+	Version      string                                 `json:"version"`
+	Services     map[ucp.UCPService][]UCPServiceBinding `json:"services"`
+	Capabilities []UCPCapabilityEntry                   `json:"capabilities"`
 }
 
-// UCPServiceEntry describes a single UCP service endpoint.
-type UCPServiceEntry struct {
-	Version string         `json:"version"`
-	Spec    string         `json:"spec"`
-	REST    *UCPRESTConfig `json:"rest,omitempty"`
-}
-
-// UCPRESTConfig holds REST endpoint details for a UCP service.
-type UCPRESTConfig struct {
-	Endpoint string `json:"endpoint"`
-	Schema   string `json:"schema"`
+// UCPServiceBinding describes a single transport binding for a UCP service.
+// Multiple bindings (REST, MCP, etc.) are grouped in an array per service.
+type UCPServiceBinding struct {
+	Version   string `json:"version"`
+	Transport string `json:"transport"`
+	Endpoint  string `json:"endpoint,omitempty"`
+	Spec      string `json:"spec,omitempty"`
+	Schema    string `json:"schema,omitempty"`
 }
 
 // UCPCapabilityEntry describes a UCP capability.
