@@ -64,15 +64,24 @@ func ObtainToken(httpClient *http.Client, baseURL, username, country string) (st
 	codeChallenge := base64.RawURLEncoding.EncodeToString(h[:])
 
 	// Step 1: Authorize
-	authData := url.Values{
-		"response_type":         {"code"},
-		"client_id":             {"agentflowui"},
-		"redirect_uri":          {"http://localhost:0/callback"},
-		"state":                 {"demo-state"},
-		"code_challenge":        {codeChallenge},
-		"code_challenge_method": {"S256"},
-		"username":              {username},
-		"country":               {country},
+	// OAuth params go in URL query string (read by HandleAuthorize before method check)
+	authURL, err := url.Parse(baseURL + "/oauth2/authorize")
+	if err != nil {
+		return "", 0, fmt.Errorf("parse auth URL: %w", err)
+	}
+	q := authURL.Query()
+	q.Set("client_id", "agentflowui")
+	q.Set("code_challenge", codeChallenge)
+	q.Set("code_challenge_method", "S256")
+	authURL.RawQuery = q.Encode()
+
+	// User-specific params go in POST form body (read by HandleAuthorize in POST branch)
+	formData := url.Values{
+		"username":       {username},
+		"country":        {country},
+		"redirect_uri":   {"http://localhost:0/callback"},
+		"state":          {"demo-state"},
+		"code_challenge": {codeChallenge},
 	}
 
 	noRedirect := &http.Client{
@@ -82,7 +91,7 @@ func ObtainToken(httpClient *http.Client, baseURL, username, country string) (st
 		},
 	}
 
-	authResp, err := noRedirect.PostForm(baseURL+"/oauth2/authorize", authData)
+	authResp, err := noRedirect.PostForm(authURL.String(), formData)
 	if err != nil {
 		return "", 0, fmt.Errorf("authorize: %w", err)
 	}

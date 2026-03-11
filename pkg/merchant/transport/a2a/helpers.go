@@ -95,6 +95,89 @@ func asDataPart(p a2alib.Part) (map[string]any, bool) {
 	return nil, false
 }
 
+// parseFulfillmentRequest converts a raw fulfillment map to a typed FulfillmentRequest.
+func parseFulfillmentRequest(data map[string]any) *model.FulfillmentRequest {
+	if data == nil {
+		return nil
+	}
+	fr := &model.FulfillmentRequest{}
+
+	rawMethods, _ := data["methods"].([]any)
+	for _, rm := range rawMethods {
+		m, ok := rm.(map[string]any)
+		if !ok {
+			continue
+		}
+		method := model.FulfillmentMethodRequest{}
+		if v, ok := m["id"].(string); ok {
+			method.ID = v
+		}
+		if v, ok := m["type"].(string); ok {
+			method.Type = v
+		}
+		if v, ok := m["selected_destination_id"].(string); ok {
+			method.SelectedDestinationID = v
+		}
+		if rawDests, ok := m["destinations"].([]any); ok {
+			for _, rd := range rawDests {
+				dm, ok := rd.(map[string]any)
+				if !ok {
+					continue
+				}
+				dest := model.FulfillmentDestinationRequest{}
+				if v, ok := dm["id"].(string); ok {
+					dest.ID = v
+				}
+				if v, ok := dm["full_name"].(string); ok {
+					dest.FullName = v
+				}
+				if v, ok := dm["street_address"].(string); ok {
+					dest.StreetAddress = v
+				}
+				if v, ok := dm["address_locality"].(string); ok {
+					dest.AddressLocality = v
+				}
+				if v, ok := dm["address_region"].(string); ok {
+					dest.AddressRegion = v
+				}
+				if v, ok := dm["postal_code"].(string); ok {
+					dest.PostalCode = v
+				}
+				if v, ok := dm["address_country"].(string); ok {
+					dest.AddressCountry = ucp.Country(v)
+				}
+				method.Destinations = append(method.Destinations, dest)
+			}
+		}
+		if rawGroups, ok := m["groups"].([]any); ok {
+			for _, rg := range rawGroups {
+				gm, ok := rg.(map[string]any)
+				if !ok {
+					continue
+				}
+				group := model.FulfillmentGroupRequest{}
+				if v, ok := gm["selected_option_id"].(string); ok {
+					group.SelectedOptionID = v
+				}
+				method.Groups = append(method.Groups, group)
+			}
+		}
+		fr.Methods = append(fr.Methods, method)
+	}
+	return fr
+}
+
+// parseDiscountCodes converts a raw []any of discount codes to a typed DiscountsRequest.
+func parseDiscountCodes(codes []any) *model.DiscountsRequest {
+	dr := &model.DiscountsRequest{}
+	for _, c := range codes {
+		if s, ok := c.(string); ok {
+			dr.Codes = append(dr.Codes, s)
+		}
+	}
+	return dr
+}
+
 // extractPaymentFromParts scans all parts for a DataPart containing
 // "a2a.ucp.checkout.payment" and returns its value.
 func extractPaymentFromParts(parts a2alib.ContentParts) map[string]any {

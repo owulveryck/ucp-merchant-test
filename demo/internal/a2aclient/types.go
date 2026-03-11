@@ -17,14 +17,15 @@ type SendParams struct {
 
 // Message is an A2A message with role and parts.
 type Message struct {
-	Role  string `json:"role"`
-	Parts []Part `json:"parts"`
+	MessageID string `json:"messageId"`
+	Role      string `json:"role"`
+	Parts     []Part `json:"parts"`
 }
 
 // Part is a content part in an A2A message.
 // Use either Text (for TextPart) or Data (for DataPart).
 type Part struct {
-	Type string         `json:"type"`
+	Kind string         `json:"kind"`
 	Text string         `json:"text,omitempty"`
 	Data map[string]any `json:"data,omitempty"`
 }
@@ -43,8 +44,21 @@ type RPCError struct {
 	Message string `json:"message"`
 }
 
-// MessageResponse is the parsed result of a message/send call.
-// The A2A server returns a Message directly (not a Task).
+// TaskResponse is the a2a-go response envelope (a Task, not a bare Message).
+type TaskResponse struct {
+	ID        string          `json:"id"`
+	ContextID string          `json:"contextId"`
+	Status    TaskStatus      `json:"status"`
+	History   json.RawMessage `json:"history,omitempty"`
+}
+
+// TaskStatus holds the state and optional message of a task.
+type TaskStatus struct {
+	State   string           `json:"state"`
+	Message *MessageResponse `json:"message,omitempty"`
+}
+
+// MessageResponse is the parsed result message within a task.
 type MessageResponse struct {
 	Role  string          `json:"role"`
 	Parts json.RawMessage `json:"parts"`

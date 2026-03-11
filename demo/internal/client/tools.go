@@ -63,17 +63,20 @@ func defineTools() []*genai.Tool {
 			},
 			{
 				Name:        "update_checkout",
-				Description: "Set buyer information and fulfillment address on a checkout",
+				Description: "Set buyer information and fulfillment on a checkout. Fulfillment is progressive: first set fulfillment_type to 'shipping', then select a destination with selected_destination_id, then select a shipping option with selected_option_id.",
 				Parameters: &genai.Schema{
 					Type: genai.TypeObject,
 					Properties: map[string]*genai.Schema{
-						"merchant_url": {Type: genai.TypeString, Description: "Merchant base URL"},
-						"checkout_id":  {Type: genai.TypeString, Description: "Checkout session ID"},
-						"email":        {Type: genai.TypeString, Description: "Buyer email"},
-						"first_name":   {Type: genai.TypeString, Description: "Buyer first name"},
-						"last_name":    {Type: genai.TypeString, Description: "Buyer last name"},
+						"merchant_url":            {Type: genai.TypeString, Description: "Merchant base URL"},
+						"checkout_id":             {Type: genai.TypeString, Description: "Checkout session ID"},
+						"email":                   {Type: genai.TypeString, Description: "Buyer email"},
+						"first_name":              {Type: genai.TypeString, Description: "Buyer first name"},
+						"last_name":               {Type: genai.TypeString, Description: "Buyer last name"},
+						"fulfillment_type":        {Type: genai.TypeString, Description: "Fulfillment method type, e.g. 'shipping'"},
+						"selected_destination_id": {Type: genai.TypeString, Description: "ID of the destination to select (from checkout fulfillment.methods[].destinations[].id)"},
+						"selected_option_id":      {Type: genai.TypeString, Description: "ID of the shipping option to select (from checkout fulfillment.methods[].groups[].options[].id)"},
 					},
-					Required: []string{"merchant_url", "checkout_id", "email"},
+					Required: []string{"merchant_url", "checkout_id"},
 				},
 			},
 			{
@@ -239,16 +242,40 @@ func (a *Agent) toolUpdateCheckout(args map[string]any) (string, error) {
 	email, _ := args["email"].(string)
 	firstName, _ := args["first_name"].(string)
 	lastName, _ := args["last_name"].(string)
+	fulfillmentType, _ := args["fulfillment_type"].(string)
+	selectedDestID, _ := args["selected_destination_id"].(string)
+	selectedOptID, _ := args["selected_option_id"].(string)
 
-	a.emitEvent("tool_call", fmt.Sprintf("Updating checkout %s with buyer %s", checkoutID, email))
+	a.emitEvent("tool_call", fmt.Sprintf("Updating checkout %s", checkoutID))
 
 	updateData := map[string]any{
 		"id": checkoutID,
-		"buyer": map[string]any{
+	}
+
+	if email != "" || firstName != "" || lastName != "" {
+		updateData["buyer"] = map[string]any{
 			"email":      email,
 			"first_name": firstName,
 			"last_name":  lastName,
-		},
+		}
+	}
+
+	if fulfillmentType != "" || selectedDestID != "" || selectedOptID != "" {
+		method := map[string]any{}
+		if fulfillmentType != "" {
+			method["type"] = fulfillmentType
+		}
+		if selectedDestID != "" {
+			method["selected_destination_id"] = selectedDestID
+		}
+		if selectedOptID != "" {
+			method["groups"] = []any{
+				map[string]any{"selected_option_id": selectedOptID},
+			}
+		}
+		updateData["fulfillment"] = map[string]any{
+			"methods": []any{method},
+		}
 	}
 
 	result, err := a.a2aClient.SendAction(merchantURL, "update_checkout", updateData)

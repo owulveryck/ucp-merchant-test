@@ -92,6 +92,14 @@ func (s *Server) handleUpdateCheckout(_ context.Context, ac *actionContext) (map
 		req.Buyer = parseBuyerRequest(buyerData)
 	}
 
+	if fulfillmentData, ok := checkoutData["fulfillment"].(map[string]any); ok {
+		req.Fulfillment = parseFulfillmentRequest(fulfillmentData)
+	}
+
+	if discountCodes, ok := checkoutData["discount_codes"].([]any); ok {
+		req.Discounts = parseDiscountCodes(discountCodes)
+	}
+
 	co, hash, err := s.merchant.UpdateCheckout(id, ac.userID, req)
 	if err != nil {
 		return nil, err
