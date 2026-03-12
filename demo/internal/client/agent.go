@@ -1,12 +1,15 @@
 package client
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"google.golang.org/genai"
 
@@ -69,12 +72,15 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 	}
 
 	for i := 0; i < 20; i++ {
+		a.emitEvent("agent_step", fmt.Sprintf("Step %d", i+1))
+
 		resp, err := a.genaiClient.Models.GenerateContent(ctx, a.model, contents, config)
 		if err != nil {
 			return "", fmt.Errorf("generate content: %w", err)
 		}
 
 		if len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil {
+			a.emitEvent("agent_error", "Empty response from model")
 			return "", fmt.Errorf("empty response from model")
 		}
 
@@ -94,12 +100,16 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 			}
 		}
 
+		if len(functionCalls) > 0 && len(textParts) > 0 {
+			a.emitEvent("agent_thinking", strings.Join(textParts, "\n"))
+		}
+
 		if len(functionCalls) == 0 {
 			result := ""
 			for _, t := range textParts {
 				result += t
 			}
-			a.emitEvent("agent_done", "Agent completed")
+			a.emitEvent("agent_done", result)
 			return result, nil
 		}
 
@@ -110,6 +120,7 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 			result, err := a.executeTool(fc.Name, fc.Args)
 			if err != nil {
 				log.Printf("Tool error: %s: %v", fc.Name, err)
+				a.emitEvent("tool_error", fmt.Sprintf("Tool %s failed: %v", fc.Name, err))
 				responseParts = append(responseParts, &genai.Part{
 					FunctionResponse: &genai.FunctionResponse{
 						ID:       fc.ID,
@@ -136,6 +147,7 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 						},
 					})
 				}
+				a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)))
 			}
 		}
 
@@ -145,7 +157,63 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 		})
 	}
 
+	a.emitEvent("agent_error", "Exceeded maximum iterations")
 	return "", fmt.Errorf("exceeded maximum iterations")
+}
+
+// ListenCommands connects to the obs hub SSE command stream and runs
+// instructions as they arrive. It blocks until ctx is cancelled.
+func (a *Agent) ListenCommands(ctx context.Context, obsURL string) {
+	for {
+		if err := a.listenCommandsOnce(ctx, obsURL); err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			log.Printf("commands SSE error: %v, reconnecting...", err)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(2 * time.Second):
+			}
+		}
+	}
+}
+
+func (a *Agent) listenCommandsOnce(ctx context.Context, obsURL string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, obsURL+"/commands", nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		payload := strings.TrimPrefix(line, "data: ")
+		var cmd struct {
+			Instruction string `json:"instruction"`
+		}
+		if json.Unmarshal([]byte(payload), &cmd) != nil || cmd.Instruction == "" {
+			continue
+		}
+		log.Printf("Received command: %s", cmd.Instruction)
+		go func(instr string) {
+			result, err := a.Run(ctx, instr)
+			if err != nil {
+				log.Printf("command run error: %v", err)
+				return
+			}
+			log.Printf("command result: %s", result)
+		}(cmd.Instruction)
+	}
+	return scanner.Err()
 }
 
 func (a *Agent) searchGraph(query string, limit int) (map[string]any, error) {
