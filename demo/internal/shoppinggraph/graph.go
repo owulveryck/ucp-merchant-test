@@ -49,6 +49,15 @@ type SearchResult struct {
 	DiscountHints []string `json:"discount_hints,omitempty"`
 }
 
+// RankingAlgorithm identifies a search ranking strategy.
+type RankingAlgorithm string
+
+const (
+	RankJaccard      RankingAlgorithm = "jaccard"
+	RankJaccardPrice RankingAlgorithm = "jaccard_price"
+	RankPriceOnly    RankingAlgorithm = "price"
+)
+
 // ShoppingGraph maintains an index of products across merchants.
 type ShoppingGraph struct {
 	mu          sync.RWMutex
@@ -56,13 +65,29 @@ type ShoppingGraph struct {
 	Merchants   map[string]*MerchantNode
 	Groups      []*ProductGroup
 	LastUpdated time.Time
+	RankAlgo    RankingAlgorithm
 }
 
 // NewShoppingGraph creates an empty shopping graph.
 func NewShoppingGraph() *ShoppingGraph {
 	return &ShoppingGraph{
 		Merchants: make(map[string]*MerchantNode),
+		RankAlgo:  RankJaccard,
 	}
+}
+
+// SetRankAlgo changes the ranking algorithm used for search.
+func (g *ShoppingGraph) SetRankAlgo(algo RankingAlgorithm) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.RankAlgo = algo
+}
+
+// GetRankAlgo returns the current ranking algorithm.
+func (g *ShoppingGraph) GetRankAlgo() RankingAlgorithm {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return g.RankAlgo
 }
 
 // UpdateMerchantProducts replaces all products for a merchant.

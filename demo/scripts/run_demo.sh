@@ -29,7 +29,7 @@ trap cleanup EXIT
 
 echo ""
 echo "=== Starting Observability Hub (port $OBS) ==="
-"$DEMO_DIR/bin/obs-hub" --port $OBS &
+"$DEMO_DIR/bin/obs-hub" --port $OBS --graph-url "http://localhost:$GRAPH" &
 PIDS+=($!)
 
 echo "=== Starting SuperShop (port $MA) ==="

@@ -19,7 +19,7 @@ import (
 func main() {
 	project := flag.String("project", os.Getenv("GOOGLE_CLOUD_PROJECT"), "GCP project for Vertex AI")
 	location := flag.String("location", envOrDefault("GOOGLE_CLOUD_LOCATION", "us-central1"), "Vertex AI location")
-	model := flag.String("model", "gemini-2.0-flash", "Gemini model name")
+	model := flag.String("model", "gemini-2.5-flash", "Gemini model name")
 	graphURL := flag.String("graph-url", "http://localhost:9000", "Shopping Graph URL")
 	obsURL := flag.String("obs-url", "", "Observability Hub URL")
 	instruction := flag.String("instruction", "", "one-shot instruction (interactive if empty)")
@@ -43,6 +43,10 @@ func main() {
 
 	a2aClient := a2aclient.NewClient("john.doe@example.com", "US", *obsURL)
 	agent := client.NewAgent(genaiClient, *model, a2aClient, *graphURL, *obsURL)
+
+	if *obsURL != "" {
+		go agent.ListenCommands(ctx, *obsURL)
+	}
 
 	if *mcpPort > 0 {
 		mcpSrv := client.NewMCPServer(agent)

@@ -2,6 +2,7 @@ package shoppinggraph
 
 import (
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -23,6 +24,7 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 	}
 
 	g.mu.RLock()
+	algo := g.RankAlgo
 	defer g.mu.RUnlock()
 
 	type scored struct {
@@ -36,7 +38,6 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 		if sim < 0.1 {
 			continue
 		}
-		// Weight by merchant score
 		merchantScore := 1.0
 		if m, ok := g.Merchants[p.MerchantID]; ok {
 			merchantScore = float64(m.Score) / 100.0
@@ -44,14 +45,24 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 				continue
 			}
 		}
-		// Boost in-stock items
 		stockBoost := 1.0
 		if p.Quantity > 0 {
 			stockBoost = 1.5
 		}
+
+		var s float64
+		switch algo {
+		case RankJaccardPrice:
+			s = sim * merchantScore * stockBoost * (1.0 / math.Log2(float64(p.Price)+2))
+		case RankPriceOnly:
+			// Use negative price so higher score = lower price
+			s = -float64(p.Price)
+		default: // RankJaccard
+			s = sim * merchantScore * stockBoost
+		}
 		candidates = append(candidates, scored{
 			product: p,
-			score:   sim * merchantScore * stockBoost,
+			score:   s,
 		})
 	}
 

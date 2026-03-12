@@ -30,6 +30,11 @@ func NewClient(username, country, obsURL string) *Client {
 	}
 }
 
+// ObsURL returns the observability hub URL.
+func (c *Client) ObsURL() string {
+	return c.obsURL
+}
+
 // ensureToken returns a cached or newly obtained token for the base URL.
 func (c *Client) ensureToken(baseURL string) (string, error) {
 	tok := c.tokens.Get(baseURL)

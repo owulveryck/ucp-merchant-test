@@ -100,7 +100,7 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 			}
 		}
 
-		if len(functionCalls) > 0 && len(textParts) > 0 {
+		if len(textParts) > 0 {
 			a.emitEvent("agent_thinking", strings.Join(textParts, "\n"))
 		}
 

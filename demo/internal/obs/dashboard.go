@@ -51,6 +51,19 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
 .modal .modal-buttons button { border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
 .modal .btn-search { background: #00D2DD; color: #0E2356; }
 .modal .btn-cancel { background: #3E4F78; color: #B7BDCC; }
+#node-super, #node-mega, #node-budget, #node-graph { cursor: pointer; }
+.catalog-modal { background: #1B2F5E; border: 1px solid #3E4F78; border-radius: 12px; padding: 1.5rem; width: 680px; max-height: 80vh; box-shadow: 0 8px 32px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
+.catalog-modal h2 { font-size: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+.catalog-modal .close-btn { background: #3E4F78; color: #B7BDCC; border: none; border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.85rem; cursor: pointer; }
+.catalog-modal .close-btn:hover { background: #4A5A85; }
+.catalog-table-wrap { overflow-y: auto; flex: 1; }
+.catalog-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.catalog-table th { position: sticky; top: 0; background: #263967; text-align: left; padding: 0.5rem 0.75rem; color: #00D2DD; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.catalog-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #2A3D6B; color: #DDE0E8; }
+.catalog-table tr:hover td { background: #263967; }
+.catalog-loading { text-align: center; padding: 2rem; color: #B7BDCC; }
+.catalog-error { text-align: center; padding: 2rem; color: #FF6B6B; }
+.stock-zero { color: #FF6B6B; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -128,6 +141,24 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
 <div class="bottombar">
   <div class="desc" id="bottom-desc">Waiting for events...</div>
   <div class="badge" id="bottom-badge" style="display:none"></div>
+</div>
+
+<div class="modal-overlay" id="catalog-modal">
+  <div class="catalog-modal">
+    <h2><span id="catalog-title">Catalog</span><button class="close-btn" id="catalog-close">Close</button></h2>
+    <div class="catalog-table-wrap" id="catalog-body">
+      <div class="catalog-loading">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="graph-modal">
+  <div class="catalog-modal">
+    <h2><span>Shopping Graph</span><button class="close-btn" id="graph-close">Close</button></h2>
+    <div id="graph-modal-body" style="padding: 0.5rem 0;">
+      <div class="catalog-loading">Loading...</div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="command-modal">
@@ -327,6 +358,12 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       panelHeader.textContent = 'Activity Log';
     }
     if (ev.type === 'agent_thinking' && ev.summary) {
+      appendToPanel('thinking-entry', ev.summary);
+    }
+    if (ev.type === 'tool_call' && ev.summary) {
+      appendToPanel('thinking-entry', ev.summary);
+    }
+    if (ev.type === 'tool_result' && ev.summary) {
       appendToPanel('thinking-entry', ev.summary);
     }
     if (ev.type === 'tool_error' && ev.summary) {
@@ -535,6 +572,124 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && modal.classList.contains('visible')) hideModal();
+    if (e.key === 'Escape' && catalogModal.classList.contains('visible')) hideCatalog();
+  });
+
+  // Catalog modal
+  var MERCHANT_INFO = {
+    'node-super':  { name: 'SuperShop',  port: '8182' },
+    'node-mega':   { name: 'MegaMart',   port: '8183' },
+    'node-budget': { name: 'BudgetBuy',  port: '8184' }
+  };
+
+  var catalogModal = document.getElementById('catalog-modal');
+  var catalogTitle = document.getElementById('catalog-title');
+  var catalogBody = document.getElementById('catalog-body');
+
+  function formatPrice(cents) {
+    return '$' + (cents / 100).toFixed(2);
+  }
+
+  function showCatalog(nodeId) {
+    var info = MERCHANT_INFO[nodeId];
+    if (!info) return;
+    catalogTitle.textContent = info.name + ' Catalog';
+    catalogBody.innerHTML = '<div class="catalog-loading">Loading...</div>';
+    catalogModal.classList.add('visible');
+
+    fetch('/catalog?port=' + info.port)
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Server error'); });
+        return r.json();
+      })
+      .then(function(data) {
+        var products = data.products || data.items || [];
+        if (!Array.isArray(products)) {
+          // try extracting from the response wrapper
+          for (var k in data) {
+            if (Array.isArray(data[k])) { products = data[k]; break; }
+          }
+        }
+        if (products.length === 0) {
+          catalogBody.innerHTML = '<div class="catalog-loading">No products found</div>';
+          return;
+        }
+        var html = '<table class="catalog-table"><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th></tr></thead><tbody>';
+        for (var i = 0; i < products.length; i++) {
+          var p = products[i];
+          var title = p.title || p.name || '';
+          var category = p.category || '';
+          var price = typeof p.price === 'number' ? formatPrice(p.price) : (p.price || '');
+          var stock = p.quantity != null ? p.quantity : (p.stock != null ? p.stock : '');
+          var stockClass = (stock === 0) ? ' class="stock-zero"' : '';
+          html += '<tr><td>' + escapeHtml(title) + '</td><td>' + escapeHtml(category) + '</td><td>' + escapeHtml(String(price)) + '</td><td' + stockClass + '>' + escapeHtml(String(stock)) + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        catalogBody.innerHTML = html;
+      })
+      .catch(function(err) {
+        catalogBody.innerHTML = '<div class="catalog-error">' + escapeHtml(err.message) + '</div>';
+      });
+  }
+
+  function hideCatalog() { catalogModal.classList.remove('visible'); }
+
+  document.getElementById('catalog-close').addEventListener('click', hideCatalog);
+
+  ['node-super', 'node-mega', 'node-budget'].forEach(function(id) {
+    document.getElementById(id).addEventListener('click', function() { showCatalog(id); });
+  });
+
+  // Graph modal
+  var graphModal = document.getElementById('graph-modal');
+  var graphModalBody = document.getElementById('graph-modal-body');
+
+  function hideGraph() { graphModal.classList.remove('visible'); }
+  document.getElementById('graph-close').addEventListener('click', hideGraph);
+
+  function showGraphModal() {
+    graphModalBody.innerHTML = '<div class="catalog-loading">Loading...</div>';
+    graphModal.classList.add('visible');
+
+    Promise.all([
+      fetch('/graph/health').then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('unreachable')); }),
+      fetch('/graph/ranking').then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('unreachable')); })
+    ]).then(function(results) {
+      var health = results[0];
+      var ranking = results[1];
+      var options = (ranking.available || []).map(function(a) {
+        var sel = a === ranking.algorithm ? ' selected' : '';
+        return '<option value="' + a + '"' + sel + '>' + a + '</option>';
+      }).join('');
+      graphModalBody.innerHTML =
+        '<table class="catalog-table">' +
+        '<thead><tr><th colspan="2">Health</th></tr></thead><tbody>' +
+        '<tr><td>Merchants Online</td><td>' + (health.merchants_online || 0) + ' / ' + (health.merchants_total || 0) + '</td></tr>' +
+        '<tr><td>Products</td><td>' + (health.products_total || 0) + '</td></tr>' +
+        '<tr><td>Groups</td><td>' + (health.groups_total || 0) + '</td></tr>' +
+        '<tr><td>Last Updated</td><td>' + (health.last_updated ? new Date(health.last_updated).toLocaleTimeString() : 'never') + '</td></tr>' +
+        '</tbody></table>' +
+        '<div style="margin-top:1rem;padding:0 0.75rem;">' +
+        '<label style="font-size:0.85rem;color:#B7BDCC;">Ranking Algorithm</label>' +
+        '<select id="ranking-select" style="display:block;width:100%;margin-top:0.3rem;padding:0.5rem 0.75rem;border:1px solid #3E4F78;border-radius:6px;background:#0E2356;color:#FFF;font-size:0.9rem;outline:none;">' +
+        options + '</select></div>';
+      document.getElementById('ranking-select').addEventListener('change', function() {
+        var algo = this.value;
+        fetch('/graph/ranking', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({algorithm: algo})
+        });
+      });
+    }).catch(function(err) {
+      graphModalBody.innerHTML = '<div class="catalog-error">' + escapeHtml(err.message) + '</div>';
+    });
+  }
+
+  document.getElementById('node-graph').addEventListener('click', function() { showGraphModal(); });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && graphModal.classList.contains('visible')) hideGraph();
   });
 
 })();

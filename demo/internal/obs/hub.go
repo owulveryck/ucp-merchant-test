@@ -19,17 +19,24 @@ type Event struct {
 	Duration  int64     `json:"duration_ms,omitempty"`
 }
 
+// Command is an instruction sent from the dashboard to the client agent.
+type Command struct {
+	Instruction string `json:"instruction"`
+}
+
 // Hub collects events and broadcasts them to SSE subscribers.
 type Hub struct {
 	mu          sync.RWMutex
 	events      []Event
 	subscribers map[chan Event]struct{}
+	commands    chan Command
 }
 
 // NewHub creates a new observability hub.
 func NewHub() *Hub {
 	return &Hub{
 		subscribers: make(map[chan Event]struct{}),
+		commands:    make(chan Command, 8),
 	}
 }
 
@@ -82,6 +89,19 @@ func (h *Hub) Unsubscribe(ch chan Event) {
 	delete(h.subscribers, ch)
 	h.mu.Unlock()
 	close(ch)
+}
+
+// SendCommand sends a command to the commands channel (non-blocking).
+func (h *Hub) SendCommand(cmd Command) {
+	select {
+	case h.commands <- cmd:
+	default:
+	}
+}
+
+// Commands returns a read-only channel for consuming commands.
+func (h *Hub) Commands() <-chan Command {
+	return h.commands
 }
 
 // Report generates a summary report as JSON.

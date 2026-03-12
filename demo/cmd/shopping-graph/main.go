@@ -44,7 +44,7 @@ func main() {
 	}
 
 	client := a2aclient.NewClient("john.doe@example.com", "US", *obsURL)
-	poller := shoppinggraph.NewPoller(graph, client, *pollInterval)
+	poller := shoppinggraph.NewPoller(graph, client, *pollInterval, client.ObsURL())
 	poller.Start()
 	defer poller.Stop()
 

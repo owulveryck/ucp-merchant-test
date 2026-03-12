@@ -1,7 +1,11 @@
 package shoppinggraph
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/owulveryck/ucp-merchant-test/demo/internal/a2aclient"
@@ -12,15 +16,17 @@ type Poller struct {
 	graph    *ShoppingGraph
 	client   *a2aclient.Client
 	interval time.Duration
+	obsURL   string
 	stop     chan struct{}
 }
 
 // NewPoller creates a new merchant poller.
-func NewPoller(graph *ShoppingGraph, client *a2aclient.Client, interval time.Duration) *Poller {
+func NewPoller(graph *ShoppingGraph, client *a2aclient.Client, interval time.Duration, obsURL string) *Poller {
 	return &Poller{
 		graph:    graph,
 		client:   client,
 		interval: interval,
+		obsURL:   obsURL,
 		stop:     make(chan struct{}),
 	}
 }
@@ -60,12 +66,31 @@ func (p *Poller) pollAll() {
 	}
 }
 
+func (p *Poller) emitEvent(eventType, summary string) {
+	if p.obsURL == "" {
+		return
+	}
+	event := map[string]any{
+		"source":  "shopping-graph",
+		"type":    eventType,
+		"summary": summary,
+	}
+	data, _ := json.Marshal(event)
+	resp, err := http.Post(p.obsURL+"/event", "application/json", bytes.NewReader(data))
+	if err != nil {
+		log.Printf("obs event error: %v", err)
+		return
+	}
+	resp.Body.Close()
+}
+
 func (p *Poller) pollMerchant(m *MerchantNode) {
 	result, err := p.client.SendAction(m.Endpoint, "list_products", map[string]any{
 		"limit": float64(50),
 	})
 	if err != nil {
 		log.Printf("poll %s (%s): %v", m.Name, m.Endpoint, err)
+		p.emitEvent("tool_call", fmt.Sprintf("Poll failed: %s at %s", m.Name, m.Endpoint))
 		p.graph.MarkOffline(m.ID)
 		return
 	}
@@ -73,6 +98,7 @@ func (p *Poller) pollMerchant(m *MerchantNode) {
 	rawProducts, ok := result["products"].([]any)
 	if !ok {
 		log.Printf("poll %s: unexpected products format", m.Name)
+		p.emitEvent("tool_call", fmt.Sprintf("Poll failed: %s at %s", m.Name, m.Endpoint))
 		p.graph.MarkOffline(m.ID)
 		return
 	}
@@ -107,5 +133,6 @@ func (p *Poller) pollMerchant(m *MerchantNode) {
 	}
 
 	log.Printf("poll %s: %d products", m.Name, len(products))
+	p.emitEvent("tool_call", fmt.Sprintf("Polled %s — %d products at %s", m.Name, len(products), m.Endpoint))
 	p.graph.UpdateMerchantProducts(m.ID, products)
 }

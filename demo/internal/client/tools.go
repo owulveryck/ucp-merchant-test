@@ -218,7 +218,7 @@ func (a *Agent) toolApplyDiscountCodes(args map[string]any) (string, error) {
 		codes[i] = strings.TrimSpace(codes[i])
 	}
 
-	a.emitEvent("tool_call", fmt.Sprintf("Applying codes %v to checkout %s", codes, checkoutID))
+	a.emitEvent("tool_call", fmt.Sprintf("Applying discount %s to checkout %s at %s", strings.Join(codes, "+"), checkoutID, merchantURL))
 
 	result, err := a.a2aClient.SendAction(merchantURL, "update_checkout", map[string]any{
 		"id":             checkoutID,
@@ -246,7 +246,26 @@ func (a *Agent) toolUpdateCheckout(args map[string]any) (string, error) {
 	selectedDestID, _ := args["selected_destination_id"].(string)
 	selectedOptID, _ := args["selected_option_id"].(string)
 
-	a.emitEvent("tool_call", fmt.Sprintf("Updating checkout %s", checkoutID))
+	var fields []string
+	if email != "" || firstName != "" || lastName != "" {
+		fields = append(fields, "buyer")
+	}
+	if fulfillmentType != "" {
+		fields = append(fields, "shipping")
+	}
+	if selectedDestID != "" {
+		fields = append(fields, "destination")
+	}
+	if selectedOptID != "" {
+		fields = append(fields, "option")
+	}
+	detail := strings.Join(fields, " + ")
+	if detail == "" {
+		detail = checkoutID
+	} else {
+		detail = checkoutID + ": " + detail
+	}
+	a.emitEvent("tool_call", fmt.Sprintf("Updating checkout %s at %s", detail, merchantURL))
 
 	updateData := map[string]any{
 		"id": checkoutID,
@@ -295,7 +314,7 @@ func (a *Agent) toolGetCheckoutSummary(args map[string]any) (string, error) {
 	merchantURL, _ := args["merchant_url"].(string)
 	checkoutID, _ := args["checkout_id"].(string)
 
-	a.emitEvent("tool_call", fmt.Sprintf("Getting checkout summary %s", checkoutID))
+	a.emitEvent("tool_call", fmt.Sprintf("Getting checkout summary %s at %s", checkoutID, merchantURL))
 
 	result, err := a.a2aClient.SendAction(merchantURL, "get_checkout", map[string]any{
 		"id": checkoutID,
@@ -318,7 +337,7 @@ func (a *Agent) toolCompleteCheckout(args map[string]any) (string, error) {
 	handlerID, _ := args["handler_id"].(string)
 	token, _ := args["token"].(string)
 
-	a.emitEvent("tool_call", fmt.Sprintf("Completing checkout %s", checkoutID))
+	a.emitEvent("tool_call", fmt.Sprintf("Completing checkout %s (token: %s) at %s", checkoutID, token, merchantURL))
 
 	payment := map[string]any{
 		"handler_id": handlerID,
@@ -339,7 +358,7 @@ func (a *Agent) toolCancelCheckout(args map[string]any) (string, error) {
 	merchantURL, _ := args["merchant_url"].(string)
 	checkoutID, _ := args["checkout_id"].(string)
 
-	a.emitEvent("tool_call", fmt.Sprintf("Cancelling checkout %s", checkoutID))
+	a.emitEvent("tool_call", fmt.Sprintf("Cancelling checkout %s at %s", checkoutID, merchantURL))
 
 	result, err := a.a2aClient.SendAction(merchantURL, "cancel_checkout", map[string]any{
 		"id": checkoutID,
