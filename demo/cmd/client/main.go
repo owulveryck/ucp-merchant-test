@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -22,6 +23,7 @@ func main() {
 	graphURL := flag.String("graph-url", "http://localhost:9000", "Shopping Graph URL")
 	obsURL := flag.String("obs-url", "", "Observability Hub URL")
 	instruction := flag.String("instruction", "", "one-shot instruction (interactive if empty)")
+	mcpPort := flag.Int("mcp-port", 0, "MCP server port (0 = disabled)")
 	flag.Parse()
 
 	if *project == "" {
@@ -41,6 +43,17 @@ func main() {
 
 	a2aClient := a2aclient.NewClient("john.doe@example.com", "US", *obsURL)
 	agent := client.NewAgent(genaiClient, *model, a2aClient, *graphURL, *obsURL)
+
+	if *mcpPort > 0 {
+		mcpSrv := client.NewMCPServer(agent)
+		mux := http.NewServeMux()
+		mux.Handle("/mcp", mcpSrv)
+		go func() {
+			addr := fmt.Sprintf(":%d", *mcpPort)
+			log.Printf("MCP endpoint: http://localhost%s/mcp", addr)
+			log.Fatal(http.ListenAndServe(addr, mux))
+		}()
+	}
 
 	if *instruction != "" {
 		result, err := agent.Run(ctx, *instruction)
