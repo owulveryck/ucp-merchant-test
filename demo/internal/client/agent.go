@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/genai"
@@ -16,13 +17,14 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/demo/internal/a2aclient"
 )
 
-const systemPrompt = `You are a shopping assistant that finds the best deals across multiple merchants.
+func buildSystemPrompt(merchantCount int) string {
+	return fmt.Sprintf(`You are a shopping assistant that finds the best deals across multiple merchants.
 
 WORKFLOW:
-1. Use search_products to find matching products across all merchants
-2. Use get_product_details for the top 3 results (from different merchants) to verify stock
-3. Use create_checkout at all qualifying merchants (up to 3) to start checkout sessions
-4. Use list_promotions at each merchant to discover available discount codes
+1. Use search_products to find matching products across all merchants (limit is set to %d automatically)
+2. Call get_product_details for ALL %d results (from different merchants) to verify stock — issue ALL calls in a single step
+3. Call create_checkout at all qualifying merchants (up to %d) to start checkout sessions — issue ALL calls in a single step
+4. Call list_promotions at all merchants — issue ALL calls in a single step
 5. If promotions are available, use apply_discount_codes with the discovered codes
 6. Use update_checkout to set buyer info (email: john.doe@example.com, first_name: John, last_name: Doe) AND fulfillment_type "shipping"
 7. Use get_checkout_summary to read available destinations from checkout fulfillment
@@ -33,21 +35,25 @@ WORKFLOW:
 12. Use complete_checkout at the cheapest merchant (handler_id: "mock_payment_handler", token: "success_token")
 13. Use cancel_checkout at the other merchants
 
+IMPORTANT: When multiple calls are independent (same tool on different merchants), issue ALL of them in a single step. This enables parallel execution and is critical for performance.
+
 IMPORTANT: Fulfillment is progressive. You MUST do steps 6-10 for EACH merchant checkout before comparing prices.
 Each update_checkout call for fulfillment builds on the previous state. Do not skip steps.
 
 Always show a clear price comparison before purchasing. Format prices as dollars (divide cents by 100).
 When applying discount codes, try all hints provided in the search results.
-Explain which merchant won and why (lowest total after discounts and shipping).`
+Explain which merchant won and why (lowest total after discounts and shipping).`, merchantCount, merchantCount, merchantCount)
+}
 
 // Agent is the Gemini-powered shopping assistant.
 type Agent struct {
-	genaiClient   *genai.Client
-	model         string
-	a2aClient     *a2aclient.Client
-	graphURL      string
-	obsURL        string
-	maxIterations int
+	genaiClient          *genai.Client
+	model                string
+	a2aClient            *a2aclient.Client
+	graphURL             string
+	obsURL               string
+	maxIterations        int
+	currentMerchantCount int // set per Run() call
 }
 
 // NewAgent creates a new client agent.
@@ -63,11 +69,15 @@ func NewAgent(genaiClient *genai.Client, model string, a2aClient *a2aclient.Clie
 }
 
 // Run executes the agent with the given instruction.
-func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
-	a.emitEvent("agent_start", fmt.Sprintf("Instruction: %s", instruction))
+func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) (string, error) {
+	if merchantCount < 1 {
+		merchantCount = 3
+	}
+	a.currentMerchantCount = merchantCount
+	a.emitEvent("agent_start", fmt.Sprintf("Instruction: %s (merchants: %d)", instruction, merchantCount))
 
 	config := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(buildSystemPrompt(merchantCount), genai.RoleUser),
 		Tools:             defineTools(),
 	}
 
@@ -117,43 +127,49 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 			return result, nil
 		}
 
-		// Execute function calls and build response parts
-		responseParts := make([]*genai.Part, 0, len(functionCalls))
-		for _, fc := range functionCalls {
-			log.Printf("Tool call: %s(%v)", fc.Name, fc.Args)
-			result, err := a.executeTool(fc.Name, fc.Args)
-			if err != nil {
-				log.Printf("Tool error: %s: %v", fc.Name, err)
-				a.emitEvent("tool_error", fmt.Sprintf("Tool %s failed: %v", fc.Name, err))
-				responseParts = append(responseParts, &genai.Part{
-					FunctionResponse: &genai.FunctionResponse{
-						ID:       fc.ID,
-						Name:     fc.Name,
-						Response: map[string]any{"error": err.Error()},
-					},
-				})
-			} else {
-				var parsed any
-				if json.Unmarshal([]byte(result), &parsed) == nil {
-					responseParts = append(responseParts, &genai.Part{
+		// Execute function calls concurrently and build response parts
+		responseParts := make([]*genai.Part, len(functionCalls))
+		var wg sync.WaitGroup
+		for i, fc := range functionCalls {
+			wg.Add(1)
+			go func(idx int, fc *genai.FunctionCall) {
+				defer wg.Done()
+				log.Printf("Tool call: %s(%v)", fc.Name, fc.Args)
+				result, err := a.executeTool(fc.Name, fc.Args)
+				if err != nil {
+					log.Printf("Tool error: %s: %v", fc.Name, err)
+					a.emitEvent("tool_error", fmt.Sprintf("Tool %s failed: %v", fc.Name, err))
+					responseParts[idx] = &genai.Part{
 						FunctionResponse: &genai.FunctionResponse{
 							ID:       fc.ID,
 							Name:     fc.Name,
-							Response: map[string]any{"result": parsed},
+							Response: map[string]any{"error": err.Error()},
 						},
-					})
+					}
 				} else {
-					responseParts = append(responseParts, &genai.Part{
-						FunctionResponse: &genai.FunctionResponse{
-							ID:       fc.ID,
-							Name:     fc.Name,
-							Response: map[string]any{"result": result},
-						},
-					})
+					var parsed any
+					if json.Unmarshal([]byte(result), &parsed) == nil {
+						responseParts[idx] = &genai.Part{
+							FunctionResponse: &genai.FunctionResponse{
+								ID:       fc.ID,
+								Name:     fc.Name,
+								Response: map[string]any{"result": parsed},
+							},
+						}
+					} else {
+						responseParts[idx] = &genai.Part{
+							FunctionResponse: &genai.FunctionResponse{
+								ID:       fc.ID,
+								Name:     fc.Name,
+								Response: map[string]any{"result": result},
+							},
+						}
+					}
+					a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)))
 				}
-				a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)))
-			}
+			}(i, fc)
 		}
+		wg.Wait()
 
 		contents = append(contents, &genai.Content{
 			Role:  "user",
@@ -202,20 +218,25 @@ func (a *Agent) listenCommandsOnce(ctx context.Context, obsURL string) error {
 		}
 		payload := strings.TrimPrefix(line, "data: ")
 		var cmd struct {
-			Instruction string `json:"instruction"`
+			Instruction   string `json:"instruction"`
+			MerchantCount int    `json:"merchant_count"`
 		}
 		if json.Unmarshal([]byte(payload), &cmd) != nil || cmd.Instruction == "" {
 			continue
 		}
-		log.Printf("Received command: %s", cmd.Instruction)
-		go func(instr string) {
-			result, err := a.Run(ctx, instr)
+		count := cmd.MerchantCount
+		if count < 1 {
+			count = 3
+		}
+		log.Printf("Received command: %s (merchants: %d)", cmd.Instruction, count)
+		go func(instr string, n int) {
+			result, err := a.Run(ctx, instr, n)
 			if err != nil {
 				log.Printf("command run error: %v", err)
 				return
 			}
 			log.Printf("command result: %s", result)
-		}(cmd.Instruction)
+		}(cmd.Instruction, count)
 	}
 	return scanner.Err()
 }

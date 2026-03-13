@@ -49,6 +49,17 @@ func defineTools() []*genai.Tool {
 				},
 			},
 			{
+				Name:        "list_promotions",
+				Description: "Ask a merchant for available discount codes / promotions",
+				Parameters: &genai.Schema{
+					Type: genai.TypeObject,
+					Properties: map[string]*genai.Schema{
+						"merchant_url": {Type: genai.TypeString, Description: "Merchant base URL"},
+					},
+					Required: []string{"merchant_url"},
+				},
+			},
+			{
 				Name:        "apply_discount_codes",
 				Description: "Apply discount codes to an active checkout",
 				Parameters: &genai.Schema{
@@ -129,6 +140,8 @@ func (a *Agent) executeTool(name string, args map[string]any) (string, error) {
 		return a.toolGetProductDetails(args)
 	case "create_checkout":
 		return a.toolCreateCheckout(args)
+	case "list_promotions":
+		return a.toolListPromotions(args)
 	case "apply_discount_codes":
 		return a.toolApplyDiscountCodes(args)
 	case "update_checkout":
@@ -146,7 +159,10 @@ func (a *Agent) executeTool(name string, args map[string]any) (string, error) {
 
 func (a *Agent) toolSearchProducts(args map[string]any) (string, error) {
 	query, _ := args["query"].(string)
-	limit := 10
+	limit := a.currentMerchantCount
+	if limit <= 0 {
+		limit = 10
+	}
 	if l, ok := args["limit"].(float64); ok {
 		limit = int(l)
 	}
@@ -203,6 +219,19 @@ func (a *Agent) toolCreateCheckout(args map[string]any) (string, error) {
 	if checkout, ok := result["a2a.ucp.checkout"].(map[string]any); ok {
 		data, _ := json.Marshal(checkout)
 		return string(data), nil
+	}
+	data, _ := json.Marshal(result)
+	return string(data), nil
+}
+
+func (a *Agent) toolListPromotions(args map[string]any) (string, error) {
+	merchantURL, _ := args["merchant_url"].(string)
+
+	a.emitEvent("tool_call", fmt.Sprintf("Asking %s for promotions", merchantURL))
+
+	result, err := a.a2aClient.SendAction(merchantURL, "list_promotions", map[string]any{})
+	if err != nil {
+		return "", err
 	}
 	data, _ := json.Marshal(result)
 	return string(data), nil
