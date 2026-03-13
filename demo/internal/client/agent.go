@@ -22,17 +22,18 @@ WORKFLOW:
 1. Use search_products to find matching products across all merchants
 2. Use get_product_details for the top 3 results (from different merchants) to verify stock
 3. Use create_checkout at all qualifying merchants (up to 3) to start checkout sessions
-4. Use apply_discount_codes with any discount hints from search results (try all available codes)
-5. Use update_checkout to set buyer info (email: john.doe@example.com, first_name: John, last_name: Doe) AND fulfillment_type "shipping"
-6. Use get_checkout_summary to read available destinations from checkout fulfillment
-7. Use update_checkout with selected_destination_id (pick the first destination from fulfillment.methods[0].destinations[0].id)
-8. Use get_checkout_summary to read available shipping options from fulfillment.methods[0].groups[0].options
-9. Use update_checkout with selected_option_id (pick the cheapest shipping option id)
-10. Use get_checkout_summary to compare final totals from all merchants
-11. Use complete_checkout at the cheapest merchant (handler_id: "mock_payment_handler", token: "success_token")
-12. Use cancel_checkout at the other merchants
+4. Use list_promotions at each merchant to discover available discount codes
+5. If promotions are available, use apply_discount_codes with the discovered codes
+6. Use update_checkout to set buyer info (email: john.doe@example.com, first_name: John, last_name: Doe) AND fulfillment_type "shipping"
+7. Use get_checkout_summary to read available destinations from checkout fulfillment
+8. Use update_checkout with selected_destination_id (pick the first destination from fulfillment.methods[0].destinations[0].id)
+9. Use get_checkout_summary to read available shipping options from fulfillment.methods[0].groups[0].options
+10. Use update_checkout with selected_option_id (pick the cheapest shipping option id)
+11. Use get_checkout_summary to compare final totals from all merchants
+12. Use complete_checkout at the cheapest merchant (handler_id: "mock_payment_handler", token: "success_token")
+13. Use cancel_checkout at the other merchants
 
-IMPORTANT: Fulfillment is progressive. You MUST do steps 5-9 for EACH merchant checkout before comparing prices.
+IMPORTANT: Fulfillment is progressive. You MUST do steps 6-10 for EACH merchant checkout before comparing prices.
 Each update_checkout call for fulfillment builds on the previous state. Do not skip steps.
 
 Always show a clear price comparison before purchasing. Format prices as dollars (divide cents by 100).
@@ -41,21 +42,23 @@ Explain which merchant won and why (lowest total after discounts and shipping).`
 
 // Agent is the Gemini-powered shopping assistant.
 type Agent struct {
-	genaiClient *genai.Client
-	model       string
-	a2aClient   *a2aclient.Client
-	graphURL    string
-	obsURL      string
+	genaiClient   *genai.Client
+	model         string
+	a2aClient     *a2aclient.Client
+	graphURL      string
+	obsURL        string
+	maxIterations int
 }
 
 // NewAgent creates a new client agent.
 func NewAgent(genaiClient *genai.Client, model string, a2aClient *a2aclient.Client, graphURL, obsURL string) *Agent {
 	return &Agent{
-		genaiClient: genaiClient,
-		model:       model,
-		a2aClient:   a2aClient,
-		graphURL:    graphURL,
-		obsURL:      obsURL,
+		genaiClient:   genaiClient,
+		model:         model,
+		a2aClient:     a2aClient,
+		graphURL:      graphURL,
+		obsURL:        obsURL,
+		maxIterations: 50,
 	}
 }
 
@@ -72,8 +75,8 @@ func (a *Agent) Run(ctx context.Context, instruction string) (string, error) {
 		genai.NewContentFromText(instruction, genai.RoleUser),
 	}
 
-	for i := 0; i < 20; i++ {
-		a.emitEvent("agent_step", fmt.Sprintf("Step %d", i+1))
+	for i := range a.maxIterations {
+		a.emitEvent("agent_step", fmt.Sprintf("Step %d/%d", i+1, a.maxIterations))
 
 		resp, err := a.genaiClient.Models.GenerateContent(ctx, a.model, contents, config)
 		if err != nil {
