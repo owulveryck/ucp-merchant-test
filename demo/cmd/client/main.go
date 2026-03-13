@@ -36,7 +36,7 @@ func main() {
 
 	// Start SSE command listener EARLY (before slow genai init)
 	// so the obs-hub sees the agent as "online" immediately.
-	commandCh := make(chan string, 8)
+	commandCh := make(chan sseCommand, 8)
 	if *obsURL != "" {
 		go listenCommandsSSE(ctx, *obsURL, commandCh)
 	}
@@ -56,8 +56,12 @@ func main() {
 	// Process commands received (possibly queued) from the SSE listener.
 	if *obsURL != "" {
 		go func() {
-			for instr := range commandCh {
-				result, err := agent.Run(ctx, instr)
+			for cmd := range commandCh {
+				merchantCount := cmd.MerchantCount
+				if merchantCount <= 0 {
+					merchantCount = 3
+				}
+				result, err := agent.Run(ctx, cmd.Instruction, merchantCount)
 				if err != nil {
 					log.Printf("command run error: %v", err)
 					continue
@@ -79,7 +83,7 @@ func main() {
 	}
 
 	if *instruction != "" {
-		result, err := agent.Run(ctx, *instruction)
+		result, err := agent.Run(ctx, *instruction, 3)
 		if err != nil {
 			log.Fatalf("agent error: %v", err)
 		}
@@ -113,7 +117,7 @@ func main() {
 			break
 		}
 
-		result, err := agent.Run(ctx, input)
+		result, err := agent.Run(ctx, input, 3)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
@@ -129,6 +133,11 @@ func main() {
 	}
 }
 
+type sseCommand struct {
+	Instruction   string `json:"instruction"`
+	MerchantCount int    `json:"merchant_count"`
+}
+
 func envOrDefault(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -139,7 +148,7 @@ func envOrDefault(key, def string) string {
 // listenCommandsSSE connects to the obs-hub /commands SSE endpoint and
 // forwards received instructions to ch. It reconnects on error and blocks
 // until ctx is cancelled.
-func listenCommandsSSE(ctx context.Context, obsURL string, ch chan<- string) {
+func listenCommandsSSE(ctx context.Context, obsURL string, ch chan<- sseCommand) {
 	for {
 		if err := listenCommandsSSEOnce(ctx, obsURL, ch); err != nil {
 			if ctx.Err() != nil {
@@ -155,7 +164,7 @@ func listenCommandsSSE(ctx context.Context, obsURL string, ch chan<- string) {
 	}
 }
 
-func listenCommandsSSEOnce(ctx context.Context, obsURL string, ch chan<- string) error {
+func listenCommandsSSEOnce(ctx context.Context, obsURL string, ch chan<- sseCommand) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, obsURL+"/commands", nil)
 	if err != nil {
 		return err
@@ -173,14 +182,12 @@ func listenCommandsSSEOnce(ctx context.Context, obsURL string, ch chan<- string)
 			continue
 		}
 		payload := strings.TrimPrefix(line, "data: ")
-		var cmd struct {
-			Instruction string `json:"instruction"`
-		}
+		var cmd sseCommand
 		if json.Unmarshal([]byte(payload), &cmd) != nil || cmd.Instruction == "" {
 			continue
 		}
-		log.Printf("Received command: %s", cmd.Instruction)
-		ch <- cmd.Instruction
+		log.Printf("Received command: %s (merchants: %d)", cmd.Instruction, cmd.MerchantCount)
+		ch <- cmd
 	}
 	return scanner.Err()
 }
