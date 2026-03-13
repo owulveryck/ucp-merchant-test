@@ -3,6 +3,7 @@ package obs
 import (
 	"encoding/json"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,10 +27,11 @@ type Command struct {
 
 // Hub collects events and broadcasts them to SSE subscribers.
 type Hub struct {
-	mu          sync.RWMutex
-	events      []Event
-	subscribers map[chan Event]struct{}
-	commands    chan Command
+	mu               sync.RWMutex
+	events           []Event
+	subscribers      map[chan Event]struct{}
+	commands         chan Command
+	commandConsumers atomic.Int32
 }
 
 // NewHub creates a new observability hub.
@@ -103,6 +105,15 @@ func (h *Hub) SendCommand(cmd Command) {
 func (h *Hub) Commands() <-chan Command {
 	return h.commands
 }
+
+// IncrCommandConsumers increments the command consumer counter.
+func (h *Hub) IncrCommandConsumers() { h.commandConsumers.Add(1) }
+
+// DecrCommandConsumers decrements the command consumer counter.
+func (h *Hub) DecrCommandConsumers() { h.commandConsumers.Add(-1) }
+
+// HasCommandConsumer returns true if at least one consumer is connected.
+func (h *Hub) HasCommandConsumer() bool { return h.commandConsumers.Load() > 0 }
 
 // Report generates a summary report as JSON.
 func (h *Hub) Report() json.RawMessage {

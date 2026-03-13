@@ -66,6 +66,18 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 		})
 	}
 
+	// Fallback: if no Jaccard matches, return all in-stock products
+	if len(candidates) == 0 {
+		for _, p := range g.Products {
+			if m, ok := g.Merchants[p.MerchantID]; ok && !m.Online {
+				continue
+			}
+			if p.Quantity > 0 {
+				candidates = append(candidates, scored{product: p, score: 1.0})
+			}
+		}
+	}
+
 	sort.Slice(candidates, func(i, j int) bool {
 		return candidates[i].score > candidates[j].score
 	})

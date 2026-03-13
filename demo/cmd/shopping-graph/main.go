@@ -19,28 +19,33 @@ func main() {
 	configFile := flag.String("config", "config/shopping_graph.yaml", "config file path")
 	obsURL := flag.String("obs-url", "", "observability hub URL")
 	pollInterval := flag.Duration("poll-interval", 30*time.Second, "merchant poll interval")
+	dynamic := flag.Bool("dynamic", false, "accept dynamic merchant registration via POST /merchants (skip config file requirement)")
 	flag.Parse()
-
-	data, err := os.ReadFile(*configFile)
-	if err != nil {
-		log.Fatalf("read config: %v", err)
-	}
-
-	var cfg shoppinggraph.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		log.Fatalf("parse config: %v", err)
-	}
 
 	graph := shoppinggraph.NewShoppingGraph()
 
-	for _, mc := range cfg.Merchants {
-		graph.Merchants[mc.ID] = &shoppinggraph.MerchantNode{
-			ID:            mc.ID,
-			Name:          mc.Name,
-			Endpoint:      mc.Endpoint,
-			Score:         mc.Score,
-			DiscountHints: mc.DiscountHints,
+	if !*dynamic {
+		data, err := os.ReadFile(*configFile)
+		if err != nil {
+			log.Fatalf("read config: %v", err)
 		}
+
+		var cfg shoppinggraph.Config
+		if err := yaml.Unmarshal(data, &cfg); err != nil {
+			log.Fatalf("parse config: %v", err)
+		}
+
+		for _, mc := range cfg.Merchants {
+			graph.Merchants[mc.ID] = &shoppinggraph.MerchantNode{
+				ID:            mc.ID,
+				Name:          mc.Name,
+				Endpoint:      mc.Endpoint,
+				Score:         mc.Score,
+				DiscountHints: mc.DiscountHints,
+			}
+		}
+	} else {
+		log.Println("Dynamic mode: merchants can be registered via POST /merchants")
 	}
 
 	client := a2aclient.NewClient("john.doe@example.com", "US", *obsURL)

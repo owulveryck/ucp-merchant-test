@@ -15,19 +15,21 @@ type Handler struct {
 	hub           *Hub
 	catalogClient *a2aclient.Client
 	graphURL      string
+	arenaURL      string
 }
 
 // NewHandler creates a new HTTP handler.
-func NewHandler(hub *Hub, graphURL string) *Handler {
+func NewHandler(hub *Hub, graphURL, arenaURL string) *Handler {
 	return &Handler{
 		hub:           hub,
 		catalogClient: a2aclient.NewClient("dashboard", "US", ""),
 		graphURL:      graphURL,
+		arenaURL:      arenaURL,
 	}
 }
 
-// Mux returns an http.ServeMux with all routes registered.
-func (h *Handler) Mux() *http.ServeMux {
+// Mux returns an http.Handler with all routes registered and CORS middleware applied.
+func (h *Handler) Mux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /event", h.handlePostEvent)
 	mux.HandleFunc("GET /events", h.handleSSE)
@@ -39,8 +41,26 @@ func (h *Handler) Mux() *http.ServeMux {
 	mux.HandleFunc("GET /graph/health", h.proxyGraph)
 	mux.HandleFunc("GET /graph/ranking", h.proxyGraph)
 	mux.HandleFunc("PUT /graph/ranking", h.proxyGraph)
+	mux.HandleFunc("GET /arena/merchants", h.proxyArena)
+	mux.HandleFunc("GET /arena/config", h.proxyArena)
+	mux.HandleFunc("POST /arena/command", h.proxyArena)
+	mux.HandleFunc("GET /status", h.handleStatus)
+	mux.HandleFunc("GET /arena", h.handleArenaDashboard)
 	mux.HandleFunc("GET /", h.handleDashboard)
-	return mux
+	return corsMiddleware(mux)
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (h *Handler) handlePostEvent(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +77,6 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -97,20 +116,32 @@ func (h *Handler) handlePostCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.hub.SendCommand(cmd)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(map[string]any{
+		"status":    "accepted",
+		"connected": h.hub.HasCommandConsumer(),
+	})
 }
 
 func (h *Handler) handleCommandsSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming not supported", http.StatusInternalServerError)
 		return
 	}
+
+	h.hub.IncrCommandConsumers()
+	defer h.hub.DecrCommandConsumers()
+
+	// Flush headers immediately so the client's Do() returns
+	// and the SSE connection is fully established.
+	fmt.Fprintf(w, ": connected\n\n")
+	flusher.Flush()
 
 	for {
 		select {
@@ -180,6 +211,37 @@ func (h *Handler) proxyGraph(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
+}
+
+func (h *Handler) proxyArena(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Path[len("/arena"):]
+	url := h.arenaURL + target
+
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, url, r.Body)
+	if err != nil {
+		http.Error(w, `{"detail":"proxy error"}`, http.StatusBadGateway)
+		return
+	}
+	req.Header.Set("Content-Type", r.Header.Get("Content-Type"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, `{"detail":"arena unreachable"}`, http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
+func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(map[string]any{
+		"agent_connected": h.hub.HasCommandConsumer(),
+	})
 }
 
 const reportHTML = `<!DOCTYPE html>

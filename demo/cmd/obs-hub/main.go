@@ -12,10 +12,11 @@ import (
 func main() {
 	port := flag.Int("port", 9002, "port to listen on")
 	graphURL := flag.String("graph-url", "http://localhost:9000", "shopping graph base URL")
+	arenaURL := flag.String("arena-url", "http://localhost:8888", "arena server base URL")
 	flag.Parse()
 
 	hub := obs.NewHub()
-	handler := obs.NewHandler(hub, *graphURL)
+	handler := obs.NewHandler(hub, *graphURL, *arenaURL)
 
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("Observability Hub starting on http://localhost:%d", *port)

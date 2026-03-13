@@ -120,6 +120,37 @@ func (g *ShoppingGraph) UpdateMerchantProducts(merchantID string, products []*Pr
 	}
 }
 
+// AddMerchant registers a new merchant in the graph.
+func (g *ShoppingGraph) AddMerchant(node *MerchantNode) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.Merchants[node.ID] = node
+}
+
+// RemoveMerchant removes a merchant and its products from the graph.
+func (g *ShoppingGraph) RemoveMerchant(id string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	delete(g.Merchants, id)
+	var kept []*ProductNode
+	for _, p := range g.Products {
+		if p.MerchantID != id {
+			kept = append(kept, p)
+		}
+	}
+	g.Products = kept
+	g.Groups = GroupProducts(g.Products)
+}
+
+// SetBoost updates the boost score for a merchant.
+func (g *ShoppingGraph) SetBoost(merchantID string, boost int) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if m, ok := g.Merchants[merchantID]; ok {
+		m.Score = boost
+	}
+}
+
 // MarkOffline marks a merchant as offline.
 func (g *ShoppingGraph) MarkOffline(merchantID string) {
 	g.mu.Lock()

@@ -22,6 +22,9 @@ func (h *Handler) Mux() *http.ServeMux {
 	mux.HandleFunc("GET /health", h.handleHealth)
 	mux.HandleFunc("GET /ranking", h.handleGetRanking)
 	mux.HandleFunc("PUT /ranking", h.handlePutRanking)
+	mux.HandleFunc("POST /merchants", h.handleAddMerchant)
+	mux.HandleFunc("DELETE /merchants/{id}", h.handleRemoveMerchant)
+	mux.HandleFunc("PUT /boost", h.handleSetBoost)
 	return mux
 }
 
@@ -75,6 +78,57 @@ func (h *Handler) handlePutRanking(w http.ResponseWriter, r *http.Request) {
 		"algorithm": h.graph.GetRankAlgo(),
 		"available": availableAlgorithms,
 	})
+}
+
+func (h *Handler) handleAddMerchant(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ID            string   `json:"id"`
+		Name          string   `json:"name"`
+		Endpoint      string   `json:"endpoint"`
+		Score         int      `json:"score"`
+		DiscountHints []string `json:"discount_hints,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
+		http.Error(w, `{"detail":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	if req.Score == 0 {
+		req.Score = 50
+	}
+	h.graph.AddMerchant(&MerchantNode{
+		ID:            req.ID,
+		Name:          req.Name,
+		Endpoint:      req.Endpoint,
+		Score:         req.Score,
+		DiscountHints: req.DiscountHints,
+	})
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"status": "added", "id": req.ID})
+}
+
+func (h *Handler) handleRemoveMerchant(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"detail":"missing id"}`, http.StatusBadRequest)
+		return
+	}
+	h.graph.RemoveMerchant(id)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "removed", "id": id})
+}
+
+func (h *Handler) handleSetBoost(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		MerchantID string `json:"merchant_id"`
+		Amount     int    `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.MerchantID == "" {
+		http.Error(w, `{"detail":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	h.graph.SetBoost(req.MerchantID, req.Amount)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
 }
 
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
