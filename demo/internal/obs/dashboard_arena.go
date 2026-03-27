@@ -110,6 +110,24 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .agent-send-status.sending { color: #999; }
 .agent-note { font-size: 0.7rem; color: #999; line-height: 1.4; margin-top: auto; padding-top: 0.5rem; }
 
+/* --- Agent expanded (overlay) state --- */
+.agent-panel.expanded { position: fixed; inset: 0; width: 100%; z-index: 200; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; padding: 2rem; border: none; }
+.agent-panel.expanded .agent-card { width: 680px; max-height: 85vh; box-shadow: 10px 10px 0px #1A1A2E; animation: agent-pop 0.25s ease-out; }
+.agent-panel.expanded .agent-card-body { padding: 2rem; }
+.agent-panel.expanded .agent-avatar { width: 72px; height: 72px; font-size: 2rem; }
+.agent-panel.expanded .agent-name { font-size: 1.8rem; }
+.agent-panel.expanded .agent-role { font-size: 1rem; }
+.agent-panel.expanded .agent-status-line { font-size: 1.1rem; margin-bottom: 1rem; }
+.agent-panel.expanded .agent-separator { margin: 0.5rem 0 1rem; }
+.agent-panel.expanded .agent-input-wrap input { font-size: 1.15rem; padding: 0.8rem 1.2rem; }
+.agent-panel.expanded .agent-input-wrap button { font-size: 1.15rem; padding: 0.8rem 1.2rem; }
+.agent-panel.expanded .agent-merchant-count { font-size: 1rem; margin-top: 0.75rem; }
+.agent-panel.expanded .agent-send-status { font-size: 0.95rem; }
+.agent-panel.expanded .agent-note { font-size: 0.9rem; }
+@keyframes agent-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+.agent-card-dots { cursor: pointer; }
+.agent-card-dots:hover { background: #F3F4F6; }
+
 .bottombar { background: #FFFFFF; padding: 0.5rem 1.5rem; border-top: 1px solid #E0E0E0; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; min-height: 48px; }
 .bottombar .desc { flex: 1; font-size: 0.85rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bottombar .badge { background: #FDE8E8; color: #E5004C; border-radius: 20px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
@@ -539,6 +557,27 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   var merchantCountValue = document.getElementById('merchant-count-value');
 
   merchantCountInput.addEventListener('input', function() { merchantCountValue.textContent = merchantCountInput.value; });
+
+  // --- Toggle expanded agent panel ---
+  var agentPanel = document.querySelector('.agent-panel');
+  var agentDots = document.querySelector('.agent-card-dots');
+  agentDots.addEventListener('click', function() {
+    agentPanel.classList.toggle('expanded');
+    if (agentPanel.classList.contains('expanded')) {
+      cmdInput.focus();
+    }
+  });
+  // Click on backdrop (outside card) to collapse
+  agentPanel.addEventListener('click', function(e) {
+    if (e.target === agentPanel && agentPanel.classList.contains('expanded')) {
+      agentPanel.classList.remove('expanded');
+    }
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && agentPanel.classList.contains('expanded')) {
+      agentPanel.classList.remove('expanded');
+    }
+  });
 
   function submitCommand() {
     var val = cmdInput.value.trim();
