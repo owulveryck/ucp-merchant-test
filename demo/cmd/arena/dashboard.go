@@ -26,6 +26,14 @@ body.flash-sale{background:#DCFCE7}
 .header{text-align:center;margin-bottom:1.5rem}
 .header h1{font-size:1.5rem;font-weight:800;color:#1A1A2E}
 .header .id{font-size:.8rem;color:#999;margin-top:.3rem}
+.rank-badge{display:inline-flex;align-items:center;gap:.4rem;margin-top:.5rem;padding:.4rem 1rem;border-radius:12px;font-size:1.1rem;font-weight:700;background:#FDE8E8;color:#E5004C;border:1px solid #E5004C}
+.rank-badge .rank-medal{font-size:1.4rem}
+.rank-badge.rank-1{background:#FEF9C3;border-color:#CA8A04;color:#854D0E}
+.rank-badge.rank-2{background:#F1F5F9;border-color:#94A3B8;color:#475569}
+.rank-badge.rank-3{background:#FFF7ED;border-color:#EA580C;color:#9A3412}
+.rank-badge.rank-none{background:#F3F4F6;border-color:#D1D5DB;color:#6B7280}
+.stock-warning{display:none;background:#DC2626;color:#fff;text-align:center;padding:.8rem;border-radius:12px;margin-bottom:1rem;font-weight:700;font-size:.95rem;animation:pulse-warn 1s ease-in-out infinite alternate}
+@keyframes pulse-warn{from{opacity:1}to{opacity:.7}}
 .card{background:#FFFFFF;border:1px solid #2D2D2D;border-radius:16px;margin-bottom:1rem;box-shadow:6px 6px 0px #E5004C;overflow:hidden}
 .card-dots{padding:.5rem 1rem;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:6px}
 .card-dots::before{content:'';width:10px;height:10px;border-radius:50%%;background:#E5004C;display:inline-block}
@@ -38,6 +46,16 @@ body.flash-sale{background:#DCFCE7}
 .field .value{font-size:1.8rem;font-weight:800;color:#E5004C;text-align:center}
 .field .subvalue{font-size:.8rem;color:#999;text-align:center}
 .cost-info{font-size:.8rem;color:#D97706;text-align:center;margin-top:.2rem}
+.bid-bar{height:6px;border-radius:3px;background:#E5E7EB;margin-top:.4rem;overflow:hidden}
+.bid-bar-fill{height:100%%;border-radius:3px;background:#E5004C;transition:width .3s}
+.funnel{display:flex;align-items:center;justify-content:center;gap:.3rem;flex-wrap:wrap;margin-bottom:.5rem}
+.funnel-step{text-align:center;padding:.3rem .6rem;border-radius:8px;font-size:.85rem;font-weight:600}
+.funnel-step .funnel-val{font-size:1.3rem;font-weight:800;display:block}
+.funnel-step.f-visits{background:#FDE8E8;color:#E5004C}
+.funnel-step.f-checkouts{background:#DBEAFE;color:#3B82F6}
+.funnel-step.f-sales{background:#DCFCE7;color:#16A34A}
+.funnel-arrow{color:#999;font-size:1rem;font-weight:700}
+.funnel-rate{font-size:.7rem;color:#999;font-weight:600}
 .discount-section{margin-top:.5rem}
 .discount-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap}
 .discount-row input,.discount-row select{padding:.4rem;border:1px solid #CCC;border-radius:8px;background:#FFFFFF;color:#1A1A2E;font-size:.85rem;font-family:'Outfit',system-ui,sans-serif}
@@ -45,6 +63,7 @@ body.flash-sale{background:#DCFCE7}
 .discount-row input[type=number]{width:60px}
 .discount-row select{width:90px}
 .discount-row label.cb{display:flex;align-items:center;gap:.3rem;font-size:.75rem;color:#666;white-space:nowrap}
+.discount-usage{font-size:.7rem;color:#16A34A;font-weight:600;white-space:nowrap}
 .btn-sm{padding:.3rem .6rem;border:none;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600}
 .btn-add{background:#FDE8E8;color:#E5004C;border:1px solid #E5004C}
 .btn-rm{background:#FEF2F2;color:#DC2626;border:1px solid #DC2626}
@@ -53,6 +72,7 @@ body.flash-sale{background:#DCFCE7}
 .activity-entry{padding:.4rem .6rem;margin-bottom:.3rem;border-radius:8px;display:flex;align-items:baseline;gap:.5rem}
 .activity-entry .act-time{color:#999;font-size:.7rem;flex-shrink:0}
 .activity-entry .act-text{flex:1}
+.activity-entry .act-cost{font-size:.75rem;font-weight:700;flex-shrink:0}
 .activity-entry.act-catalog{background:#FDE8E8;border-left:3px solid #E5004C;color:#E5004C}
 .activity-entry.act-checkout{background:#DBEAFE;border-left:3px solid #3B82F6;color:#3B82F6}
 .activity-entry.act-cart{background:#F3F4F6;border-left:3px solid #9CA3AF;color:#6B7280}
@@ -61,6 +81,10 @@ body.flash-sale{background:#DCFCE7}
 .sale-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(229,0,76,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:9999;animation:pulse .5s ease-in-out infinite alternate}
 .sale-overlay h1{font-size:4rem;color:#fff;font-weight:900;text-shadow:0 4px 20px rgba(0,0,0,.3)}
 .sale-overlay p{font-size:1.5rem;color:#fff;margin-top:1rem}
+.sale-overlay .sale-breakdown{font-size:1.1rem;color:rgba(255,255,255,.9);margin-top:.8rem;line-height:1.8}
+.sale-overlay .sale-profit{font-size:2rem;font-weight:800;margin-top:.5rem}
+.sale-overlay .sale-profit.positive{color:#BBF7D0}
+.sale-overlay .sale-profit.negative{color:#FCA5A5}
 @keyframes pulse{from{background:rgba(229,0,76,.95)}to{background:rgba(253,232,232,.95)}}
 </style>
 </head>
@@ -69,7 +93,13 @@ body.flash-sale{background:#DCFCE7}
 <div class="header">
 <h1>%s</h1>
 <div class="id">ID: %s</div>
+<div class="rank-badge rank-none" id="rank-badge">
+<span class="rank-medal" id="rank-medal">-</span>
+<span id="rank-text">Classement...</span>
 </div>
+</div>
+
+<div class="stock-warning" id="stock-warning">Stock epuise — vous etes invisible dans le Shopping Graph !</div>
 
 <div class="card">
 <div class="card-dots"></div>
@@ -102,6 +132,7 @@ body.flash-sale{background:#DCFCE7}
 <div class="value" id="bid-display">--</div>
 <div class="subvalue">0 = organique uniquement (gratuit)</div>
 <input type="range" id="bid-slider" min="0" max="200" step="5" value="50">
+<div class="bid-bar"><div class="bid-bar-fill" id="bid-bar-fill" style="width:0"></div></div>
 <div class="cost-info" id="bid-cpc-info"></div>
 <div class="cost-info" id="bid-spend-info" style="color:#16A34A"></div>
 </div>
@@ -115,6 +146,15 @@ body.flash-sale{background:#DCFCE7}
 <div class="field">
 <div class="value" id="profit-display">$0.00</div>
 <div class="subvalue" id="sales-count-display">0 ventes</div>
+</div>
+<div class="funnel" id="funnel">
+<div class="funnel-step f-visits"><span class="funnel-val" id="f-visits">0</span>visites</div>
+<div class="funnel-arrow">&rarr;</div>
+<div class="funnel-step f-checkouts"><span class="funnel-val" id="f-checkouts">0</span>checkouts</div>
+<div class="funnel-rate" id="f-rate1"></div>
+<div class="funnel-arrow">&rarr;</div>
+<div class="funnel-step f-sales"><span class="funnel-val" id="f-sales">0</span>ventes</div>
+<div class="funnel-rate" id="f-rate2"></div>
 </div>
 </div>
 </div>
@@ -149,6 +189,8 @@ body.flash-sale{background:#DCFCE7}
 <div class="sale-overlay" id="sale-overlay">
 <h1>VENDU !</h1>
 <p id="sale-detail"></p>
+<div class="sale-breakdown" id="sale-breakdown"></div>
+<div class="sale-profit" id="sale-profit"></div>
 </div>
 
 <script>
@@ -158,6 +200,8 @@ const COST_PRICE=%d;
 
 let config={selling_price:6000,stock:10,discount_codes:[],max_cpc_bid:50};
 let saveTimer=null;
+let checkoutCount=0;
+let discountUsage={};
 
 async function loadConfig(){
   try{
@@ -178,7 +222,16 @@ function updateDisplays(){
   document.getElementById('bid-display').textContent='$'+(config.max_cpc_bid/100).toFixed(2)+' / visite';
   const cpcEl=document.getElementById('bid-cpc-info');
   const actualCPC=config.actual_cpc||0;
-  cpcEl.textContent='CPC reel: $'+(actualCPC/100).toFixed(2);
+  const maxBid=config.max_cpc_bid||0;
+  if(maxBid===0){
+    cpcEl.textContent='Organique — gratuit, visibilite reduite';
+    cpcEl.style.color='#6B7280';
+  } else {
+    cpcEl.textContent='CPC reel: $'+(actualCPC/100).toFixed(2)+' (max: $'+(maxBid/100).toFixed(2)+')';
+    cpcEl.style.color='#D97706';
+  }
+  const bidBarPct=maxBid>0?Math.min(100,actualCPC/maxBid*100):0;
+  document.getElementById('bid-bar-fill').style.width=bidBarPct+'%%';
   const spendEl=document.getElementById('bid-spend-info');
   const totalAdSpend=config.total_ad_spend||0;
   spendEl.textContent='Depenses pub: $'+(totalAdSpend/100).toFixed(2);
@@ -189,9 +242,19 @@ function updateDisplays(){
     profitEl.textContent='$'+(np/100).toFixed(2);
     if(np<0){profitEl.style.color='#DC2626'}else{profitEl.style.color='#16A34A'}
     const cc=config.consultation_count||0;
+    const sc=config.sales_count||0;
     const avgCPC=cc>0?(totalAdSpend/cc/100).toFixed(2):'0.00';
-    document.getElementById('sales-count-display').textContent=config.sales_count+' vente(s) / '+cc+' consultation(s) a $'+avgCPC+' moy.';
+    document.getElementById('sales-count-display').textContent=sc+' vente(s) / '+cc+' consultation(s) a $'+avgCPC+' moy.';
+    // Funnel
+    document.getElementById('f-visits').textContent=cc;
+    document.getElementById('f-checkouts').textContent=checkoutCount;
+    document.getElementById('f-sales').textContent=sc;
+    document.getElementById('f-rate1').textContent=cc>0?Math.round(checkoutCount/cc*100)+'%%':'';
+    document.getElementById('f-rate2').textContent=checkoutCount>0?Math.round(sc/checkoutCount*100)+'%%':'';
   }
+  // Stock warning
+  const warn=document.getElementById('stock-warning');
+  if(config.stock<=0){warn.style.display='block'}else{warn.style.display='none'}
 }
 
 function schedSave(){
@@ -217,10 +280,13 @@ function renderDiscounts(){
   (config.discount_codes||[]).forEach((dc,i)=>{
     const row=document.createElement('div');
     row.className='discount-row';
+    const usage=discountUsage[dc.code.toUpperCase()]||0;
+    const usageBadge=usage>0?'<span class="discount-usage">('+usage+'x)</span>':'';
     row.innerHTML=
       '<input type="text" value="'+dc.code+'" placeholder="CODE" onchange="updDiscount('+i+',\'code\',this.value)">'+
       '<select onchange="updDiscount('+i+',\'type\',this.value)"><option value="percentage"'+(dc.type==='percentage'?' selected':'')+'>%%</option><option value="fixed"'+(dc.type==='fixed'?' selected':'')+'>Fixe</option></select>'+
       '<input type="number" value="'+dc.value+'" min="1" onchange="updDiscount('+i+',\'value\',parseInt(this.value))">'+
+      usageBadge+
       '<label class="cb"><input type="checkbox"'+(dc.new_customer_only?' checked':'')+' onchange="updDiscount('+i+',\'new_customer_only\',this.checked)">Nouveau client</label>'+
       '<button class="btn-sm btn-rm" onclick="rmDiscount('+i+')">X</button>';
     el.appendChild(row);
@@ -249,6 +315,31 @@ function renderShipping(){
   }
 }
 
+// Rank badge
+async function fetchRank(){
+  try{
+    const r=await fetch('/rankings');
+    const d=await r.json();
+    const rankings=d.rankings||{};
+    const myRank=rankings[TID];
+    const badge=document.getElementById('rank-badge');
+    const medal=document.getElementById('rank-medal');
+    const text=document.getElementById('rank-text');
+    const total=Object.keys(rankings).length;
+    if(myRank&&typeof myRank==='object'&&myRank.rank>0){
+      const rk=myRank.rank;
+      const medals={1:'\uD83E\uDD47',2:'\uD83E\uDD48',3:'\uD83E\uDD49'};
+      medal.textContent=medals[rk]||'#'+rk;
+      text.textContent=rk+(rk===1?'er':'e')+' / '+total+' marchands';
+      badge.className='rank-badge'+(rk<=3?' rank-'+rk:'');
+    } else {
+      medal.textContent='-';
+      text.textContent='Non classe'+(total>0?' ('+total+' marchands)':'');
+      badge.className='rank-badge rank-none';
+    }
+  }catch(e){}
+}
+
 // Background flash on events
 let flashTimer=null;
 function flashBg(cls){
@@ -260,12 +351,13 @@ function flashBg(cls){
 // SSE for sale + activity notifications
 const actLog=document.getElementById('activity-log');
 let actCount=0;
-function addActivity(cls,text){
+function addActivity(cls,text,costAnnotation){
   const now=new Date();
   const ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
   const div=document.createElement('div');
   div.className='activity-entry '+cls;
-  div.innerHTML='<span class="act-time">'+ts+'</span><span class="act-text">'+text+'</span>';
+  const costHtml=costAnnotation?'<span class="act-cost">'+costAnnotation+'</span>':'';
+  div.innerHTML='<span class="act-time">'+ts+'</span><span class="act-text">'+text+'</span>'+costHtml;
   actLog.appendChild(div);
   actLog.scrollTop=actLog.scrollHeight;
   actCount++;
@@ -280,21 +372,60 @@ function sseConnect(){
     try{
       const d=JSON.parse(e.data);
       if(d.type==='sale'){
+        const saleTotal=d.total||0;
+        const profit=config.selling_price-COST_PRICE-(config.actual_cpc||0);
         const ov=document.getElementById('sale-overlay');
-        document.getElementById('sale-detail').textContent='Commande '+d.order_id+' - $'+(d.total/100).toFixed(2);
+        document.getElementById('sale-detail').textContent='Commande '+d.order_id+' - $'+(saleTotal/100).toFixed(2);
+        const bd=document.getElementById('sale-breakdown');
+        bd.innerHTML='Prix de vente: $'+(config.selling_price/100).toFixed(2)+'<br>Prix d\'achat: -$'+(COST_PRICE/100).toFixed(2)+'<br>CPC: -$'+((config.actual_cpc||0)/100).toFixed(2);
+        const sp=document.getElementById('sale-profit');
+        sp.textContent=(profit>=0?'+':'')+' $'+(profit/100).toFixed(2);
+        sp.className='sale-profit '+(profit>=0?'positive':'negative');
         ov.style.display='flex';
         if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);
         setTimeout(()=>{ov.style.display='none';loadConfig()},5000);
-        addActivity('act-sale',d.summary||('Vente: '+d.order_id));
+        const profitStr=(profit>=0?'+':'-')+' $'+Math.abs(profit/100).toFixed(2);
+        addActivity('act-sale',d.summary||('Vente: '+d.order_id),'<span style="color:#16A34A">'+profitStr+'</span>');
         flashBg('flash-sale');
+        // Track discount usage from summary
+        if(d.summary){
+          (config.discount_codes||[]).forEach(dc=>{
+            if(d.summary.toUpperCase().indexOf(dc.code.toUpperCase())>=0){
+              discountUsage[dc.code.toUpperCase()]=(discountUsage[dc.code.toUpperCase()]||0)+1;
+              renderDiscounts();
+            }
+          });
+        }
       } else if(d.type==='catalog_browse'||d.type==='product_details'){
-        addActivity('act-catalog',d.summary||d.type);
+        const cpcCost=(config.actual_cpc||0);
+        const costStr=cpcCost>0?'-$'+(cpcCost/100).toFixed(2):'';
+        addActivity('act-catalog',d.summary||d.type,costStr?'<span style="color:#D97706">'+costStr+'</span>':'');
       } else if(d.type==='checkout_created'){
+        checkoutCount++;
         addActivity('act-checkout',d.summary||d.type);
         flashBg('flash-checkout');
+        updateDisplays();
+        // Track discount usage
+        if(d.summary){
+          (config.discount_codes||[]).forEach(dc=>{
+            if(d.summary.toUpperCase().indexOf(dc.code.toUpperCase())>=0){
+              discountUsage[dc.code.toUpperCase()]=(discountUsage[dc.code.toUpperCase()]||0)+1;
+              renderDiscounts();
+            }
+          });
+        }
       } else if(d.type==='checkout_updated'){
         addActivity('act-checkout',d.summary||d.type);
         flashBg('flash-negotiate');
+        // Track discount usage
+        if(d.summary){
+          (config.discount_codes||[]).forEach(dc=>{
+            if(d.summary.toUpperCase().indexOf(dc.code.toUpperCase())>=0){
+              discountUsage[dc.code.toUpperCase()]=(discountUsage[dc.code.toUpperCase()]||0)+1;
+              renderDiscounts();
+            }
+          });
+        }
       } else if(d.type==='cart_created'){
         addActivity('act-cart',d.summary||d.type);
       } else if(d.type==='checkout_canceled'){
@@ -307,11 +438,13 @@ function sseDisconnect(){
   if(evtSrc){evtSrc.close();evtSrc=null}
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){sseDisconnect()}else{sseConnect();loadConfig()}
+  if(document.hidden){sseDisconnect()}else{sseConnect();loadConfig();fetchRank()}
 });
 if(!document.hidden){sseConnect()}
 
 loadConfig();
+fetchRank();
+setInterval(fetchRank,3000);
 </script>
 </body>
 </html>`
