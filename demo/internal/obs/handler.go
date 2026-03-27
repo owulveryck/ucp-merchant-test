@@ -42,6 +42,7 @@ func (h *Handler) Mux() http.Handler {
 	mux.HandleFunc("GET /graph/ranking", h.proxyGraph)
 	mux.HandleFunc("PUT /graph/ranking", h.proxyGraph)
 	mux.HandleFunc("GET /arena/merchants", h.proxyArena)
+	mux.HandleFunc("GET /arena/rankings", h.proxyArena)
 	mux.HandleFunc("GET /arena/config", h.proxyArena)
 	mux.HandleFunc("POST /arena/command", h.proxyArena)
 	mux.HandleFunc("GET /status", h.handleStatus)
@@ -246,8 +247,10 @@ func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 const reportHTML = `<!DOCTYPE html>
 <html><head><title>Demo Report</title>
-<style>body{font-family:system-ui;max-width:800px;margin:2rem auto;padding:0 1rem}
-pre{background:#f5f5f5;padding:1rem;border-radius:8px;overflow-x:auto}</style>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{font-family:'Outfit',system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;background:#FDF0EE;color:#1A1A2E}
+h1{font-weight:800;color:#1A1A2E}
+pre{font-family:'JetBrains Mono',monospace;background:#FFFFFF;padding:1.5rem;border-radius:16px;border:1px solid #2D2D2D;box-shadow:6px 6px 0px #E5004C;overflow-x:auto;color:#2D2D2D}</style>
 </head><body><h1>Demo Report</h1><pre id="report">Loading...</pre>
 <script>fetch('/report/json').then(r=>r.json()).then(d=>document.getElementById('report').textContent=JSON.stringify(d,null,2))</script>
 </body></html>`

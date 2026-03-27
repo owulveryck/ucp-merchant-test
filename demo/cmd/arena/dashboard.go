@@ -7,7 +7,7 @@ import (
 
 func serveDashboard(w http.ResponseWriter, r *http.Request, tenantID, merchantName string, costPrice int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, dashboardHTML, merchantName, tenantID, float64(costPrice)/100, costPrice, tenantID, costPrice)
+	fmt.Fprintf(w, dashboardHTML, merchantName, merchantName, tenantID, float64(costPrice)/100, costPrice, tenantID, costPrice)
 }
 
 const dashboardHTML = `<!DOCTYPE html>
@@ -16,54 +16,64 @@ const dashboardHTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%s - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a1a;color:#e0e0e0;min-height:100vh;padding:1rem}
+body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;min-height:100vh;padding:1rem;transition:background .4s ease}
+body.flash-checkout{background:#DBEAFE}
+body.flash-negotiate{background:#FFF7ED}
+body.flash-sale{background:#DCFCE7}
 .header{text-align:center;margin-bottom:1.5rem}
-.header h1{font-size:1.5rem;background:linear-gradient(135deg,#00d4ff,#7b2ff7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header .id{font-size:.8rem;color:#555;margin-top:.3rem}
-.card{background:#111;border:2px solid #222;border-radius:12px;padding:1.2rem;margin-bottom:1rem}
-.card h2{font-size:1rem;color:#888;margin-bottom:.8rem;text-transform:uppercase;letter-spacing:.05em}
+.header h1{font-size:1.5rem;font-weight:800;color:#1A1A2E}
+.header .id{font-size:.8rem;color:#999;margin-top:.3rem}
+.card{background:#FFFFFF;border:1px solid #2D2D2D;border-radius:16px;margin-bottom:1rem;box-shadow:6px 6px 0px #E5004C;overflow:hidden}
+.card-dots{padding:.5rem 1rem;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:6px}
+.card-dots::before{content:'';width:10px;height:10px;border-radius:50%%;background:#E5004C;display:inline-block}
+.card-dots::after{content:'';width:10px;height:10px;border-radius:50%%;background:#CCC;display:inline-block}
+.card-body{padding:1.2rem}
+.card h2{font-size:1rem;color:#999;margin-bottom:.8rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .field{margin-bottom:1rem}
-.field label{display:block;font-size:.85rem;color:#aaa;margin-bottom:.3rem}
-.field input[type=range]{width:100%%;accent-color:#00d4ff}
-.field .value{font-size:1.8rem;font-weight:700;color:#00d4ff;text-align:center}
-.field .subvalue{font-size:.8rem;color:#666;text-align:center}
-.cost-info{font-size:.8rem;color:#ff8800;text-align:center;margin-top:.2rem}
+.field label{display:block;font-size:.85rem;color:#666;margin-bottom:.3rem}
+.field input[type=range]{width:100%%;accent-color:#E5004C}
+.field .value{font-size:1.8rem;font-weight:800;color:#E5004C;text-align:center}
+.field .subvalue{font-size:.8rem;color:#999;text-align:center}
+.cost-info{font-size:.8rem;color:#D97706;text-align:center;margin-top:.2rem}
 .discount-section{margin-top:.5rem}
 .discount-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap}
-.discount-row input,.discount-row select{padding:.4rem;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:.85rem}
+.discount-row input,.discount-row select{padding:.4rem;border:1px solid #CCC;border-radius:8px;background:#FFFFFF;color:#1A1A2E;font-size:.85rem;font-family:'Outfit',system-ui,sans-serif}
 .discount-row input[type=text]{flex:1;min-width:80px}
 .discount-row input[type=number]{width:60px}
 .discount-row select{width:90px}
-.discount-row label.cb{display:flex;align-items:center;gap:.3rem;font-size:.75rem;color:#aaa;white-space:nowrap}
-.btn-sm{padding:.3rem .6rem;border:none;border-radius:6px;cursor:pointer;font-size:.8rem}
-.btn-add{background:#1a3a1a;color:#4caf50;border:1px solid #2e7d32}
-.btn-rm{background:#3a1a1a;color:#ef5350;border:1px solid #c62828}
-.save-status{text-align:center;font-size:.8rem;color:#4caf50;margin-top:.5rem;opacity:0;transition:opacity .3s}
+.discount-row label.cb{display:flex;align-items:center;gap:.3rem;font-size:.75rem;color:#666;white-space:nowrap}
+.btn-sm{padding:.3rem .6rem;border:none;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600}
+.btn-add{background:#FDE8E8;color:#E5004C;border:1px solid #E5004C}
+.btn-rm{background:#FEF2F2;color:#DC2626;border:1px solid #DC2626}
+.save-status{text-align:center;font-size:.8rem;color:#16A34A;margin-top:.5rem;opacity:0;transition:opacity .3s}
 .activity-log{max-height:250px;overflow-y:auto;font-size:.8rem}
-.activity-entry{padding:.4rem .6rem;margin-bottom:.3rem;border-radius:6px;display:flex;align-items:baseline;gap:.5rem}
-.activity-entry .act-time{color:#555;font-size:.7rem;flex-shrink:0}
+.activity-entry{padding:.4rem .6rem;margin-bottom:.3rem;border-radius:8px;display:flex;align-items:baseline;gap:.5rem}
+.activity-entry .act-time{color:#999;font-size:.7rem;flex-shrink:0}
 .activity-entry .act-text{flex:1}
-.activity-entry.act-catalog{background:#0d1b2a;border-left:3px solid #00d4ff;color:#00d4ff}
-.activity-entry.act-checkout{background:#0d1b2a;border-left:3px solid #00e5cc;color:#00e5cc}
-.activity-entry.act-cart{background:#0d1b2a;border-left:3px solid #7b86a2;color:#b0b8cc}
-.activity-entry.act-cancel{background:#1a0d0d;border-left:3px solid #ff4444;color:#ff4444}
-.activity-entry.act-sale{background:#0d1a0d;border-left:3px solid #4caf50;color:#4caf50}
-.sale-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,212,255,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:9999;animation:pulse .5s ease-in-out infinite alternate}
+.activity-entry.act-catalog{background:#FDE8E8;border-left:3px solid #E5004C;color:#E5004C}
+.activity-entry.act-checkout{background:#DBEAFE;border-left:3px solid #3B82F6;color:#3B82F6}
+.activity-entry.act-cart{background:#F3F4F6;border-left:3px solid #9CA3AF;color:#6B7280}
+.activity-entry.act-cancel{background:#FEF2F2;border-left:3px solid #DC2626;color:#DC2626}
+.activity-entry.act-sale{background:#DCFCE7;border-left:3px solid #16A34A;color:#16A34A}
+.sale-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(229,0,76,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:9999;animation:pulse .5s ease-in-out infinite alternate}
 .sale-overlay h1{font-size:4rem;color:#fff;font-weight:900;text-shadow:0 4px 20px rgba(0,0,0,.3)}
 .sale-overlay p{font-size:1.5rem;color:#fff;margin-top:1rem}
-@keyframes pulse{from{background:rgba(0,212,255,.95)}to{background:rgba(123,47,247,.95)}}
+@keyframes pulse{from{background:rgba(229,0,76,.95)}to{background:rgba(253,232,232,.95)}}
 </style>
 </head>
 <body>
 
 <div class="header">
-<h1>Mon Commerce</h1>
+<h1>%s</h1>
 <div class="id">ID: %s</div>
 </div>
 
 <div class="card">
+<div class="card-dots"></div>
+<div class="card-body">
 <h2>Prix de vente</h2>
 <div class="field">
 <div class="value" id="price-display">--</div>
@@ -71,43 +81,67 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a1a;color:#e0e0e
 <input type="range" id="price-slider" min="%d" max="30000" step="100" value="6000">
 </div>
 </div>
+</div>
 
 <div class="card">
+<div class="card-dots"></div>
+<div class="card-body">
 <h2>Stock</h2>
 <div class="field">
 <div class="value" id="stock-display">--</div>
 <input type="range" id="stock-slider" min="0" max="50" step="1" value="10">
 </div>
 </div>
+</div>
 
 <div class="card">
-<h2>Boost (visibilite)</h2>
+<div class="card-dots"></div>
+<div class="card-body">
+<h2>Enchere max par visite</h2>
 <div class="field">
-<div class="value" id="boost-display">--</div>
-<div class="subvalue">Plus le boost est eleve, plus vous etes visible</div>
-<input type="range" id="boost-slider" min="0" max="100" step="5" value="50">
-<div class="cost-info" id="boost-cost-info"></div>
-<div class="cost-info" id="boost-margin-info" style="color:#4caf50"></div>
+<div class="value" id="bid-display">--</div>
+<div class="subvalue">0 = organique uniquement (gratuit)</div>
+<input type="range" id="bid-slider" min="0" max="200" step="5" value="50">
+<div class="cost-info" id="bid-cpc-info"></div>
+<div class="cost-info" id="bid-spend-info" style="color:#16A34A"></div>
+</div>
 </div>
 </div>
 
 <div class="card">
+<div class="card-dots"></div>
+<div class="card-body">
 <h2>Rentabilite</h2>
 <div class="field">
 <div class="value" id="profit-display">$0.00</div>
 <div class="subvalue" id="sales-count-display">0 ventes</div>
 </div>
 </div>
-
-<div class="card">
-<h2>Activite</h2>
-<div class="activity-log" id="activity-log"></div>
 </div>
 
 <div class="card">
+<div class="card-dots"></div>
+<div class="card-body">
+<h2>Activite</h2>
+<div class="activity-log" id="activity-log"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-dots"></div>
+<div class="card-body">
 <h2>Codes promo</h2>
 <div class="discount-section" id="discounts"></div>
 <button class="btn-sm btn-add" onclick="addDiscount()">+ Ajouter un code promo</button>
+</div>
+</div>
+
+<div class="card">
+<div class="card-dots"></div>
+<div class="card-body">
+<h2>Options de livraison</h2>
+<div class="discount-section" id="shipping-options"></div>
+</div>
 </div>
 
 <div class="save-status" id="save-status">Sauvegarde...</div>
@@ -122,7 +156,7 @@ const TID='%s';
 const API='/'+TID+'/api';
 const COST_PRICE=%d;
 
-let config={selling_price:6000,stock:10,discount_codes:[],boost_score:50};
+let config={selling_price:6000,stock:10,discount_codes:[],max_cpc_bid:50};
 let saveTimer=null;
 
 async function loadConfig(){
@@ -131,27 +165,32 @@ async function loadConfig(){
     config=await r.json();
     document.getElementById('price-slider').value=config.selling_price;
     document.getElementById('stock-slider').value=config.stock;
-    document.getElementById('boost-slider').value=config.boost_score;
+    document.getElementById('bid-slider').value=config.max_cpc_bid;
     updateDisplays();
     renderDiscounts();
+    renderShipping();
   }catch(e){}
 }
 
 function updateDisplays(){
   document.getElementById('price-display').textContent='$'+(config.selling_price/100).toFixed(2);
   document.getElementById('stock-display').textContent=config.stock;
-  document.getElementById('boost-display').textContent=config.boost_score;
-  const margin=config.selling_price-COST_PRICE;
-  const boostCost=config.boost_score*margin/100;
-  const netMargin=margin-boostCost;
-  const bcEl=document.getElementById('boost-cost-info');
-  bcEl.textContent='Cout du boost par vente: $'+(boostCost/100).toFixed(2);
-  const bmEl=document.getElementById('boost-margin-info');
-  bmEl.textContent='Marge nette par vente: $'+(netMargin/100).toFixed(2);
-  if(netMargin<=margin*0.2){bmEl.style.color='#ff4444'}else{bmEl.style.color='#4caf50'}
-  if(config.total_profit!==undefined){
-    document.getElementById('profit-display').textContent='$'+(config.total_profit/100).toFixed(2);
-    document.getElementById('sales-count-display').textContent=config.sales_count+' vente(s)';
+  document.getElementById('bid-display').textContent='$'+(config.max_cpc_bid/100).toFixed(2)+' / visite';
+  const cpcEl=document.getElementById('bid-cpc-info');
+  const actualCPC=config.actual_cpc||0;
+  cpcEl.textContent='CPC reel: $'+(actualCPC/100).toFixed(2);
+  const spendEl=document.getElementById('bid-spend-info');
+  const totalAdSpend=config.total_ad_spend||0;
+  spendEl.textContent='Depenses pub: $'+(totalAdSpend/100).toFixed(2);
+  if(totalAdSpend>0){spendEl.style.color='#D97706'}else{spendEl.style.color='#16A34A'}
+  if(config.net_profit!==undefined){
+    const np=config.net_profit;
+    const profitEl=document.getElementById('profit-display');
+    profitEl.textContent='$'+(np/100).toFixed(2);
+    if(np<0){profitEl.style.color='#DC2626'}else{profitEl.style.color='#16A34A'}
+    const cc=config.consultation_count||0;
+    const avgCPC=cc>0?(totalAdSpend/cc/100).toFixed(2):'0.00';
+    document.getElementById('sales-count-display').textContent=config.sales_count+' vente(s) / '+cc+' consultation(s) a $'+avgCPC+' moy.';
   }
 }
 
@@ -161,16 +200,16 @@ function schedSave(){
   el.textContent='Sauvegarde...';el.style.opacity='1';
   saveTimer=setTimeout(async()=>{
     try{
-      await fetch(API+'/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
-      el.textContent='Sauvegarde !';
-      setTimeout(()=>el.style.opacity='0',1000);
-    }catch(e){el.textContent='Erreur';el.style.color='#ff4444'}
+      const r=await fetch(API+'/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
+      if(r.ok){el.textContent='Sauvegarde !';const d=await r.json();config=d;updateDisplays();setTimeout(()=>el.style.opacity='0',1000);}
+      else{el.textContent='Erreur';el.style.color='#DC2626';loadConfig();}
+    }catch(e){el.textContent='Erreur';el.style.color='#DC2626'}
   },300);
 }
 
 document.getElementById('price-slider').oninput=function(){config.selling_price=parseInt(this.value);updateDisplays();schedSave()};
 document.getElementById('stock-slider').oninput=function(){config.stock=parseInt(this.value);updateDisplays();schedSave()};
-document.getElementById('boost-slider').oninput=function(){config.boost_score=parseInt(this.value);updateDisplays();schedSave()};
+document.getElementById('bid-slider').oninput=function(){config.max_cpc_bid=parseInt(this.value);updateDisplays();schedSave()};
 
 function renderDiscounts(){
   const el=document.getElementById('discounts');
@@ -196,6 +235,28 @@ function addDiscount(){
 function updDiscount(i,k,v){config.discount_codes[i][k]=v;schedSave()}
 function rmDiscount(i){config.discount_codes.splice(i,1);renderDiscounts();schedSave()}
 
+function renderShipping(){
+  const el=document.getElementById('shipping-options');
+  el.innerHTML='';
+  (config.shipping_options||[]).forEach((so)=>{
+    const row=document.createElement('div');
+    row.className='discount-row';
+    row.innerHTML='<span style="color:#666;font-size:.85rem">'+so.title+'</span><span style="color:#E5004C;font-weight:700;margin-left:auto">$'+(so.cost/100).toFixed(2)+'</span>';
+    el.appendChild(row);
+  });
+  if(!config.shipping_options||config.shipping_options.length===0){
+    el.innerHTML='<div style="color:#555;font-size:.85rem">Aucune option configuree</div>';
+  }
+}
+
+// Background flash on events
+let flashTimer=null;
+function flashBg(cls){
+  clearTimeout(flashTimer);
+  document.body.className=cls;
+  flashTimer=setTimeout(()=>{document.body.className=''},3000);
+}
+
 // SSE for sale + activity notifications
 const actLog=document.getElementById('activity-log');
 let actCount=0;
@@ -210,28 +271,45 @@ function addActivity(cls,text){
   actCount++;
   if(actCount>50){actLog.removeChild(actLog.firstChild);actCount--}
 }
-const evtSrc=new EventSource('/'+TID+'/api/notifications');
-evtSrc.addEventListener('message',function(e){
-  try{
-    const d=JSON.parse(e.data);
-    if(d.type==='sale'){
-      const ov=document.getElementById('sale-overlay');
-      document.getElementById('sale-detail').textContent='Commande '+d.order_id+' - $'+(d.total/100).toFixed(2);
-      ov.style.display='flex';
-      if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);
-      setTimeout(()=>{ov.style.display='none';loadConfig()},5000);
-      addActivity('act-sale',d.summary||('Vente: '+d.order_id));
-    } else if(d.type==='catalog_browse'||d.type==='product_details'){
-      addActivity('act-catalog',d.summary||d.type);
-    } else if(d.type==='checkout_created'||d.type==='checkout_updated'){
-      addActivity('act-checkout',d.summary||d.type);
-    } else if(d.type==='cart_created'){
-      addActivity('act-cart',d.summary||d.type);
-    } else if(d.type==='checkout_canceled'){
-      addActivity('act-cancel',d.summary||d.type);
-    }
-  }catch(e){}
+// SSE lifecycle: connect only when tab is visible to avoid browser connection limit
+let evtSrc=null;
+function sseConnect(){
+  if(evtSrc)return;
+  evtSrc=new EventSource('/'+TID+'/api/notifications');
+  evtSrc.addEventListener('message',function(e){
+    try{
+      const d=JSON.parse(e.data);
+      if(d.type==='sale'){
+        const ov=document.getElementById('sale-overlay');
+        document.getElementById('sale-detail').textContent='Commande '+d.order_id+' - $'+(d.total/100).toFixed(2);
+        ov.style.display='flex';
+        if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);
+        setTimeout(()=>{ov.style.display='none';loadConfig()},5000);
+        addActivity('act-sale',d.summary||('Vente: '+d.order_id));
+        flashBg('flash-sale');
+      } else if(d.type==='catalog_browse'||d.type==='product_details'){
+        addActivity('act-catalog',d.summary||d.type);
+      } else if(d.type==='checkout_created'){
+        addActivity('act-checkout',d.summary||d.type);
+        flashBg('flash-checkout');
+      } else if(d.type==='checkout_updated'){
+        addActivity('act-checkout',d.summary||d.type);
+        flashBg('flash-negotiate');
+      } else if(d.type==='cart_created'){
+        addActivity('act-cart',d.summary||d.type);
+      } else if(d.type==='checkout_canceled'){
+        addActivity('act-cancel',d.summary||d.type);
+      }
+    }catch(e){}
+  });
+}
+function sseDisconnect(){
+  if(evtSrc){evtSrc.close();evtSrc=null}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){sseDisconnect()}else{sseConnect();loadConfig()}
 });
+if(!document.hidden){sseConnect()}
 
 loadConfig();
 </script>

@@ -8,88 +8,120 @@ const arenaDashboardHTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UCP Arena Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; color: #FFFFFF; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color: #1A1A2E; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-.topbar { background: #263967; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #3E4F78; flex-shrink: 0; }
-.topbar h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.02em; }
-.topbar .product-info { font-size: 0.85rem; color: #B7BDCC; margin-left: 0.5rem; }
+.topbar { background: #FFFFFF; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #E0E0E0; flex-shrink: 0; }
+.topbar h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.02em; color: #1A1A2E; }
+.topbar h1 span { color: #E5004C; }
+.topbar .product-info { font-size: 0.85rem; color: #666; margin-left: 0.5rem; }
 .topbar .right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
-.topbar .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #00D2DD; display: inline-block; margin-right: 4px; animation: pulse-dot 1.5s ease-in-out infinite; }
+.topbar .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #E5004C; display: inline-block; margin-right: 4px; animation: pulse-dot 1.5s ease-in-out infinite; }
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-.topbar .btn-cmd { background: #00D2DD; color: #0E2356; border: none; border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-.topbar .btn-cmd:hover { opacity: 0.85; }
-.topbar .btn-cmd:disabled { opacity: 0.4; cursor: not-allowed; }
-.topbar .merchant-count { font-size: 0.8rem; color: #B7BDCC; }
-.agent-status { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem; }
-.agent-status .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.agent-status.connected { color: #2ECC71; }
-.agent-status.connected .status-dot { background: #2ECC71; }
-.agent-status.disconnected { color: #8892A8; }
-.agent-status.disconnected .status-dot { background: #8892A8; }
+.topbar .merchant-count { font-size: 0.8rem; color: #666; }
 
-.winner-banner { display: none; background: linear-gradient(135deg, #00D2DD, #7b2ff7); padding: 1.2rem 1.5rem; text-align: center; flex-shrink: 0; animation: banner-in 0.4s ease-out; }
-.winner-banner h2 { font-size: 1.5rem; color: #fff; margin-bottom: 0.25rem; }
+.winner-banner { display: none; background: #E5004C; padding: 1.2rem 1.5rem; text-align: center; flex-shrink: 0; animation: banner-in 0.4s ease-out; }
+.winner-banner h2 { font-size: 1.5rem; color: #fff; margin-bottom: 0.25rem; font-weight: 800; }
 .winner-banner p { font-size: 1rem; color: rgba(255,255,255,0.85); }
 @keyframes banner-in { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
 .main-area { flex: 1; display: flex; overflow: hidden; }
 
-.activity-panel { width: 300px; background: #1B2F5E; border-right: 1px solid #3E4F78; display: flex; flex-direction: column; flex-shrink: 0; }
-.activity-panel .panel-header { font-weight: 600; font-size: 0.75rem; color: #00D2DD; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 0.75rem; border-bottom: 1px solid #3E4F78; }
-.activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #B7BDCC; }
-.activity-panel .panel-body .thinking-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #263967; border-radius: 6px; color: #DDE0E8; }
-.activity-panel .panel-body .result-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #1A3A2A; border: 1px solid #2ECC71; border-radius: 6px; color: #FFFFFF; }
-.activity-panel .panel-body .error-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #3A1A1A; border: 1px solid #FF6B6B; border-radius: 6px; color: #FF6B6B; }
-.activity-panel .panel-body .arena-registration { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #1A2A4A; border: 1px solid #00D2DD; border-radius: 6px; color: #00D2DD; }
-.activity-panel .panel-body .arena-sale { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #1A3A2A; border: 1px solid #2ECC71; border-radius: 6px; color: #2ECC71; }
-.activity-panel .panel-body .arena-config { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #2A2A1A; border: 1px solid #FF9800; border-radius: 6px; color: #FF9800; }
-.activity-panel .panel-body .tool-call-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #1E2A4A; border: 1px solid #7b86a2; border-radius: 6px; color: #B0B8CC; }
+.activity-panel { width: 300px; background: #FFFFFF; border-right: 1px solid #E0E0E0; display: flex; flex-direction: column; flex-shrink: 0; }
+.activity-panel .panel-header { font-weight: 700; font-size: 0.75rem; color: #E5004C; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 0.75rem; border-bottom: 1px solid #E0E0E0; }
+.activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #666; }
+.activity-panel .panel-body .thinking-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F9FAFB; border-radius: 8px; color: #2D2D2D; }
+.activity-panel .panel-body .result-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #DCFCE7; border: 1px solid #16A34A; border-radius: 8px; color: #16A34A; }
+.activity-panel .panel-body .error-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FEF2F2; border: 1px solid #DC2626; border-radius: 8px; color: #DC2626; }
+.activity-panel .panel-body .arena-registration { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FDE8E8; border: 1px solid #E5004C; border-radius: 8px; color: #E5004C; }
+.activity-panel .panel-body .arena-sale { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #DCFCE7; border: 1px solid #16A34A; border-radius: 8px; color: #16A34A; }
+.activity-panel .panel-body .arena-config { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FFF7ED; border: 1px solid #F59E0B; border-radius: 8px; color: #D97706; }
+.activity-panel .panel-body .tool-call-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F3F4F6; border: 1px solid #9CA3AF; border-radius: 8px; color: #6B7280; }
 
 .merchants-area { flex: 1; overflow-y: auto; padding: 1.5rem; }
 .merchants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-.merchant-card { background: #1B2F5E; border: 1px solid #3E4F78; border-radius: 12px; padding: 1.2rem; transition: border-color 0.3s, box-shadow 0.3s; }
-.merchant-card.active { border-color: #00D2DD; box-shadow: 0 0 16px rgba(0, 210, 221, 0.25); }
-.merchant-card .mc-name { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
-.merchant-card .mc-name .sales-badge { background: #2ECC71; color: #0E2356; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 10px; }
-.merchant-card .mc-row { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; font-size: 0.85rem; color: #B7BDCC; border-bottom: 1px solid #2A3D6B; }
+.merchant-card { background: #FFFFFF; border: 1px solid #2D2D2D; border-radius: 16px; padding: 1.2rem; transition: border-color 0.3s, box-shadow 0.3s; box-shadow: 4px 4px 0px #E5004C; }
+.merchant-card.active { border-color: #E5004C; box-shadow: 6px 6px 0px #E5004C; }
+.merchant-card.state-checkout { border-color: #3B82F6; background: #EFF6FF; box-shadow: 4px 4px 0px #3B82F6; }
+.merchant-card.state-negotiate { border-color: #F59E0B; background: #FFFBEB; box-shadow: 4px 4px 0px #F59E0B; }
+.merchant-card.state-sale { border-color: #16A34A; background: #F0FDF4; box-shadow: 6px 6px 0px #16A34A; }
+.merchant-card.state-lookup { border-color: #E5004C; background: #FDE8E8; box-shadow: 4px 4px 0px #E5004C; }
+.mc-status { display: none; margin-top: 0.6rem; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-align: center; animation: status-in 0.25s ease-out; }
+@keyframes status-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.mc-status.visible { display: block; }
+.mc-status.st-lookup { background: #FDE8E8; color: #E5004C; border: 1px solid #E5004C; }
+.mc-status.st-checkout { background: #DBEAFE; color: #3B82F6; border: 1px solid #3B82F6; }
+.mc-status.st-negotiate { background: #FFF7ED; color: #D97706; border: 1px solid #F59E0B; }
+.mc-status.st-sale { background: #DCFCE7; color: #16A34A; border: 1px solid #16A34A; }
+.mc-status.st-cancel { background: #FEF2F2; color: #DC2626; border: 1px solid #DC2626; }
+.merchant-card .mc-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; color: #1A1A2E; }
+.merchant-card .mc-name .sales-badge { background: #FDE8E8; color: #E5004C; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 20px; }
+.mc-rank { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 20px; background: #FDE8E8; color: #E5004C; }
+.mc-rank.top-1 { background: #FFD700; color: #1A1A2E; }
+.mc-rank.top-2 { background: #C0C0C0; color: #1A1A2E; }
+.mc-rank.top-3 { background: #CD7F32; color: #FFF; }
+.merchant-card .mc-row { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; font-size: 0.85rem; color: #666; border-bottom: 1px solid #E0E0E0; }
 .merchant-card .mc-row:last-child { border-bottom: none; }
-.merchant-card .mc-row .mc-label { color: #8892A8; }
-.merchant-card .mc-row .mc-value { font-weight: 600; color: #DDE0E8; font-variant-numeric: tabular-nums; }
-.merchant-card .mc-row .mc-value.positive { color: #2ECC71; }
-.merchant-card .mc-row .mc-value.negative { color: #FF6B6B; }
-.merchant-card .mc-row .mc-value.zero-stock { color: #FF6B6B; }
+.merchant-card .mc-row .mc-label { color: #999; }
+.merchant-card .mc-row .mc-value { font-weight: 600; color: #1A1A2E; font-variant-numeric: tabular-nums; }
+.merchant-card .mc-row .mc-value.positive { color: #16A34A; }
+.merchant-card .mc-row .mc-value.negative { color: #DC2626; }
+.merchant-card .mc-row .mc-value.zero-stock { color: #DC2626; }
 
-.no-merchants { text-align: center; padding: 4rem 2rem; color: #5A6A8A; }
-.no-merchants h2 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #8892A8; }
+.no-merchants { text-align: center; padding: 4rem 2rem; color: #999; }
+.no-merchants h2 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #666; font-weight: 700; }
 .no-merchants p { font-size: 0.9rem; }
 
-.bottombar { background: #263967; padding: 0.5rem 1.5rem; border-top: 1px solid #3E4F78; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; min-height: 48px; }
-.bottombar .desc { flex: 1; font-size: 0.85rem; color: #B7BDCC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bottombar .badge { background: #00D2DD; color: #0E2356; border-radius: 4px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+/* --- Agent Acheteur panel (right side, visually separate) --- */
+.agent-panel { width: 320px; background: #FDF0EE; border-left: 1px solid #E0E0E0; display: flex; flex-direction: column; flex-shrink: 0; padding: 1rem; gap: 0.75rem; }
+.agent-card { background: #FFFFFF; border: 1px solid #2D2D2D; border-radius: 16px; box-shadow: 6px 6px 0px #1A1A2E; overflow: hidden; display: flex; flex-direction: column; }
+.agent-card-dots { padding: 0.4rem 0.75rem; border-bottom: 1px solid #E0E0E0; display: flex; align-items: center; gap: 6px; }
+.agent-card-dots::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #1A1A2E; display: inline-block; }
+.agent-card-dots::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #CCC; display: inline-block; }
+.agent-card-dots .agent-card-title { margin-left: 0.5rem; font-size: 0.7rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.05em; }
+.agent-card-body { padding: 1rem; }
+.agent-card-body .agent-identity { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.agent-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1A1A2E; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.agent-info .agent-name { font-size: 1rem; font-weight: 800; color: #1A1A2E; }
+.agent-info .agent-role { font-size: 0.75rem; color: #999; }
+.agent-status-line { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.75rem; }
+.agent-status-line .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.agent-status-line.connected { color: #16A34A; }
+.agent-status-line.connected .status-dot { background: #16A34A; }
+.agent-status-line.disconnected { color: #999; }
+.agent-status-line.disconnected .status-dot { background: #999; }
+.agent-separator { border: none; border-top: 1px solid #E0E0E0; margin: 0.25rem 0 0.75rem; }
+.agent-input-wrap { display: flex; gap: 0.5rem; }
+.agent-input-wrap input { flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #CCC; border-radius: 8px; background: #FFFFFF; color: #1A1A2E; font-size: 0.85rem; outline: none; font-family: 'Outfit', system-ui, sans-serif; }
+.agent-input-wrap input:focus { border-color: #1A1A2E; }
+.agent-input-wrap input:disabled { opacity: 0.4; }
+.agent-input-wrap button { background: #1A1A2E; color: #FFFFFF; border: none; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+.agent-input-wrap button:hover { opacity: 0.85; }
+.agent-input-wrap button:disabled { opacity: 0.4; cursor: not-allowed; }
+.agent-merchant-count { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #999; margin-top: 0.5rem; }
+.agent-merchant-count input[type=range] { flex: 1; accent-color: #1A1A2E; }
+.agent-merchant-count .count-val { font-weight: 700; color: #1A1A2E; min-width: 1.2rem; text-align: center; }
+.agent-send-status { font-size: 0.75rem; margin-top: 0.4rem; min-height: 1.1rem; }
+.agent-send-status.success { color: #16A34A; }
+.agent-send-status.error { color: #DC2626; }
+.agent-send-status.warning { color: #D97706; }
+.agent-send-status.sending { color: #999; }
+.agent-note { font-size: 0.7rem; color: #999; line-height: 1.4; margin-top: auto; padding-top: 0.5rem; }
 
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; justify-content: center; align-items: center; }
-.modal-overlay.visible { display: flex; }
-.modal { background: #1B2F5E; border: 1px solid #3E4F78; border-radius: 12px; padding: 1.5rem; width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-.modal h2 { font-size: 1rem; margin-bottom: 1rem; }
-.modal input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #3E4F78; border-radius: 6px; background: #0E2356; color: #FFF; font-size: 0.9rem; outline: none; }
-.modal input:focus { border-color: #00D2DD; }
-.modal .modal-buttons { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end; }
-.modal .modal-buttons button { border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-.modal .btn-search { background: #00D2DD; color: #0E2356; }
-.modal .btn-cancel { background: #3E4F78; color: #B7BDCC; }
+.bottombar { background: #FFFFFF; padding: 0.5rem 1.5rem; border-top: 1px solid #E0E0E0; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; min-height: 48px; }
+.bottombar .desc { flex: 1; font-size: 0.85rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bottombar .badge { background: #FDE8E8; color: #E5004C; border-radius: 20px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <h1>UCP Arena Monitor</h1>
+  <h1>UCP <span>Arena</span></h1>
   <span class="product-info" id="product-info"></span>
   <div class="right">
     <span class="merchant-count" id="merchant-count">0 merchants</span>
-    <span id="agent-status" class="agent-status disconnected" title="No agent connected"><span class="status-dot"></span>Agent: offline</span>
-    <button class="btn-cmd" id="btn-command" disabled title="No agent connected">Send Command</button>
     <span><span class="live-dot"></span>LIVE</span>
   </div>
 </div>
@@ -112,22 +144,43 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       </div>
     </div>
   </div>
+  <div class="agent-panel">
+    <div class="agent-card">
+      <div class="agent-card-dots"><span class="agent-card-title">External Service</span></div>
+      <div class="agent-card-body">
+        <div class="agent-identity">
+          <div class="agent-avatar">🛒</div>
+          <div class="agent-info">
+            <div class="agent-name">Agent Acheteur</div>
+            <div class="agent-role">Gemini &middot; independent buyer</div>
+          </div>
+        </div>
+        <div id="agent-status" class="agent-status-line disconnected">
+          <span class="status-dot"></span> Disconnected
+        </div>
+        <hr class="agent-separator">
+        <div class="agent-input-wrap">
+          <input type="text" id="command-input" placeholder="What should I buy?" autocomplete="off" disabled />
+          <button id="btn-send" disabled>Send</button>
+        </div>
+        <div class="agent-merchant-count">
+          <span>Merchants:</span>
+          <input type="range" id="merchant-count-input" min="1" max="10" value="3" />
+          <span class="count-val" id="merchant-count-value">3</span>
+        </div>
+        <div class="agent-send-status" id="send-status"></div>
+      </div>
+    </div>
+    <div class="agent-note">
+      The buying agent is an independent process (Gemini).
+      It is not part of the arena — it discovers and negotiates with merchants on its own via the Shopping Graph.
+    </div>
+  </div>
 </div>
 
 <div class="bottombar">
   <div class="desc" id="bottom-desc">Waiting for events...</div>
   <div class="badge" id="bottom-badge" style="display:none"></div>
-</div>
-
-<div class="modal-overlay" id="command-modal">
-  <div class="modal">
-    <h2>Send instruction to Agent</h2>
-    <input type="text" id="command-input" placeholder="e.g. find the best headphones" autocomplete="off" />
-    <div class="modal-buttons">
-      <button class="btn-cancel" id="modal-cancel">Cancel</button>
-      <button class="btn-search" id="modal-submit">Send</button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -146,6 +199,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
   var activeMerchant = null;
   var activeTimer = null;
   var bannerTimer = null;
+  var currentRankings = {};
 
   // Fetch arena config for product info
   fetch('/arena/config')
@@ -181,6 +235,16 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
     bannerTimer = setTimeout(function() { winnerBanner.style.display = 'none'; }, 8000);
   }
 
+  function fetchRankings() {
+    fetch('/arena/rankings')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function(data) {
+        currentRankings = data.rankings || {};
+        fetchMerchants();
+      })
+      .catch(function() {});
+  }
+
   // --- Merchant cards ---
   function renderMerchants(data) {
     var merchants = data.merchants || [];
@@ -191,27 +255,70 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       return;
     }
 
+    merchants.sort(function(a, b) {
+      var rdA = currentRankings[a.id];
+      var ra = (rdA && typeof rdA === 'object' && typeof rdA.rank === 'number') ? rdA.rank : 9999;
+      var rdB = currentRankings[b.id];
+      var rb = (rdB && typeof rdB === 'object' && typeof rdB.rank === 'number') ? rdB.rank : 9999;
+      if (ra !== rb) return ra - rb;
+      return (a.id < b.id) ? -1 : 1;
+    });
+
     var html = '';
     for (var i = 0; i < merchants.length; i++) {
       var m = merchants[i];
       var isActive = activeMerchant && activeMerchant === m.name;
       var activeClass = isActive ? ' active' : '';
-      var profitClass = m.total_profit > 0 ? 'positive' : (m.total_profit < 0 ? 'negative' : '');
+      var profitClass = m.net_profit > 0 ? 'positive' : (m.net_profit < 0 ? 'negative' : '');
       var stockClass = m.stock <= 0 ? 'zero-stock' : '';
 
-      html += '<div class="merchant-card' + activeClass + '" data-name="' + escapeHtml(m.name) + '">' +
-        '<div class="mc-name"><span>' + escapeHtml(m.name) + '</span>' +
+      var rData = currentRankings[m.id];
+      var rankNum = (rData && typeof rData === 'object' && typeof rData.rank === 'number') ? rData.rank : 0;
+      var rankBadge = '';
+      if (rankNum > 0) {
+        var rankCls = rankNum <= 3 ? ' top-' + rankNum : '';
+        rankBadge = '<span class="mc-rank' + rankCls + '">#' + rankNum + '</span>';
+      }
+
+      html += '<div class="merchant-card' + activeClass + '" data-name="' + escapeHtml(m.name) + '" data-id="' + escapeHtml(m.id || m.name) + '">' +
+        '<div class="mc-name"><span>' + rankBadge + ' ' + escapeHtml(m.name) + '</span>' +
         (m.sales_count > 0 ? '<span class="sales-badge">' + m.sales_count + ' sale' + (m.sales_count !== 1 ? 's' : '') + '</span>' : '') +
         '</div>' +
         '<div class="mc-row"><span class="mc-label">Price</span><span class="mc-value">' + formatPrice(m.price) + '</span></div>' +
         '<div class="mc-row"><span class="mc-label">Stock</span><span class="mc-value ' + stockClass + '">' + m.stock + '</span></div>' +
-        '<div class="mc-row"><span class="mc-label">Boost</span><span class="mc-value">' + m.boost + '%</span></div>' +
-        '<div class="mc-row"><span class="mc-label">Margin</span><span class="mc-value">' + formatPrice(m.margin) + '</span></div>' +
-        '<div class="mc-row"><span class="mc-label">Net Margin</span><span class="mc-value">' + formatPrice(m.net_margin) + '</span></div>' +
-        '<div class="mc-row"><span class="mc-label">Profit</span><span class="mc-value ' + profitClass + '">' + formatPrice(m.total_profit) + '</span></div>' +
+        '<div class="mc-row"><span class="mc-label">Max Bid</span><span class="mc-value">' + formatPrice(m.max_cpc_bid) + '/visit</span></div>' +
+        '<div class="mc-row"><span class="mc-label">Actual CPC</span><span class="mc-value">' + formatPrice(m.actual_cpc) + '/visit</span></div>' +
+        '<div class="mc-row"><span class="mc-label">Ad Spend</span><span class="mc-value">' + formatPrice(m.total_ad_spend) + ' (' + (m.consultation_count || 0) + ' visits)</span></div>' +
+        '<div class="mc-row"><span class="mc-label">Profit</span><span class="mc-value ' + profitClass + '">' + formatPrice(m.net_profit) + '</span></div>' +
+        '<div class="mc-status" data-status-for="' + escapeHtml(m.name) + '"></div>' +
         '</div>';
     }
+    // Capture active states before replacing DOM
+    var prevStates = {};
+    var oldCards = merchantsGrid.querySelectorAll('.merchant-card');
+    for (var j = 0; j < oldCards.length; j++) {
+      var cn = oldCards[j].getAttribute('data-name');
+      var se = oldCards[j].querySelector('.mc-status');
+      if (cn && se && se.classList.contains('visible')) {
+        prevStates[cn] = { cls: se.className, text: se.textContent, cardCls: oldCards[j].className };
+      }
+    }
     merchantsGrid.innerHTML = html;
+    // Restore active states on new cards
+    var newCards = merchantsGrid.querySelectorAll('.merchant-card');
+    for (var k = 0; k < newCards.length; k++) {
+      var nm = newCards[k].getAttribute('data-name');
+      if (nm && prevStates[nm]) {
+        var ps = prevStates[nm];
+        // Restore card-level state classes
+        ['state-checkout','state-negotiate','state-sale','state-lookup'].forEach(function(sc) {
+          if (ps.cardCls.indexOf(sc) !== -1) newCards[k].classList.add(sc);
+        });
+        if (ps.cardCls.indexOf('active') !== -1) newCards[k].classList.add('active');
+        var nse = newCards[k].querySelector('.mc-status');
+        if (nse) { nse.className = ps.cls; nse.textContent = ps.text; }
+      }
+    }
   }
 
   function fetchMerchants() {
@@ -221,8 +328,8 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       .catch(function() {});
   }
 
-  fetchMerchants();
-  setInterval(fetchMerchants, 5000);
+  fetchRankings();
+  setInterval(fetchRankings, 3000);
 
   // --- SSE events ---
   function detectMerchantName(ev) {
@@ -230,7 +337,9 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
     var cards = document.querySelectorAll('.merchant-card');
     for (var i = 0; i < cards.length; i++) {
       var name = cards[i].getAttribute('data-name');
+      var id = cards[i].getAttribute('data-id');
       if (name && s.indexOf(name) !== -1) return name;
+      if (id && s.indexOf(id) !== -1) return name;
     }
     return null;
   }
@@ -255,23 +364,93 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
     }, 3000);
   }
 
+  // Translate raw agent summaries into human-readable descriptions
+  function detectOp(ev) {
+    var s = ev.summary || '';
+    if (ev.type === 'agent_start') return 'Agent demarre';
+    if (ev.type === 'agent_done') return ev.summary;
+    if (ev.type === 'agent_thinking') return s;
+    var m;
+    if ((m = s.match(/^Searching for:\s*(.+)/i))) return 'Recherche: ' + m[1];
+    if (s.match(/^Getting details for/i)) return 'Consultation prix';
+    if (s.match(/^Creating checkout/i)) return 'Creation du panier';
+    if (s.match(/^Asking .+ for promotions/i)) return 'Recherche de promotions';
+    if ((m = s.match(/^Applying discount\s+(\S+)/i))) return 'Negociation: code ' + m[1];
+    if (s.match(/^Updating checkout/i)) return 'Mise a jour commande';
+    if (s.match(/^Getting checkout summary/i)) return 'Verification du panier';
+    if (s.match(/^Completing checkout/i)) return 'Paiement en cours';
+    if (s.match(/^Cancelling checkout/i)) return 'Annulation de commande';
+    return s;
+  }
+
+  function isPolledMessage(s) {
+    return s && (s.indexOf('Polled') !== -1 || s.indexOf('Poll failed') !== -1);
+  }
+
+  var stateLabels = {
+    'state-lookup': { css: 'st-lookup', text: 'Consultation prix' },
+    'state-checkout': { css: 'st-checkout', text: 'Creation panier' },
+    'state-negotiate': { css: 'st-negotiate', text: 'Negociation' },
+    'state-sale': { css: 'st-sale', text: 'Paiement en cours' },
+    'state-cancel': { css: 'st-cancel', text: 'Annulation' }
+  };
+  var stateTimers = {};
+
+  // Set a visual state class on a merchant card with a status label, auto-remove after duration ms
+  function setMerchantState(name, cls, duration, label) {
+    var cards = document.querySelectorAll('.merchant-card');
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].getAttribute('data-name') !== name) continue;
+      var card = cards[i];
+      card.classList.remove('state-checkout', 'state-negotiate', 'state-sale', 'state-lookup');
+      var statusEl = card.querySelector('.mc-status');
+      if (statusEl) {
+        statusEl.className = 'mc-status';
+        statusEl.textContent = '';
+      }
+      if (stateTimers[name]) { clearTimeout(stateTimers[name]); delete stateTimers[name]; }
+      if (cls) {
+        card.classList.add(cls);
+        var info = stateLabels[cls];
+        if (statusEl && info) {
+          statusEl.className = 'mc-status visible ' + info.css;
+          statusEl.textContent = label || info.text;
+        }
+        stateTimers[name] = (function(c, n) {
+          return setTimeout(function() {
+            c.classList.remove('state-checkout', 'state-negotiate', 'state-sale', 'state-lookup');
+            var se = c.querySelector('.mc-status');
+            if (se) { se.className = 'mc-status'; se.textContent = ''; }
+            delete stateTimers[n];
+          }, duration);
+        })(card, name);
+      }
+    }
+  }
+
   var es = new EventSource('/events');
   es.onmessage = function(msg) {
     try {
       var ev = JSON.parse(msg.data);
+      var summary = ev.summary || '';
+
+      // Skip polled messages everywhere
+      if (isPolledMessage(summary)) return;
+
+      var displayText = detectOp(ev);
 
       // Arena-specific events
       if (ev.source === 'arena') {
         if (ev.type === 'merchant_registered') {
-          appendToPanel('arena-registration', ev.summary);
-          fetchMerchants();
+          appendToPanel('arena-registration', summary);
+          fetchRankings();
         } else if (ev.type === 'sale_completed') {
-          appendToPanel('arena-sale', ev.summary);
-          showWinnerBanner('SOLD!', ev.summary);
-          fetchMerchants();
+          appendToPanel('arena-sale', summary);
+          showWinnerBanner('SOLD!', summary);
+          fetchRankings();
         } else if (ev.type === 'config_update') {
-          appendToPanel('arena-config', ev.summary);
-          fetchMerchants();
+          appendToPanel('arena-config', summary);
+          fetchRankings();
         }
       }
 
@@ -279,115 +458,135 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       if (ev.type === 'agent_start') {
         panelBody.innerHTML = '';
         panelHeader.textContent = 'Activity Log';
-        appendToPanel('thinking-entry', 'Agent started');
+        appendToPanel('thinking-entry', displayText);
       }
-      if (ev.type === 'agent_thinking' && ev.summary) appendToPanel('thinking-entry', ev.summary);
-      if (ev.type === 'tool_call' && ev.summary) appendToPanel('tool-call-entry', ev.summary);
-      if (ev.type === 'tool_result' && ev.summary) appendToPanel('result-entry', ev.summary);
-      if (ev.type === 'tool_error' && ev.summary) appendToPanel('error-entry', ev.summary);
-      if (ev.type === 'agent_error' && ev.summary) appendToPanel('error-entry', ev.summary);
-      if (ev.type === 'agent_done' && ev.summary) {
+      if (ev.type === 'agent_thinking' && summary) appendToPanel('thinking-entry', displayText);
+      if (ev.type === 'tool_call' && summary) appendToPanel('tool-call-entry', displayText);
+      if (ev.type === 'tool_result' && summary) appendToPanel('result-entry', displayText);
+      if (ev.type === 'tool_error' && summary) appendToPanel('error-entry', displayText);
+      if (ev.type === 'agent_error' && summary) appendToPanel('error-entry', displayText);
+      if (ev.type === 'agent_done' && summary) {
         panelHeader.textContent = 'Agent Result';
-        appendToPanel('result-entry', ev.summary);
-        fetchMerchants();
+        appendToPanel('result-entry', displayText);
+        fetchRankings();
       }
 
       // Bottom bar
-      bottomDesc.textContent = ev.summary || ev.type || '';
+      bottomDesc.textContent = displayText || ev.type || '';
       if (ev.type === 'tool_error' || ev.type === 'agent_error') {
         bottomBadge.textContent = 'Error';
         bottomBadge.style.display = '';
-        bottomBadge.style.background = '#FF6B6B';
-        bottomBadge.style.color = '#FFFFFF';
+        bottomBadge.style.background = '#FEF2F2';
+        bottomBadge.style.color = '#DC2626';
       } else if (ev.type) {
         bottomBadge.textContent = ev.type.replace(/_/g, ' ');
         bottomBadge.style.display = '';
-        bottomBadge.style.background = '#00D2DD';
-        bottomBadge.style.color = '#0E2356';
+        bottomBadge.style.background = '#FDE8E8';
+        bottomBadge.style.color = '#E5004C';
       }
 
-      // Highlight merchant
+      // Highlight merchant + state colors + status label
       var mName = detectMerchantName(ev);
-      if (mName) highlightMerchant(mName);
+      if (mName) {
+        highlightMerchant(mName);
+        var dm;
+        if (summary.match(/^Getting details for/i)) {
+          setMerchantState(mName, 'state-lookup', 4000);
+        } else if (summary.match(/^Creating checkout/i)) {
+          setMerchantState(mName, 'state-checkout', 5000);
+        } else if (summary.match(/^Asking .+ for promotions/i)) {
+          setMerchantState(mName, 'state-negotiate', 5000, 'Recherche de promotions');
+        } else if ((dm = summary.match(/^Applying discount\s+(\S+)/i))) {
+          setMerchantState(mName, 'state-negotiate', 5000, 'Code promo: ' + dm[1]);
+        } else if (summary.match(/^Updating checkout/i)) {
+          setMerchantState(mName, 'state-negotiate', 5000, 'Mise a jour commande');
+        } else if (summary.match(/^Getting checkout summary/i)) {
+          setMerchantState(mName, 'state-checkout', 4000, 'Verification panier');
+        } else if (summary.match(/^Completing checkout/i)) {
+          setMerchantState(mName, 'state-sale', 8000);
+        } else if (summary.match(/^Cancelling checkout/i)) {
+          setMerchantState(mName, 'state-cancel', 5000);
+        }
+
+        // Merchant activity events (from merchant callbacks, source = merchant name)
+        if (ev.type === 'product_details' || ev.type === 'catalog_browse') {
+          setMerchantState(mName, 'state-lookup', 4000);
+        } else if (ev.type === 'checkout_created' || ev.type === 'cart_created') {
+          setMerchantState(mName, 'state-checkout', 5000);
+        } else if (ev.type === 'checkout_updated') {
+          var label = 'Mise a jour';
+          if (summary.indexOf('promo') !== -1) label = 'Code promo';
+          else if (summary.indexOf('livraison') !== -1) label = 'Livraison';
+          else if (summary.indexOf('acheteur') !== -1) label = 'Info acheteur';
+          setMerchantState(mName, 'state-negotiate', 5000, label);
+        } else if (ev.type === 'checkout_canceled') {
+          setMerchantState(mName, 'state-cancel', 5000);
+        }
+      }
 
       // Refresh merchants on sales or completions
-      if (ev.type === 'tool_result' && ev.summary && ev.summary.indexOf('omplete') !== -1) {
-        fetchMerchants();
+      if (ev.type === 'tool_result' && summary && summary.indexOf('omplete') !== -1) {
+        fetchRankings();
       }
     } catch(e) { console.error(e); }
   };
 
-  // --- Command modal ---
-  var modal = document.getElementById('command-modal');
+  // --- Agent panel (inline, no modal) ---
   var cmdInput = document.getElementById('command-input');
+  var btnSend = document.getElementById('btn-send');
+  var sendStatus = document.getElementById('send-status');
+  var merchantCountInput = document.getElementById('merchant-count-input');
+  var merchantCountValue = document.getElementById('merchant-count-value');
 
-  document.getElementById('btn-command').addEventListener('click', function() {
-    modal.classList.add('visible');
-    cmdInput.value = '';
-    cmdInput.focus();
-  });
-
-  function hideModal() { modal.classList.remove('visible'); }
-  document.getElementById('modal-cancel').addEventListener('click', hideModal);
+  merchantCountInput.addEventListener('input', function() { merchantCountValue.textContent = merchantCountInput.value; });
 
   function submitCommand() {
     var val = cmdInput.value.trim();
     if (!val) return;
-    hideModal();
-    bottomDesc.textContent = 'Sending: ' + val;
-    bottomBadge.textContent = 'Sending...';
-    bottomBadge.style.display = '';
-    bottomBadge.style.background = '#00D2DD';
-    bottomBadge.style.color = '#0E2356';
-    fetch('/command', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({instruction: val}) })
+    sendStatus.textContent = 'Sending...';
+    sendStatus.className = 'agent-send-status sending';
+    btnSend.disabled = true;
+    fetch('/command', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({instruction: val, merchant_count: parseInt(merchantCountInput.value, 10)}) })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.connected) {
-          bottomBadge.textContent = 'Command sent';
-          bottomBadge.style.background = '#2ECC71';
-          bottomBadge.style.color = '#0E2356';
+          sendStatus.textContent = 'Instruction sent to agent';
+          sendStatus.className = 'agent-send-status success';
+          cmdInput.value = '';
         } else {
-          bottomBadge.textContent = 'No agent connected';
-          bottomBadge.style.background = '#FF9800';
-          bottomBadge.style.color = '#0E2356';
+          sendStatus.textContent = 'Agent not connected';
+          sendStatus.className = 'agent-send-status warning';
         }
+        btnSend.disabled = false;
       })
       .catch(function() {
-        bottomBadge.textContent = 'Send failed';
-        bottomBadge.style.background = '#FF6B6B';
-        bottomBadge.style.color = '#FFFFFF';
+        sendStatus.textContent = 'Failed to reach agent';
+        sendStatus.className = 'agent-send-status error';
+        btnSend.disabled = false;
       });
   }
 
-  document.getElementById('modal-submit').addEventListener('click', submitCommand);
+  btnSend.addEventListener('click', submitCommand);
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') submitCommand();
-    if (e.key === 'Escape') hideModal();
-  });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.classList.contains('visible')) hideModal();
   });
 
   // --- Agent status polling ---
-  var agentStatus = document.getElementById('agent-status');
-  var btnCommand = document.getElementById('btn-command');
+  var agentStatusEl = document.getElementById('agent-status');
   function pollAgentStatus() {
     fetch('/status')
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.agent_connected) {
-          agentStatus.className = 'agent-status connected';
-          agentStatus.title = 'Agent connected';
-          agentStatus.innerHTML = '<span class="status-dot"></span>Agent: online';
-          btnCommand.disabled = false;
-          btnCommand.title = '';
+          agentStatusEl.className = 'agent-status-line connected';
+          agentStatusEl.innerHTML = '<span class="status-dot"></span> Connected';
+          cmdInput.disabled = false;
+          btnSend.disabled = false;
         } else {
-          agentStatus.className = 'agent-status disconnected';
-          agentStatus.title = 'No agent connected';
-          agentStatus.innerHTML = '<span class="status-dot"></span>Agent: offline';
-          btnCommand.disabled = true;
-          btnCommand.title = 'No agent connected';
+          agentStatusEl.className = 'agent-status-line disconnected';
+          agentStatusEl.innerHTML = '<span class="status-dot"></span> Disconnected';
+          cmdInput.disabled = true;
+          btnSend.disabled = true;
         }
       })
       .catch(function() {});
@@ -401,5 +600,6 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
 
 func (h *Handler) handleArenaDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Cache-Control", "no-cache, no-store")
 	w.Write([]byte(arenaDashboardHTML))
 }

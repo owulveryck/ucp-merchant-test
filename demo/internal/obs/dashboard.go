@@ -8,68 +8,72 @@ const dashboardHTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UCP Shopping Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; color: #FFFFFF; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-.topbar { background: #263967; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #3E4F78; flex-shrink: 0; }
-.topbar h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.02em; }
+body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color: #1A1A2E; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+.topbar { background: #FFFFFF; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #E0E0E0; flex-shrink: 0; }
+.topbar h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.02em; color: #1A1A2E; }
+.topbar h1 span { color: #E5004C; }
 .topbar .controls { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
-.topbar .controls button { background: #00D2DD; color: #0E2356; border: none; border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+.topbar .controls button { background: #E5004C; color: #FFFFFF; border: none; border-radius: 8px; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
 .topbar .controls button:hover { opacity: 0.85; }
-.topbar .controls button.active { background: #FFFFFF; }
-.topbar .step-info { font-size: 0.8rem; color: #B7BDCC; font-variant-numeric: tabular-nums; }
-.topbar .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #00D2DD; display: inline-block; margin-right: 4px; }
+.topbar .controls button.active { background: #1A1A2E; color: #FFFFFF; }
+.topbar .step-info { font-size: 0.8rem; color: #666; font-variant-numeric: tabular-nums; }
+.topbar .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #E5004C; display: inline-block; margin-right: 4px; }
 .topbar .live-dot.recording { animation: pulse-dot 1.5s ease-in-out infinite; }
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 .main-area { flex: 1; display: flex; overflow: hidden; }
 .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
 .canvas-wrap svg { width: 100%; height: 100%; }
-.activity-panel { width: 280px; background: #1B2F5E; border-right: 1px solid #3E4F78; display: flex; flex-direction: column; flex-shrink: 0; }
-.activity-panel .panel-header { font-weight: 600; font-size: 0.75rem; color: #00D2DD; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 0.75rem; border-bottom: 1px solid #3E4F78; }
-.activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #B7BDCC; }
-.activity-panel .panel-body .thinking-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #263967; border-radius: 6px; color: #DDE0E8; }
-.activity-panel .panel-body .result-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #1A3A2A; border: 1px solid #2ECC71; border-radius: 6px; color: #FFFFFF; }
-.activity-panel .panel-body .error-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #3A1A1A; border: 1px solid #FF6B6B; border-radius: 6px; color: #FF6B6B; }
-.bottombar { background: #263967; padding: 0.5rem 1.5rem; border-top: 1px solid #3E4F78; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; min-height: 48px; }
-.bottombar .desc { flex: 1; font-size: 0.85rem; color: #B7BDCC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bottombar .badge { background: #00D2DD; color: #0E2356; border-radius: 4px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-.node-rect { fill: #3E4F78; stroke: #4A5A85; stroke-width: 1.5; rx: 12; ry: 12; transition: stroke 0.3s, stroke-width 0.3s, filter 0.3s; }
-.node-rect.active { stroke: #00D2DD; stroke-width: 3; filter: url(#glow); }
-.node-label { fill: #FFFFFF; font-size: 15px; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-.node-sublabel { fill: #B7BDCC; font-size: 11px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-.conn-path { fill: none; stroke: #2A3D6B; stroke-width: 1.5; }
+.activity-panel { width: 280px; background: #FFFFFF; border-right: 1px solid #E0E0E0; display: flex; flex-direction: column; flex-shrink: 0; }
+.activity-panel .panel-header { font-weight: 700; font-size: 0.75rem; color: #E5004C; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 0.75rem; border-bottom: 1px solid #E0E0E0; }
+.activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #666; }
+.activity-panel .panel-body .thinking-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F9FAFB; border-radius: 8px; color: #2D2D2D; }
+.activity-panel .panel-body .result-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #DCFCE7; border: 1px solid #16A34A; border-radius: 8px; color: #16A34A; }
+.activity-panel .panel-body .error-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FEF2F2; border: 1px solid #DC2626; border-radius: 8px; color: #DC2626; }
+.bottombar { background: #FFFFFF; padding: 0.5rem 1.5rem; border-top: 1px solid #E0E0E0; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; min-height: 48px; }
+.bottombar .desc { flex: 1; font-size: 0.85rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bottombar .badge { background: #FDE8E8; color: #E5004C; border-radius: 20px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.node-rect { fill: #FFFFFF; stroke: #2D2D2D; stroke-width: 1.5; rx: 16; ry: 16; transition: stroke 0.3s, stroke-width 0.3s, filter 0.3s; }
+.node-rect.active { stroke: #E5004C; stroke-width: 3; filter: url(#glow); }
+.node-label { fill: #1A1A2E; font-size: 15px; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.node-sublabel { fill: #666666; font-size: 11px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.conn-path { fill: none; stroke: #D1D5DB; stroke-width: 1.5; }
+.node-dot-red { fill: #E5004C; }
+.node-dot-gray { fill: #CCCCCC; }
 @keyframes dash-travel { to { stroke-dashoffset: 0; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 #node-client { cursor: pointer; }
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; justify-content: center; align-items: center; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; justify-content: center; align-items: center; }
 .modal-overlay.visible { display: flex; }
-.modal { background: #1B2F5E; border: 1px solid #3E4F78; border-radius: 12px; padding: 1.5rem; width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-.modal h2 { font-size: 1rem; margin-bottom: 1rem; }
-.modal input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #3E4F78; border-radius: 6px; background: #0E2356; color: #FFF; font-size: 0.9rem; outline: none; }
-.modal input:focus { border-color: #00D2DD; }
+.modal { background: #FFFFFF; border: 1px solid #2D2D2D; border-radius: 16px; padding: 1.5rem; width: 380px; box-shadow: 6px 6px 0px #E5004C; }
+.modal h2 { font-size: 1rem; margin-bottom: 1rem; font-weight: 700; color: #1A1A2E; }
+.modal input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #CCC; border-radius: 8px; background: #FFFFFF; color: #1A1A2E; font-size: 0.9rem; outline: none; font-family: 'Outfit', system-ui, sans-serif; }
+.modal input:focus { border-color: #E5004C; }
 .modal .modal-buttons { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end; }
-.modal .modal-buttons button { border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-.modal .btn-search { background: #00D2DD; color: #0E2356; }
-.modal .btn-cancel { background: #3E4F78; color: #B7BDCC; }
+.modal .modal-buttons button { border: none; border-radius: 8px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.modal .btn-search { background: #E5004C; color: #FFFFFF; }
+.modal .btn-cancel { background: transparent; border: 2px solid #2D2D2D; color: #2D2D2D; }
 #node-super, #node-mega, #node-budget, #node-graph { cursor: pointer; }
-.catalog-modal { background: #1B2F5E; border: 1px solid #3E4F78; border-radius: 12px; padding: 1.5rem; width: 680px; max-height: 80vh; box-shadow: 0 8px 32px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
-.catalog-modal h2 { font-size: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
-.catalog-modal .close-btn { background: #3E4F78; color: #B7BDCC; border: none; border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.85rem; cursor: pointer; }
-.catalog-modal .close-btn:hover { background: #4A5A85; }
+.catalog-modal { background: #FFFFFF; border: 1px solid #2D2D2D; border-radius: 16px; padding: 1.5rem; width: 680px; max-height: 80vh; box-shadow: 6px 6px 0px #E5004C; display: flex; flex-direction: column; }
+.catalog-modal h2 { font-size: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: #1A1A2E; }
+.catalog-modal .close-btn { background: transparent; border: 2px solid #2D2D2D; color: #2D2D2D; border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.85rem; cursor: pointer; font-weight: 600; }
+.catalog-modal .close-btn:hover { background: #F3F4F6; }
 .catalog-table-wrap { overflow-y: auto; flex: 1; }
 .catalog-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-.catalog-table th { position: sticky; top: 0; background: #263967; text-align: left; padding: 0.5rem 0.75rem; color: #00D2DD; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
-.catalog-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #2A3D6B; color: #DDE0E8; }
-.catalog-table tr:hover td { background: #263967; }
-.catalog-loading { text-align: center; padding: 2rem; color: #B7BDCC; }
-.catalog-error { text-align: center; padding: 2rem; color: #FF6B6B; }
-.stock-zero { color: #FF6B6B; font-weight: 600; }
+.catalog-table th { position: sticky; top: 0; background: #FDE8E8; text-align: left; padding: 0.5rem 0.75rem; color: #E5004C; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.catalog-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #E0E0E0; color: #2D2D2D; }
+.catalog-table tr:hover td { background: #FDF0EE; }
+.catalog-loading { text-align: center; padding: 2rem; color: #999; }
+.catalog-error { text-align: center; padding: 2rem; color: #DC2626; }
+.stock-zero { color: #DC2626; font-weight: 600; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <h1>UCP Shopping Demo</h1>
+  <h1>UCP <span>Shopping</span> Demo</h1>
   <div class="controls">
     <button id="btn-replay" title="Replay">&#x27F2; Replay</button>
     <button id="btn-step" title="Step forward">&#x25B6; Step</button>
@@ -88,7 +92,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
 <svg id="svg-canvas" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet">
   <defs>
     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" markerUnits="strokeWidth">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#00D2DD" />
+      <polygon points="0 0, 10 3.5, 0 7" fill="#E5004C" />
     </marker>
     <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="4" result="blur" />
@@ -101,9 +105,9 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
   <path id="path-super" class="conn-path" d="M240,300 C500,300 700,120 860,120" />
   <path id="path-mega"  class="conn-path" d="M240,300 C500,300 700,300 860,300" />
   <path id="path-budget" class="conn-path" d="M240,300 C500,300 700,480 860,480" />
-  <path id="path-graph-super"  class="conn-path" d="M640,75 C750,75 800,120 860,120" style="stroke-dasharray: 6 4; stroke: #2A3D6B;" />
-  <path id="path-graph-mega"   class="conn-path" d="M640,75 C750,75 800,300 860,300" style="stroke-dasharray: 6 4; stroke: #2A3D6B;" />
-  <path id="path-graph-budget" class="conn-path" d="M640,75 C750,175 800,480 860,480" style="stroke-dasharray: 6 4; stroke: #2A3D6B;" />
+  <path id="path-graph-super"  class="conn-path" d="M640,75 C750,75 800,120 860,120" style="stroke-dasharray: 6 4; stroke: #D1D5DB;" />
+  <path id="path-graph-mega"   class="conn-path" d="M640,75 C750,75 800,300 860,300" style="stroke-dasharray: 6 4; stroke: #D1D5DB;" />
+  <path id="path-graph-budget" class="conn-path" d="M640,75 C750,175 800,480 860,480" style="stroke-dasharray: 6 4; stroke: #D1D5DB;" />
 
   <!-- animation layer -->
   <g id="anim-layer"></g>
@@ -111,28 +115,38 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
   <!-- nodes -->
   <g id="node-client" transform="translate(60,265)">
     <rect class="node-rect" width="180" height="70" />
-    <text class="node-label" x="90" y="30">Client Agent</text>
-    <text class="node-sublabel" x="90" y="50">Gemini</text>
+    <circle class="node-dot-red" cx="16" cy="12" r="4" />
+    <circle class="node-dot-gray" cx="28" cy="12" r="4" />
+    <text class="node-label" x="90" y="35">Client Agent</text>
+    <text class="node-sublabel" x="90" y="55">Gemini</text>
   </g>
   <g id="node-graph" transform="translate(460,40)">
     <rect class="node-rect" width="180" height="70" />
-    <text class="node-label" x="90" y="30">Shopping Graph</text>
-    <text class="node-sublabel" x="90" y="50">Product Index</text>
+    <circle class="node-dot-red" cx="16" cy="12" r="4" />
+    <circle class="node-dot-gray" cx="28" cy="12" r="4" />
+    <text class="node-label" x="90" y="35">Shopping Graph</text>
+    <text class="node-sublabel" x="90" y="55">Product Index</text>
   </g>
   <g id="node-super" transform="translate(860,85)">
     <rect class="node-rect" width="180" height="70" />
-    <text class="node-label" x="90" y="30">SuperShop</text>
-    <text class="node-sublabel" x="90" y="50">:8182</text>
+    <circle class="node-dot-red" cx="16" cy="12" r="4" />
+    <circle class="node-dot-gray" cx="28" cy="12" r="4" />
+    <text class="node-label" x="90" y="35">SuperShop</text>
+    <text class="node-sublabel" x="90" y="55">:8182</text>
   </g>
   <g id="node-mega" transform="translate(860,265)">
     <rect class="node-rect" width="180" height="70" />
-    <text class="node-label" x="90" y="30">MegaMart</text>
-    <text class="node-sublabel" x="90" y="50">:8183</text>
+    <circle class="node-dot-red" cx="16" cy="12" r="4" />
+    <circle class="node-dot-gray" cx="28" cy="12" r="4" />
+    <text class="node-label" x="90" y="35">MegaMart</text>
+    <text class="node-sublabel" x="90" y="55">:8183</text>
   </g>
   <g id="node-budget" transform="translate(860,445)">
     <rect class="node-rect" width="180" height="70" />
-    <text class="node-label" x="90" y="30">BudgetBuy</text>
-    <text class="node-sublabel" x="90" y="50">:8184</text>
+    <circle class="node-dot-red" cx="16" cy="12" r="4" />
+    <circle class="node-dot-gray" cx="28" cy="12" r="4" />
+    <text class="node-label" x="90" y="35">BudgetBuy</text>
+    <text class="node-sublabel" x="90" y="55">:8184</text>
   </g>
 </svg>
 </div>
@@ -277,7 +291,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
     var arrow = document.createElementNS(ns, 'path');
     arrow.setAttribute('d', refPath.getAttribute('d'));
     arrow.setAttribute('fill', 'none');
-    arrow.setAttribute('stroke', '#00D2DD');
+    arrow.setAttribute('stroke', '#E5004C');
     arrow.setAttribute('stroke-width', '2.5');
     arrow.setAttribute('marker-end', 'url(#arrowhead)');
     arrow.setAttribute('stroke-dasharray', String(totalLen));
@@ -288,7 +302,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
     // traveling dot
     var dot = document.createElementNS(ns, 'circle');
     dot.setAttribute('r', '4');
-    dot.setAttribute('fill', '#00D2DD');
+    dot.setAttribute('fill', '#E5004C');
     var motionAnim = document.createElementNS(ns, 'animateMotion');
     motionAnim.setAttribute('dur', '700ms');
     motionAnim.setAttribute('fill', 'freeze');
@@ -308,7 +322,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       textEl.setAttribute('x', String(mid.x));
       textEl.setAttribute('y', String(mid.y - 14));
       textEl.setAttribute('text-anchor', 'middle');
-      textEl.setAttribute('fill', '#0E2356');
+      textEl.setAttribute('fill', '#FFFFFF');
       textEl.setAttribute('font-size', '11');
       textEl.setAttribute('font-weight', '600');
       textEl.textContent = label;
@@ -321,7 +335,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       pill.setAttribute('width', String(approxW));
       pill.setAttribute('height', '20');
       pill.setAttribute('rx', '10');
-      pill.setAttribute('fill', '#00D2DD');
+      pill.setAttribute('fill', '#E5004C');
 
       g.appendChild(pill);
       g.appendChild(textEl);
@@ -383,11 +397,11 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
       bottomBadge.textContent = op;
       bottomBadge.style.display = '';
       if (ev.type === 'tool_error' || ev.type === 'agent_error') {
-        bottomBadge.style.background = '#FF6B6B';
-        bottomBadge.style.color = '#FFFFFF';
+        bottomBadge.style.background = '#FEF2F2';
+        bottomBadge.style.color = '#DC2626';
       } else {
-        bottomBadge.style.background = '#00D2DD';
-        bottomBadge.style.color = '#0E2356';
+        bottomBadge.style.background = '#FDE8E8';
+        bottomBadge.style.color = '#E5004C';
       }
     } else {
       bottomBadge.style.display = 'none';
@@ -670,8 +684,8 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0E2356; c
         '<tr><td>Last Updated</td><td>' + (health.last_updated ? new Date(health.last_updated).toLocaleTimeString() : 'never') + '</td></tr>' +
         '</tbody></table>' +
         '<div style="margin-top:1rem;padding:0 0.75rem;">' +
-        '<label style="font-size:0.85rem;color:#B7BDCC;">Ranking Algorithm</label>' +
-        '<select id="ranking-select" style="display:block;width:100%;margin-top:0.3rem;padding:0.5rem 0.75rem;border:1px solid #3E4F78;border-radius:6px;background:#0E2356;color:#FFF;font-size:0.9rem;outline:none;">' +
+        '<label style="font-size:0.85rem;color:#666;">Ranking Algorithm</label>' +
+        '<select id="ranking-select" style="display:block;width:100%;margin-top:0.3rem;padding:0.5rem 0.75rem;border:1px solid #CCC;border-radius:8px;background:#FFFFFF;color:#1A1A2E;font-size:0.9rem;outline:none;font-family:Outfit,system-ui,sans-serif;">' +
         options + '</select></div>';
       document.getElementById('ranking-select').addEventListener('change', function() {
         var algo = this.value;
