@@ -32,6 +32,8 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .activity-panel { width: 300px; background: #FFFFFF; border-right: 1px solid #E0E0E0; display: flex; flex-direction: column; flex-shrink: 0; }
 .activity-panel .panel-header { font-weight: 700; font-size: 0.75rem; color: #E5004C; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 0.75rem; border-bottom: 1px solid #E0E0E0; }
 .activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #666; }
+.activity-panel .panel-body .thinking-entry, .activity-panel .panel-body .result-entry, .activity-panel .panel-body .error-entry, .activity-panel .panel-body .arena-registration, .activity-panel .panel-body .arena-sale, .activity-panel .panel-body .arena-config, .activity-panel .panel-body .tool-call-entry { cursor: pointer; transition: opacity 0.15s; }
+.activity-panel .panel-body .thinking-entry:hover, .activity-panel .panel-body .result-entry:hover, .activity-panel .panel-body .error-entry:hover, .activity-panel .panel-body .arena-registration:hover, .activity-panel .panel-body .arena-sale:hover, .activity-panel .panel-body .arena-config:hover, .activity-panel .panel-body .tool-call-entry:hover { opacity: 0.75; }
 .activity-panel .panel-body .thinking-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F9FAFB; border-radius: 8px; color: #2D2D2D; }
 .activity-panel .panel-body .result-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #DCFCE7; border: 1px solid #16A34A; border-radius: 8px; color: #16A34A; }
 .activity-panel .panel-body .error-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FEF2F2; border: 1px solid #DC2626; border-radius: 8px; color: #DC2626; }
@@ -125,6 +127,26 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .agent-panel.expanded .agent-send-status { font-size: 0.95rem; }
 .agent-panel.expanded .agent-note { font-size: 0.9rem; }
 @keyframes agent-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+/* --- Agent Modal Overlay --- */
+.agent-modal-overlay { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(26,26,46,0.6); align-items: center; justify-content: center; padding: 2rem; }
+.agent-modal-overlay.visible { display: flex; }
+.agent-modal { background: #FFFFFF; border: 2px solid #2D2D2D; border-radius: 16px; box-shadow: 8px 8px 0px #E5004C; width: 720px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; animation: agent-pop 0.3s ease-out; overflow: hidden; }
+.agent-modal-dots { padding: 0.6rem 1rem; border-bottom: 1px solid #E0E0E0; display: flex; align-items: center; }
+.agent-modal-dots::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #E5004C; display: inline-block; margin-right: 8px; }
+.agent-modal-title { font-size: 0.75rem; font-weight: 700; color: #E5004C; text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
+.agent-modal-close { background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; padding: 0 0.25rem; line-height: 1; }
+.agent-modal-close:hover { color: #E5004C; }
+.agent-modal-body { padding: 2rem 2.5rem; overflow-y: auto; font-size: 1.15rem; line-height: 1.7; color: #1A1A2E; }
+.agent-modal-body h1, .agent-modal-body h2, .agent-modal-body h3 { font-weight: 800; color: #1A1A2E; margin: 1rem 0 0.5rem; }
+.agent-modal-body strong { color: #E5004C; }
+.agent-modal-body ul, .agent-modal-body ol { margin: 0.75rem 0; padding-left: 1.5rem; }
+.agent-modal-body li { margin-bottom: 0.4rem; }
+.agent-modal-body a { color: #E5004C; text-decoration: underline; }
+.agent-modal-body p { margin-bottom: 0.75rem; }
+.agent-modal-body code { background: #F3F4F6; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.95em; }
+.agent-modal-progress { height: 3px; background: #E5004C; width: 100%; transition: width linear; }
+
 .agent-card-dots { cursor: pointer; }
 .agent-card-dots:hover { background: #F3F4F6; }
 
@@ -132,6 +154,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .bottombar .desc { flex: 1; font-size: 0.85rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bottombar .badge { background: #FDE8E8; color: #E5004C; border-radius: 20px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 </head>
 <body>
 
@@ -196,6 +219,17 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   </div>
 </div>
 
+<div class="agent-modal-overlay" id="agent-modal-overlay">
+  <div class="agent-modal">
+    <div class="agent-modal-dots">
+      <span class="agent-modal-title">Agent Acheteur</span>
+      <button class="agent-modal-close" id="agent-modal-close">&times;</button>
+    </div>
+    <div class="agent-modal-body" id="agent-modal-body"></div>
+    <div class="agent-modal-progress" id="agent-modal-progress"></div>
+  </div>
+</div>
+
 <div class="bottombar">
   <div class="desc" id="bottom-desc">Waiting for events...</div>
   <div class="badge" id="bottom-badge" style="display:none"></div>
@@ -237,10 +271,14 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
     return '$' + (cents / 100).toFixed(2);
   }
 
-  function appendToPanel(className, text) {
+  function appendToPanel(className, text, rawText) {
     var div = document.createElement('div');
     div.className = className;
     div.textContent = text;
+    div.setAttribute('data-raw', rawText || text);
+    div.addEventListener('click', function() {
+      showAgentModal(div.getAttribute('data-raw'), 5000);
+    });
     panelBody.appendChild(div);
     panelBody.scrollTop = panelBody.scrollHeight;
   }
@@ -476,17 +514,18 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
       if (ev.type === 'agent_start') {
         panelBody.innerHTML = '';
         panelHeader.textContent = 'Activity Log';
-        appendToPanel('thinking-entry', displayText);
+        appendToPanel('thinking-entry', displayText, summary);
       }
-      if (ev.type === 'agent_thinking' && summary) appendToPanel('thinking-entry', displayText);
-      if (ev.type === 'tool_call' && summary) appendToPanel('tool-call-entry', displayText);
-      if (ev.type === 'tool_result' && summary) appendToPanel('result-entry', displayText);
-      if (ev.type === 'tool_error' && summary) appendToPanel('error-entry', displayText);
-      if (ev.type === 'agent_error' && summary) appendToPanel('error-entry', displayText);
+      if (ev.type === 'agent_thinking' && summary) appendToPanel('thinking-entry', displayText, summary);
+      if (ev.type === 'tool_call' && summary) appendToPanel('tool-call-entry', displayText, summary);
+      if (ev.type === 'tool_result' && summary) appendToPanel('result-entry', displayText, summary);
+      if (ev.type === 'tool_error' && summary) appendToPanel('error-entry', displayText, summary);
+      if (ev.type === 'agent_error' && summary) appendToPanel('error-entry', displayText, summary);
       if (ev.type === 'agent_done' && summary) {
         panelHeader.textContent = 'Agent Result';
-        appendToPanel('result-entry', displayText);
+        appendToPanel('result-entry', displayText, summary);
         fetchRankings();
+        showAgentModal(summary, 5000);
       }
 
       // Bottom bar
@@ -574,8 +613,12 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
     }
   });
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && agentPanel.classList.contains('expanded')) {
-      agentPanel.classList.remove('expanded');
+    if (e.key === 'Escape') {
+      if (document.getElementById('agent-modal-overlay').classList.contains('visible')) {
+        hideAgentModal();
+      } else if (agentPanel.classList.contains('expanded')) {
+        agentPanel.classList.remove('expanded');
+      }
     }
   });
 
@@ -632,6 +675,47 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   }
   pollAgentStatus();
   setInterval(pollAgentStatus, 3000);
+
+  // --- Agent Modal (full-screen markdown overlay) ---
+  var modalOverlay = document.getElementById('agent-modal-overlay');
+  var modalBody = document.getElementById('agent-modal-body');
+  var modalProgress = document.getElementById('agent-modal-progress');
+  var modalDismissTimer = null;
+  var modalOpenedAt = 0;
+
+  if (typeof marked !== 'undefined') {
+    marked.setOptions({ breaks: true });
+  }
+
+  function showAgentModal(text, autoDismissMs) {
+    autoDismissMs = autoDismissMs || 5000;
+    if (typeof marked !== 'undefined') {
+      modalBody.innerHTML = marked.parse(text);
+    } else {
+      modalBody.innerHTML = '<p>' + escapeHtml(text) + '</p>';
+    }
+    modalOverlay.classList.add('visible');
+    modalOpenedAt = Date.now();
+    if (modalDismissTimer) clearTimeout(modalDismissTimer);
+    modalProgress.style.transition = 'none';
+    modalProgress.style.width = '100%';
+    modalProgress.offsetWidth; // force reflow
+    modalProgress.style.transition = 'width ' + autoDismissMs + 'ms linear';
+    modalProgress.style.width = '0%';
+    modalDismissTimer = setTimeout(hideAgentModal, autoDismissMs);
+  }
+
+  function hideAgentModal() {
+    modalOverlay.classList.remove('visible');
+    if (modalDismissTimer) { clearTimeout(modalDismissTimer); modalDismissTimer = null; }
+    modalProgress.style.transition = 'none';
+    modalProgress.style.width = '0%';
+  }
+
+  document.getElementById('agent-modal-close').addEventListener('click', hideAgentModal);
+  modalOverlay.addEventListener('click', function(e) {
+    if (e.target === modalOverlay) hideAgentModal();
+  });
 })();
 </script>
 </body>
