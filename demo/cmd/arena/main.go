@@ -13,9 +13,10 @@ func main() {
 	productName := flag.String("product-name", "Casque Audio", "product name")
 	graphURL := flag.String("graph-url", "http://localhost:9000", "shopping graph URL")
 	obsURL := flag.String("obs-url", "", "observability hub URL")
+	baseURL := flag.String("base-url", "", "external base URL (e.g. https://demo.example.com); if empty, uses http://localhost:PORT")
 	flag.Parse()
 
-	srv := NewArenaServer(*costPrice, *productName, *graphURL, *obsURL, *port)
+	srv := NewArenaServer(*costPrice, *productName, *graphURL, *obsURL, *port, *baseURL)
 
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("Arena starting on http://localhost:%d", *port)

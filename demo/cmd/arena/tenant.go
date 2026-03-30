@@ -27,30 +27,48 @@ type Tenant struct {
 	Config   *MerchantConfig
 }
 
+// tenantBaseURL returns the public-facing base URL for a tenant.
+// When s.baseURL is set, it returns the public URL; otherwise localhost.
+func (s *ArenaServer) tenantBaseURL(id string) string {
+	if s.baseURL != "" {
+		return s.baseURL + "/" + id
+	}
+	return fmt.Sprintf("http://localhost:%d/%s", s.port, id)
+}
+
 // RegisterTenant creates a new tenant and registers it with the shopping graph.
 func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	id := uuid.New().String()[:8]
 
 	baseURL := func() string {
-		return fmt.Sprintf("http://localhost:%d/%s", s.port, id)
+		return s.tenantBaseURL(id)
 	}
 
 	notifier := NewNotifier()
 
 	m := newArenaMerchant("casque_audio", s.productName, s.costPrice, baseURL, notifier)
+	m.graphURL = s.graphURL
+	m.merchantID = id
 	m.onActivity = func(eventType, summary string) {
 		s.forwardToObsHub(name, eventType, summary, nil)
+		// Only forward actionable events to presenter (skip catalog polling noise)
+		switch eventType {
+		case "checkout_created", "checkout_updated", "checkout_canceled", "cart_created":
+			s.presenterN.Send(SaleEvent{Type: eventType, MerchantID: id})
+		}
 	}
 	m.onSale = func(ev SaleEvent) {
+		ev.MerchantID = id
 		s.presenterN.Send(ev)
 		s.forwardToObsHub("arena", "sale_completed",
 			fmt.Sprintf("SALE! Order %s - $%.2f (%s)", ev.OrderID, float64(ev.Total)/100, ev.Buyer),
 			map[string]any{
-				"order_id":     ev.OrderID,
-				"buyer":        ev.Buyer,
-				"total":        ev.Total,
-				"net_profit":   ev.NetProfit,
-				"total_profit": ev.TotalProfit,
+				"order_id":       ev.OrderID,
+				"buyer":          ev.Buyer,
+				"total":          ev.Total,
+				"total_revenue":  ev.TotalRevenue,
+				"total_ad_spend": ev.TotalAdSpend,
+				"net_profit":     ev.NetProfit,
 			})
 	}
 
@@ -59,12 +77,22 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 		func() string { return "http" },
 		func() int { return s.port },
 	)
+	// When a public base URL is configured, override OAuth metadata URLs
+	if s.baseURL != "" {
+		oauthSrv.BaseURLFn = baseURL
+	}
 
-	a2aSrv := a2a.New(m, oauthSrv,
+	a2aOpts := []a2a.Option{
 		a2a.WithMerchantName(name),
 		a2a.WithListenPort(func() int { return s.port }),
 		a2a.WithScheme(func() string { return "http" }),
-	)
+	}
+	// When a public base URL is configured, override agent card URL
+	if s.baseURL != "" {
+		a2aOpts = append(a2aOpts, a2a.WithBaseURL(baseURL))
+	}
+
+	a2aSrv := a2a.New(m, oauthSrv, a2aOpts...)
 
 	disc := discovery.New(baseURL)
 
@@ -129,7 +157,7 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	go s.registerWithGraph(tenant)
 
 	// Notify presenter
-	event := SaleEvent{Type: "registration", Buyer: name, OrderID: id}
+	event := SaleEvent{Type: "registration", MerchantID: id, Buyer: name, OrderID: id}
 	s.presenterN.Send(event)
 
 	// Forward to obs-hub
@@ -144,10 +172,10 @@ func (s *ArenaServer) registerWithGraph(t *Tenant) {
 	}
 
 	body, _ := json.Marshal(map[string]any{
-		"id":       t.ID,
-		"name":     t.Name,
-		"endpoint": fmt.Sprintf("http://localhost:%d/%s", s.port, t.ID),
-		"score":    t.Config.BoostScore,
+		"id":          t.ID,
+		"name":        t.Name,
+		"endpoint":    s.tenantBaseURL(t.ID),
+		"max_cpc_bid": t.Config.MaxCPCBid,
 	})
 
 	resp, err := http.Post(s.graphURL+"/merchants", "application/json", bytes.NewReader(body))

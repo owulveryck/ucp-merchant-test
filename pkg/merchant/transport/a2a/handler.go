@@ -29,6 +29,8 @@ type Server struct {
 	listenPort     func() int
 	schemeFn       func() string
 
+	baseURLFn func() string
+
 	mu       sync.Mutex
 	sessions map[string]*sessionState
 }
@@ -57,6 +59,12 @@ func WithListenPort(fn func() int) Option {
 // WithScheme sets the function returning the URL scheme ("http" or "https").
 func WithScheme(fn func() string) Option {
 	return func(s *Server) { s.schemeFn = fn }
+}
+
+// WithBaseURL sets a function returning the full base URL (e.g. "https://demo.example.com/tenant-id").
+// When set, the agent card URL uses this instead of constructing from scheme+localhost+port.
+func WithBaseURL(fn func() string) Option {
+	return func(s *Server) { s.baseURLFn = fn }
 }
 
 // New creates a new A2A transport server.
@@ -138,7 +146,12 @@ func (s *Server) buildAgentCard() *a2alib.AgentCard {
 	if name == "" {
 		name = "UCP Merchant"
 	}
-	url := fmt.Sprintf("%s://localhost:%d/a2a", s.schemeFn(), s.listenPort())
+	var url string
+	if s.baseURLFn != nil {
+		url = s.baseURLFn() + "/a2a"
+	} else {
+		url = fmt.Sprintf("%s://localhost:%d/a2a", s.schemeFn(), s.listenPort())
+	}
 
 	return &a2alib.AgentCard{
 		Name:               name,

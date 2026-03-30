@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -18,11 +19,12 @@ type ArenaServer struct {
 	graphURL    string
 	obsURL      string
 	port        int
+	baseURL     string    // external base URL for public-facing endpoints; empty = localhost
 	presenterN  *Notifier // SSE for presenter dashboard
 }
 
 // NewArenaServer creates a new arena server.
-func NewArenaServer(costPrice int, productName, graphURL, obsURL string, port int) *ArenaServer {
+func NewArenaServer(costPrice int, productName, graphURL, obsURL string, port int, baseURL string) *ArenaServer {
 	return &ArenaServer{
 		tenants:     make(map[string]*Tenant),
 		costPrice:   costPrice,
@@ -30,6 +32,7 @@ func NewArenaServer(costPrice int, productName, graphURL, obsURL string, port in
 		graphURL:    graphURL,
 		obsURL:      obsURL,
 		port:        port,
+		baseURL:     strings.TrimRight(baseURL, "/"),
 		presenterN:  NewNotifier(),
 	}
 }
@@ -49,6 +52,9 @@ func (s *ArenaServer) ListTenants() []*Tenant {
 	for _, t := range s.tenants {
 		result = append(result, t)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
 	return result
 }
 
@@ -70,11 +76,20 @@ func (s *ArenaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case path == "/register" && r.Method == http.MethodPost:
 		s.handleRegister(w, r)
 		return
+	case path == "/auto":
+		s.handleAuto(w, r)
+		return
 	case path == "/merchants":
 		s.handleListMerchants(w, r)
 		return
 	case path == "/config":
 		s.handleConfig(w, r)
+		return
+	case path == "/events":
+		s.presenterN.ServeHTTP(w, r)
+		return
+	case path == "/rankings":
+		s.handleRankings(w, r)
 		return
 	}
 
@@ -124,6 +139,41 @@ func (s *ArenaServer) handleConfig(w http.ResponseWriter, r *http.Request) {
 		"product_name": s.productName,
 		"cost_price":   s.costPrice,
 	})
+}
+
+// handleRankings fetches rankings from the shopping graph and returns merchant_id -> rank.
+func (s *ArenaServer) handleRankings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if s.graphURL == "" {
+		json.NewEncoder(w).Encode(map[string]any{"rankings": map[string]any{}})
+		return
+	}
+
+	body, _ := json.Marshal(map[string]any{"query": s.productName, "limit": 300})
+	resp, err := http.Post(s.graphURL+"/search", "application/json", bytes.NewReader(body))
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"rankings": map[string]any{}})
+		return
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Results []struct {
+			Rank       int    `json:"rank"`
+			MerchantID string `json:"merchant_id"`
+			Price      int    `json:"price"`
+		} `json:"results"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"rankings": map[string]any{}})
+		return
+	}
+
+	rankings := make(map[string]any)
+	for _, r := range result.Results {
+		rankings[r.MerchantID] = map[string]int{"rank": r.Rank, "price": r.Price}
+	}
+	json.NewEncoder(w).Encode(map[string]any{"rankings": rankings})
 }
 
 func setCORSHeaders(w http.ResponseWriter) {

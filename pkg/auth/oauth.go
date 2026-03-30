@@ -60,6 +60,10 @@ type OAuthServer struct {
 	MerchantName string
 	Scheme       func() string
 	ListenPort   func() int
+	// BaseURLFn, when set, overrides the default localhost-based URL construction
+	// in HandleMetadata. Use this for remote deployments where the server is
+	// accessible via a public URL.
+	BaseURLFn func() string
 }
 
 // NewOAuthServer creates a new OAuth server.
@@ -96,7 +100,12 @@ func (s *OAuthServer) HandleMetadata(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	base := fmt.Sprintf("%s://localhost:%d", s.Scheme(), s.ListenPort())
+	var base string
+	if s.BaseURLFn != nil {
+		base = s.BaseURLFn()
+	} else {
+		base = fmt.Sprintf("%s://localhost:%d", s.Scheme(), s.ListenPort())
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"issuer":                                base,

@@ -6,10 +6,14 @@ import (
 )
 
 func (s *ArenaServer) handleLanding(w http.ResponseWriter, r *http.Request) {
-	arenaURL := fmt.Sprintf("http://%s", r.Host)
+	scheme := "http"
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	arenaURL := fmt.Sprintf("%s://%s", scheme, r.Host)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, no-store")
-	fmt.Fprintf(w, landingHTML, arenaURL, arenaURL, s.productName, float64(s.costPrice)/100, arenaURL)
+	fmt.Fprintf(w, landingHTML, arenaURL, arenaURL, s.productName, float64(s.costPrice)/100)
 }
 
 const landingHTML = `<!DOCTYPE html>
@@ -64,7 +68,7 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 <div class="win-dots"></div>
 <div class="win-body qr-section">
 <div class="qr-placeholder">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%s/register-page" alt="QR Code" onerror="this.parentElement.textContent='QR'">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%s/auto" alt="QR Code" onerror="this.parentElement.textContent='QR'">
 </div>
 <div class="url-label">Scannez ou rendez-vous sur</div>
 <div class="url">%s</div>
@@ -89,7 +93,6 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 </div>
 
 <script>
-const BASE='%s';
 let merchants=[];
 let rankings={};
 let merchantStates={};
@@ -99,7 +102,7 @@ async function register(){
   const name=document.getElementById('name').value.trim();
   if(!name){document.getElementById('error').style.display='block';document.getElementById('error').textContent='Entrez votre nom';return}
   try{
-    const r=await fetch(BASE+'/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     const d=await r.json();
     if(!r.ok){document.getElementById('error').style.display='block';document.getElementById('error').textContent=d.detail||'Erreur';return}
     window.location.href=d.dashboard;
@@ -168,7 +171,7 @@ function setMerchantState(mid,cls){
 
 async function fetchMerchants(){
   try{
-    const r=await fetch(BASE+'/merchants');
+    const r=await fetch('/merchants');
     const d=await r.json();
     merchants=d.merchants||[];
     renderMerchants();
@@ -177,7 +180,7 @@ async function fetchMerchants(){
 
 async function fetchRankings(){
   try{
-    const r=await fetch(BASE+'/rankings');
+    const r=await fetch('/rankings');
     const d=await r.json();
     rankings=d.rankings||{};
     renderMerchants();
@@ -210,7 +213,7 @@ function sseHandler(e){
 }
 function sseConnect(){
   if(evtSrc)return;
-  evtSrc=new EventSource(BASE+'/events');
+  evtSrc=new EventSource('/events');
   evtSrc.addEventListener('message',sseHandler);
 }
 function sseDisconnect(){
