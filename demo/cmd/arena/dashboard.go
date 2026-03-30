@@ -86,6 +86,15 @@ body.flash-sale{background:#DCFCE7}
 .sale-overlay .sale-profit.positive{color:#BBF7D0}
 .sale-overlay .sale-profit.negative{color:#FCA5A5}
 @keyframes pulse{from{background:rgba(229,0,76,.95)}to{background:rgba(253,232,232,.95)}}
+.algo-bar{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem}
+.algo-btn{position:relative;padding:.4rem .8rem;border:1px solid #E5004C;border-radius:20px;background:#FDE8E8;color:#E5004C;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Outfit',system-ui,sans-serif;transition:all .2s}
+.algo-btn:hover{background:#E5004C;color:#fff}
+.algo-btn.active{background:#E5004C;color:#fff;box-shadow:0 2px 8px rgba(229,0,76,.3)}
+.algo-btn .algo-tooltip{display:none;position:absolute;bottom:calc(100%% + 8px);left:50%%;transform:translateX(-50%%);background:#1A1A2E;color:#fff;padding:.5rem .7rem;border-radius:8px;font-size:.7rem;font-weight:400;width:220px;text-align:center;z-index:100;line-height:1.3}
+.algo-btn .algo-tooltip::after{content:'';position:absolute;top:100%%;left:50%%;transform:translateX(-50%%);border:6px solid transparent;border-top-color:#1A1A2E}
+.algo-btn:hover .algo-tooltip{display:block}
+#price-slider.algo-active,#bid-slider.algo-active{accent-color:#999;pointer-events:none}
+.algo-auto-tag{display:inline-block;background:#E5004C;color:#fff;font-size:.6rem;font-weight:700;padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -109,6 +118,13 @@ body.flash-sale{background:#DCFCE7}
 <div class="value" id="price-display">--</div>
 <div class="cost-info">Prix d'achat: $%.2f (minimum)</div>
 <input type="range" id="price-slider" min="%d" max="30000" step="100" value="6000">
+<div class="algo-bar" id="algo-bar">
+<button class="algo-btn active" data-algo="manual" onclick="setAlgo('manual')">Manuel<span class="algo-tooltip">Controle libre du prix, encheres et promos avec les curseurs.</span></button>
+<button class="algo-btn" data-algo="markup" onclick="setAlgo('markup')">Markup dyn.<span class="algo-tooltip">Stock eleve = prix bas + encheres hautes + promo auto. Stock bas = prix haut + encheres reduites. Marge dynamique.</span></button>
+<button class="algo-btn" data-algo="threshold" onclick="setAlgo('threshold')">Seuils stock<span class="algo-tooltip">5 paliers : >80%% = promo -15%% + encheres max. 60-80%% = promo -10%%. 40-60%% = promo -5%%. 20-40%% = prix +15%%. &lt;20%% = prix premium, 0 enchere.</span></button>
+<button class="algo-btn" data-algo="markdown" onclick="setAlgo('markdown')">Demarque<span class="algo-tooltip">Faible conversion = prix baisse + encheres montent + promo auto. Optimise pour ecouler quand les visiteurs ne convertissent pas.</span></button>
+<button class="algo-btn" data-algo="surge" onclick="setAlgo('surge')">Surge<span class="algo-tooltip">Forte demande = prix monte + encheres baissent (pas besoin de payer). Aucune promo. Maximise la marge sur la rarete.</span></button>
+</div>
 </div>
 </div>
 </div>
@@ -198,10 +214,12 @@ const TID='%s';
 const API='/'+TID+'/api';
 const COST_PRICE=%d;
 
-let config={selling_price:6000,stock:10,discount_codes:[],max_cpc_bid:50};
+let config={selling_price:6000,stock:10,discount_codes:[],max_cpc_bid:50,pricing_algo:'manual'};
 let saveTimer=null;
 let checkoutCount=0;
 let discountUsage={};
+let currentAlgo='manual';
+const MAX_STOCK_REF=20;
 
 async function loadConfig(){
   try{
@@ -213,6 +231,12 @@ async function loadConfig(){
     updateDisplays();
     renderDiscounts();
     renderShipping();
+    currentAlgo=config.pricing_algo||'manual';
+    document.querySelectorAll('.algo-btn').forEach(b=>{b.classList.toggle('active',b.dataset.algo===currentAlgo)});
+    const sl=document.getElementById('price-slider');
+    const bl=document.getElementById('bid-slider');
+    if(currentAlgo!=='manual'){sl.classList.add('algo-active');bl.classList.add('algo-active');recalcAlgoPrice()}
+    else{sl.classList.remove('algo-active');bl.classList.remove('algo-active')}
   }catch(e){}
 }
 
@@ -270,9 +294,110 @@ function schedSave(){
   },300);
 }
 
-document.getElementById('price-slider').oninput=function(){config.selling_price=parseInt(this.value);updateDisplays();schedSave()};
-document.getElementById('stock-slider').oninput=function(){config.stock=parseInt(this.value);updateDisplays();schedSave()};
-document.getElementById('bid-slider').oninput=function(){config.max_cpc_bid=parseInt(this.value);updateDisplays();schedSave()};
+function setAlgo(algo){
+  currentAlgo=algo;
+  config.pricing_algo=algo;
+  document.querySelectorAll('.algo-btn').forEach(b=>{b.classList.toggle('active',b.dataset.algo===algo)});
+  const ps=document.getElementById('price-slider');
+  const bs=document.getElementById('bid-slider');
+  if(algo==='manual'){
+    ps.classList.remove('algo-active');
+    bs.classList.remove('algo-active');
+    removeAutoDiscount();
+  }else{
+    ps.classList.add('algo-active');
+    bs.classList.add('algo-active');
+    recalcAlgoPrice();
+  }
+  schedSave();
+}
+
+function removeAutoDiscount(){
+  config.discount_codes=(config.discount_codes||[]).filter(dc=>!dc.code.startsWith('AUTO'));
+  renderDiscounts();
+}
+
+function setAutoDiscount(pct){
+  config.discount_codes=config.discount_codes||[];
+  const idx=config.discount_codes.findIndex(dc=>dc.code.startsWith('AUTO'));
+  if(pct<=0){
+    if(idx>=0)config.discount_codes.splice(idx,1);
+  }else{
+    const dc={code:'AUTO'+pct,type:'percentage',value:pct,new_customer_only:false};
+    if(idx>=0)config.discount_codes[idx]=dc;
+    else config.discount_codes.push(dc);
+  }
+  renderDiscounts();
+}
+
+function recalcAlgoPrice(){
+  if(currentAlgo==='manual')return;
+  const stock=config.stock||0;
+  const consult=config.consultation_count||0;
+  const sales=config.sales_count||0;
+  let newPrice=config.selling_price;
+  let newBid=config.max_cpc_bid;
+  let autoPct=0;
+
+  if(currentAlgo==='markup'){
+    const maxS=Math.max(MAX_STOCK_REF,stock);
+    const ratio=maxS>0?stock/maxS:0;
+    // Prix: marge basse si stock eleve, haute si stock bas
+    const adj=(1-ratio)*0.4-ratio*0.15;
+    newPrice=Math.round(COST_PRICE*(1+0.30+adj));
+    // Enchere: forte si stock eleve (besoin de vendre), faible si stock bas
+    newBid=Math.round(ratio*150);
+    // Promo: discount si stock >60%% pour ecouler
+    if(ratio>0.6)autoPct=Math.round((ratio-0.6)*25);
+
+  }else if(currentAlgo==='threshold'){
+    const maxS=Math.max(MAX_STOCK_REF,stock);
+    const pct=maxS>0?stock/maxS:0;
+    if(pct>0.8){newPrice=Math.round(COST_PRICE*1.10);newBid=175;autoPct=15}
+    else if(pct>0.6){newPrice=Math.round(COST_PRICE*1.20);newBid=125;autoPct=10}
+    else if(pct>0.4){newPrice=Math.round(COST_PRICE*1.30);newBid=75;autoPct=5}
+    else if(pct>0.2){newPrice=Math.round(COST_PRICE*1.45);newBid=25;autoPct=0}
+    else{newPrice=Math.round(COST_PRICE*1.65);newBid=0;autoPct=0}
+
+  }else if(currentAlgo==='markdown'){
+    const ratio=consult>0?sales/consult:1;
+    // Prix: baisse si faible conversion
+    const disc=Math.min(0.25,(1-ratio)*0.3);
+    newPrice=Math.round(COST_PRICE*(1.30-disc));
+    newPrice=Math.max(newPrice,Math.round(COST_PRICE*1.05));
+    // Enchere: monte si personne n'achete (besoin de visibilite + conversion)
+    newBid=Math.round((1-ratio)*175);
+    // Promo: discount croissant si conversion faible
+    if(ratio<0.5)autoPct=Math.round((0.5-ratio)*30);
+
+  }else if(currentAlgo==='surge'){
+    const sf=Math.min(2.0,1.0+consult*0.05);
+    newPrice=Math.round(COST_PRICE*1.20*sf);
+    // Enchere: baisse avec la demande (pas besoin de payer, la demande vient seule)
+    newBid=Math.round(Math.max(0,150-consult*10));
+    // Promo: aucune en surge (la demande est forte)
+    autoPct=0;
+  }
+
+  // Clamp prix
+  newPrice=Math.max(COST_PRICE,Math.min(30000,newPrice));
+  newPrice=Math.round(newPrice/100)*100;
+  if(newPrice<COST_PRICE)newPrice=COST_PRICE;
+  // Clamp enchere
+  newBid=Math.max(0,Math.min(200,Math.round(newBid/5)*5));
+
+  config.selling_price=newPrice;
+  config.max_cpc_bid=newBid;
+  document.getElementById('price-slider').value=newPrice;
+  document.getElementById('bid-slider').value=newBid;
+  setAutoDiscount(autoPct);
+  updateDisplays();
+  schedSave();
+}
+
+document.getElementById('price-slider').oninput=function(){if(currentAlgo!=='manual')return;config.selling_price=parseInt(this.value);updateDisplays();schedSave()};
+document.getElementById('stock-slider').oninput=function(){config.stock=parseInt(this.value);updateDisplays();if(currentAlgo!=='manual'){recalcAlgoPrice()}else{schedSave()}};
+document.getElementById('bid-slider').oninput=function(){if(currentAlgo!=='manual')return;config.max_cpc_bid=parseInt(this.value);updateDisplays();schedSave()};
 
 function renderDiscounts(){
   const el=document.getElementById('discounts');
@@ -280,15 +405,24 @@ function renderDiscounts(){
   (config.discount_codes||[]).forEach((dc,i)=>{
     const row=document.createElement('div');
     row.className='discount-row';
+    const isAuto=dc.code.startsWith('AUTO');
     const usage=discountUsage[dc.code.toUpperCase()]||0;
     const usageBadge=usage>0?'<span class="discount-usage">('+usage+'x)</span>':'';
-    row.innerHTML=
-      '<input type="text" value="'+dc.code+'" placeholder="CODE" onchange="updDiscount('+i+',\'code\',this.value)">'+
-      '<select onchange="updDiscount('+i+',\'type\',this.value)"><option value="percentage"'+(dc.type==='percentage'?' selected':'')+'>%%</option><option value="fixed"'+(dc.type==='fixed'?' selected':'')+'>Fixe</option></select>'+
-      '<input type="number" value="'+dc.value+'" min="1" onchange="updDiscount('+i+',\'value\',parseInt(this.value))">'+
-      usageBadge+
-      '<label class="cb"><input type="checkbox"'+(dc.new_customer_only?' checked':'')+' onchange="updDiscount('+i+',\'new_customer_only\',this.checked)">Nouveau client</label>'+
-      '<button class="btn-sm btn-rm" onclick="rmDiscount('+i+')">X</button>';
+    if(isAuto){
+      row.innerHTML=
+        '<span style="color:#E5004C;font-weight:700;font-size:.85rem">'+dc.code+'</span>'+
+        '<span class="algo-auto-tag">ALGO</span>'+
+        '<span style="color:#666;font-size:.85rem;margin-left:auto">-'+dc.value+'%%</span>'+
+        usageBadge;
+    }else{
+      row.innerHTML=
+        '<input type="text" value="'+dc.code+'" placeholder="CODE" onchange="updDiscount('+i+',\'code\',this.value)">'+
+        '<select onchange="updDiscount('+i+',\'type\',this.value)"><option value="percentage"'+(dc.type==='percentage'?' selected':'')+'>%%</option><option value="fixed"'+(dc.type==='fixed'?' selected':'')+'>Fixe</option></select>'+
+        '<input type="number" value="'+dc.value+'" min="1" onchange="updDiscount('+i+',\'value\',parseInt(this.value))">'+
+        usageBadge+
+        '<label class="cb"><input type="checkbox"'+(dc.new_customer_only?' checked':'')+' onchange="updDiscount('+i+',\'new_customer_only\',this.checked)">Nouveau client</label>'+
+        '<button class="btn-sm btn-rm" onclick="rmDiscount('+i+')">X</button>';
+    }
     el.appendChild(row);
   });
 }

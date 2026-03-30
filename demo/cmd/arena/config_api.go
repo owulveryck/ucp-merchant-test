@@ -9,43 +9,49 @@ import (
 
 func handleGetConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig, costPrice int, m *arenaMerchant) {
 	cfg.mu.RLock()
-	sellingPrice := cfg.SellingPrice
-	boostScore := cfg.BoostScore
+	maxCPCBid := cfg.MaxCPCBid
 	cfg.mu.RUnlock()
 
-	margin := sellingPrice - costPrice
-	boostCostPerSale := boostScore * margin / 100
-	netMarginPerSale := margin - boostCostPerSale
-
 	m.mu.Lock()
-	totalProfit := m.totalProfit
+	totalRevenue := m.totalRevenue
+	totalAdSpend := m.totalBoostSpend
+	totalUnitsSold := m.totalUnitsSold
+	consultationCount := m.consultationCount
 	salesCount := m.salesCount
+	actualCPC := m.lastActualCPC
 	m.mu.Unlock()
+
+	netProfit := totalRevenue - (costPrice * totalUnitsSold) - totalAdSpend
 
 	cfg.mu.RLock()
 	defer cfg.mu.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"selling_price":       cfg.SellingPrice,
-		"stock":               cfg.Stock,
-		"discount_codes":      cfg.DiscountCodes,
-		"boost_score":         cfg.BoostScore,
-		"cost_price":          costPrice,
-		"margin":              margin,
-		"boost_cost_per_sale": boostCostPerSale,
-		"net_margin_per_sale": netMarginPerSale,
-		"total_profit":        totalProfit,
-		"sales_count":         salesCount,
+		"selling_price":      cfg.SellingPrice,
+		"stock":              cfg.Stock,
+		"discount_codes":     cfg.DiscountCodes,
+		"max_cpc_bid":        maxCPCBid,
+		"shipping_options":   cfg.ShippingOptions,
+		"cost_price":         costPrice,
+		"actual_cpc":         actualCPC,
+		"total_ad_spend":     totalAdSpend,
+		"total_revenue":      totalRevenue,
+		"net_profit":         netProfit,
+		"consultation_count": consultationCount,
+		"sales_count":        salesCount,
+		"pricing_algo":       cfg.PricingAlgo,
 	})
 }
 
 func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig, costPrice int, srv *ArenaServer, tenantID string, m *arenaMerchant) {
 	var req struct {
-		SellingPrice  *int           `json:"selling_price"`
-		Stock         *int           `json:"stock"`
-		DiscountCodes []DiscountCode `json:"discount_codes"`
-		BoostScore    *int           `json:"boost_score"`
+		SellingPrice    *int             `json:"selling_price"`
+		Stock           *int             `json:"stock"`
+		DiscountCodes   []DiscountCode   `json:"discount_codes"`
+		MaxCPCBid       *int             `json:"max_cpc_bid"`
+		ShippingOptions []ShippingOption `json:"shipping_options"`
+		PricingAlgo     *string          `json:"pricing_algo"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"detail":"invalid request"}`, http.StatusBadRequest)
@@ -72,44 +78,67 @@ func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 	if req.DiscountCodes != nil {
 		cfg.DiscountCodes = req.DiscountCodes
 	}
-	if req.BoostScore != nil {
-		score := *req.BoostScore
-		if score < 0 {
-			score = 0
+	if req.MaxCPCBid != nil {
+		bid := *req.MaxCPCBid
+		if bid < 0 {
+			bid = 0
 		}
-		if score > 100 {
-			score = 100
+		if bid > 200 {
+			bid = 200
 		}
-		cfg.BoostScore = score
+		cfg.MaxCPCBid = bid
+	}
+	if req.ShippingOptions != nil {
+		cfg.ShippingOptions = req.ShippingOptions
+	}
+	if req.PricingAlgo != nil {
+		cfg.PricingAlgo = *req.PricingAlgo
 	}
 	cfg.mu.Unlock()
 
-	// Update boost in shopping graph
-	if req.BoostScore != nil && srv.graphURL != "" {
+	// Update bid in shopping graph
+	if req.MaxCPCBid != nil && srv.graphURL != "" {
 		go func() {
 			body, _ := json.Marshal(map[string]any{
 				"merchant_id": tenantID,
-				"amount":      *req.BoostScore,
+				"amount":      *req.MaxCPCBid,
 			})
-			req, err := http.NewRequest(http.MethodPut, srv.graphURL+"/boost", bytes.NewReader(body))
+			req, err := http.NewRequest(http.MethodPut, srv.graphURL+"/bid", bytes.NewReader(body))
 			if err != nil {
 				return
 			}
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				log.Printf("update boost: %v", err)
+				log.Printf("update bid: %v", err)
 				return
 			}
 			resp.Body.Close()
 		}()
 	}
 
-	// Notify presenter of config change
-	srv.presenterN.Send(SaleEvent{Type: "config_update", OrderID: tenantID})
-
-	// Forward to obs-hub
-	srv.forwardToObsHub("arena", "config_update", "Config updated: "+tenantID, nil)
+	// Trigger shopping graph re-poll on price/stock change
+	needsPoll := (req.SellingPrice != nil || req.Stock != nil) && srv.graphURL != ""
+	if needsPoll {
+		go func() {
+			pollReq, err := http.NewRequest(http.MethodPost, srv.graphURL+"/poll/"+tenantID, nil)
+			if err != nil {
+				return
+			}
+			resp, err := http.DefaultClient.Do(pollReq)
+			if err != nil {
+				log.Printf("trigger re-poll: %v", err)
+				return
+			}
+			resp.Body.Close()
+			// Notify presenter AFTER re-poll completes
+			srv.presenterN.Send(SaleEvent{Type: "config_update", OrderID: tenantID})
+			srv.forwardToObsHub("arena", "config_update", "Config updated: "+tenantID, nil)
+		}()
+	} else {
+		srv.presenterN.Send(SaleEvent{Type: "config_update", OrderID: tenantID})
+		srv.forwardToObsHub("arena", "config_update", "Config updated: "+tenantID, nil)
+	}
 
 	handleGetConfig(w, r, cfg, costPrice, m)
 }

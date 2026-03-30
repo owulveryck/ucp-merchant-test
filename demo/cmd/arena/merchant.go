@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
+	"net/http"
 	"strings"
 	"sync"
 
@@ -18,11 +20,13 @@ import (
 
 // MerchantConfig holds the configurable state for an arena merchant.
 type MerchantConfig struct {
-	mu            sync.RWMutex
-	SellingPrice  int            `json:"selling_price"`
-	Stock         int            `json:"stock"`
-	DiscountCodes []DiscountCode `json:"discount_codes"`
-	BoostScore    int            `json:"boost_score"`
+	mu              sync.RWMutex
+	SellingPrice    int              `json:"selling_price"`
+	Stock           int              `json:"stock"`
+	DiscountCodes   []DiscountCode   `json:"discount_codes"`
+	MaxCPCBid       int              `json:"max_cpc_bid"`
+	ShippingOptions []ShippingOption `json:"shipping_options"`
+	PricingAlgo     string           `json:"pricing_algo"`
 }
 
 // DiscountCode is a configurable discount.
@@ -33,6 +37,47 @@ type DiscountCode struct {
 	NewCustomerOnly bool   `json:"new_customer_only"`
 }
 
+// ShippingOption represents a shipping method with its cost.
+type ShippingOption struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Cost  int    `json:"cost"`
+}
+
+// promoPool is the set of possible discount codes for randomisation.
+var promoPool = []DiscountCode{
+	{Code: "WELCOME10", Type: "percentage", Value: 10, NewCustomerOnly: true},
+	{Code: "SAVE15", Type: "percentage", Value: 15},
+	{Code: "PROMO20", Type: "percentage", Value: 20},
+	{Code: "FLAT500", Type: "fixed", Value: 500},
+	{Code: "DEAL300", Type: "fixed", Value: 300},
+}
+
+// randomizeMerchantConfig generates a randomised config for a new arena merchant.
+func randomizeMerchantConfig(costPrice int) *MerchantConfig {
+	cfg := &MerchantConfig{
+		SellingPrice: costPrice + 500 + rand.IntN(2001), // cost + [500..2500]
+		Stock:        3 + rand.IntN(18),                 // [3..20]
+		MaxCPCBid:    rand.IntN(151),                    // [0..150]
+		ShippingOptions: []ShippingOption{
+			{ID: "option_standard", Title: "Standard Shipping", Cost: 399 + rand.IntN(401)}, // [$3.99..$7.99]
+			{ID: "option_express", Title: "Express Shipping", Cost: 999 + rand.IntN(501)},   // [$9.99..$14.99]
+		},
+		PricingAlgo: "manual",
+	}
+
+	// Pick 0, 1 or 2 discount codes from the pool
+	n := rand.IntN(3) // 0, 1, or 2
+	if n > 0 {
+		perm := rand.Perm(len(promoPool))
+		for i := 0; i < n && i < len(perm); i++ {
+			cfg.DiscountCodes = append(cfg.DiscountCodes, promoPool[perm[i]])
+		}
+	}
+
+	return cfg
+}
+
 // arenaMerchant implements merchant.Merchant for a single arena tenant.
 type arenaMerchant struct {
 	mu       sync.Mutex
@@ -41,10 +86,18 @@ type arenaMerchant struct {
 	baseURL  func() string
 	notifier *Notifier
 
+	// Shopping graph connection for CPC fetching
+	graphURL   string
+	merchantID string
+
 	// Cost & profit tracking
-	costPrice   int // prix d'achat en cents
-	totalProfit int // profit net cumule (marge - cout boost) en cents
-	salesCount  int // nombre de ventes completees
+	costPrice         int // prix d'achat en cents
+	totalBoostSpend   int // depenses publicitaires cumulees en cents
+	totalRevenue      int // revenu brut cumule en cents
+	totalUnitsSold    int // unites vendues total
+	consultationCount int // nombre de consultations facturees
+	salesCount        int // nombre de ventes completees
+	lastActualCPC     int // dernier CPC reel en cents
 
 	// State
 	checkouts      map[string]*model.Checkout
@@ -67,18 +120,15 @@ type arenaMerchant struct {
 }
 
 func newArenaMerchant(productID, productName string, costPrice int, baseURL func() string, notifier *Notifier) *arenaMerchant {
+	cfg := randomizeMerchantConfig(costPrice)
 	return &arenaMerchant{
 		costPrice: costPrice,
-		config: &MerchantConfig{
-			SellingPrice: costPrice + 1000, // default: cost + $10
-			Stock:        10,
-			BoostScore:   50,
-		},
+		config:    cfg,
 		product: icatalog.Product{
 			ID:                 productID,
 			Title:              productName,
-			Price:              costPrice + 1000,
-			Quantity:           10,
+			Price:              cfg.SellingPrice,
+			Quantity:           cfg.Stock,
 			Description:        fmt.Sprintf("Premium %s", productName),
 			AvailableCountries: []ucp.Country{"US", "FR", "GB", "DE"},
 		},
@@ -105,6 +155,49 @@ func (m *arenaMerchant) notifyActivity(eventType, summary string) {
 	}
 }
 
+// chargeCPC charges the merchant for a catalog consultation based on actual CPC from the shopping graph.
+func (m *arenaMerchant) chargeCPC() {
+	m.config.mu.RLock()
+	bid := m.config.MaxCPCBid
+	m.config.mu.RUnlock()
+
+	if bid == 0 {
+		return // organic only, no charge
+	}
+
+	cpc := m.fetchActualCPC()
+	if cpc == 0 {
+		cpc = 1 // floor 1 cent
+	}
+
+	m.mu.Lock()
+	m.totalBoostSpend += cpc
+	m.consultationCount++
+	m.lastActualCPC = cpc
+	m.mu.Unlock()
+}
+
+// fetchActualCPC calls the shopping graph to get the last actual CPC for this merchant.
+func (m *arenaMerchant) fetchActualCPC() int {
+	if m.graphURL == "" || m.merchantID == "" {
+		return 1
+	}
+
+	resp, err := http.Get(m.graphURL + "/cpc/" + m.merchantID)
+	if err != nil {
+		return 1
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		ActualCPC int `json:"actual_cpc"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 1
+	}
+	return result.ActualCPC
+}
+
 // currentProduct returns the product with current config values.
 func (m *arenaMerchant) currentProduct() icatalog.Product {
 	m.config.mu.RLock()
@@ -121,6 +214,7 @@ func (m *arenaMerchant) Find(id string) *icatalog.Product {
 	p := m.currentProduct()
 	if p.ID == id {
 		m.notifyActivity("product_details", fmt.Sprintf("Détails produit consultés: %s", p.Title))
+		m.chargeCPC()
 		return &p
 	}
 	return nil
@@ -135,6 +229,7 @@ func (m *arenaMerchant) Filter(category ucp.Category, brand, query string, count
 		return nil
 	}
 	m.notifyActivity("catalog_browse", "Catalogue consulté")
+	m.chargeCPC()
 	return []icatalog.Product{p}
 }
 
@@ -146,6 +241,7 @@ func (m *arenaMerchant) Lookup(id string, shipsTo ucp.Country) *icatalog.Product
 	p := m.currentProduct()
 	if p.ID == id {
 		m.notifyActivity("product_details", fmt.Sprintf("Détails produit consultés: %s", p.Title))
+		m.chargeCPC()
 		return &p
 	}
 	return nil
@@ -157,6 +253,7 @@ func (m *arenaMerchant) Search(params icatalog.SearchParams) []icatalog.SearchRe
 		return nil
 	}
 	m.notifyActivity("catalog_browse", "Catalogue consulté (recherche)")
+	m.chargeCPC()
 	return []icatalog.SearchResult{
 		{Product: p},
 	}
@@ -440,17 +537,16 @@ func (m *arenaMerchant) CompleteCheckout(id, ownerID string, country ucp.Country
 
 	hash := computeHash(co)
 
-	// Calculate profit with boost cost
+	// Track revenue
 	m.config.mu.RLock()
-	boostScore := m.config.BoostScore
 	sellingPrice := m.config.SellingPrice
 	m.config.mu.RUnlock()
 
-	margin := sellingPrice - m.costPrice
-	boostCost := boostScore * margin / 100
-	netProfit := (margin - boostCost) * qty
-	m.totalProfit += netProfit
+	m.totalRevenue += sellingPrice * qty
+	m.totalUnitsSold += qty
 	m.salesCount++
+
+	netProfit := m.totalRevenue - (m.costPrice * m.totalUnitsSold) - m.totalBoostSpend
 
 	// Send sale notification
 	buyerEmail := ""
@@ -464,13 +560,14 @@ func (m *arenaMerchant) CompleteCheckout(id, ownerID string, country ucp.Country
 		}
 	}
 	saleEvent := SaleEvent{
-		Type:        "sale",
-		OrderID:     orderID,
-		Buyer:       buyerEmail,
-		Total:       total,
-		BoostCost:   boostCost * qty,
-		NetProfit:   netProfit,
-		TotalProfit: m.totalProfit,
+		Type:              "sale",
+		OrderID:           orderID,
+		Buyer:             buyerEmail,
+		Total:             total,
+		TotalRevenue:      m.totalRevenue,
+		TotalAdSpend:      m.totalBoostSpend,
+		ConsultationCount: m.consultationCount,
+		NetProfit:         netProfit,
 	}
 	go m.notifier.Send(saleEvent)
 	if m.onSale != nil {
@@ -552,6 +649,29 @@ func (m *arenaMerchant) UpdateOrder(id string, req model.OrderUpdateRequest) (*m
 		order.Adjustments = req.Adjustments
 	}
 	return order, nil
+}
+
+// ListPromotions returns the currently configured discount codes as promotions.
+func (m *arenaMerchant) ListPromotions() []merchant.Promotion {
+	m.config.mu.RLock()
+	defer m.config.mu.RUnlock()
+	promos := make([]merchant.Promotion, 0, len(m.config.DiscountCodes))
+	for _, dc := range m.config.DiscountCodes {
+		desc := ""
+		switch dc.Type {
+		case "percentage":
+			desc = fmt.Sprintf("%d%% off", dc.Value)
+		case "fixed":
+			desc = fmt.Sprintf("$%.2f off", float64(dc.Value)/100)
+		}
+		if dc.NewCustomerOnly {
+			desc += " (new customers only)"
+		}
+		promos = append(promos, merchant.Promotion{
+			Code: dc.Code, Type: dc.Type, Description: desc,
+		})
+	}
+	return promos
 }
 
 // Reset clears all transient state.
@@ -742,22 +862,41 @@ func (m *arenaMerchant) parseFulfillment(req *model.FulfillmentRequest, co *mode
 		if mr.SelectedDestinationID != "" {
 			method.SelectedDestinationID = mr.SelectedDestinationID
 
-			// Generate shipping options when destination is selected
-			shippingCost := 499
+			// Generate shipping options from config
+			m.config.mu.RLock()
+			shippingOpts := make([]ShippingOption, len(m.config.ShippingOptions))
+			copy(shippingOpts, m.config.ShippingOptions)
+			m.config.mu.RUnlock()
+
+			var fulfillmentOptions []model.FulfillmentOption
+			for _, so := range shippingOpts {
+				fulfillmentOptions = append(fulfillmentOptions, model.FulfillmentOption{
+					ID:    so.ID,
+					Title: so.Title,
+					Totals: []model.Total{
+						{Type: "fulfillment", Amount: so.Cost, DisplayText: fmt.Sprintf("$%.2f", float64(so.Cost)/100)},
+						{Type: "total", Amount: so.Cost, DisplayText: fmt.Sprintf("$%.2f", float64(so.Cost)/100)},
+					},
+				})
+			}
+			if len(fulfillmentOptions) == 0 {
+				fulfillmentOptions = []model.FulfillmentOption{
+					{
+						ID:    "option_standard",
+						Title: "Standard Shipping",
+						Totals: []model.Total{
+							{Type: "fulfillment", Amount: 499, DisplayText: "$4.99"},
+							{Type: "total", Amount: 499, DisplayText: "$4.99"},
+						},
+					},
+				}
+			}
+
 			method.Groups = []model.FulfillmentGroup{
 				{
 					ID:          "group_1",
 					LineItemIDs: lineItemIDs,
-					Options: []model.FulfillmentOption{
-						{
-							ID:    "option_standard",
-							Title: "Standard Shipping",
-							Totals: []model.Total{
-								{Type: "fulfillment", Amount: shippingCost, DisplayText: fmt.Sprintf("$%.2f", float64(shippingCost)/100)},
-								{Type: "total", Amount: shippingCost, DisplayText: fmt.Sprintf("$%.2f", float64(shippingCost)/100)},
-							},
-						},
-					},
+					Options:     fulfillmentOptions,
 				},
 			}
 		}
