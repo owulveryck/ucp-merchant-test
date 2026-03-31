@@ -165,6 +165,7 @@ func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) 
 						}
 						a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)), map[string]any{
 							"action":      fc.Name,
+							"params":      fc.Args,
 							"response":    parsed,
 							"duration_ms": durationMs,
 						})
@@ -178,6 +179,7 @@ func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) 
 						}
 						a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)), map[string]any{
 							"action":      fc.Name,
+							"params":      fc.Args,
 							"response":    result,
 							"duration_ms": durationMs,
 						})

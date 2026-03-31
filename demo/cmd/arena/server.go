@@ -203,6 +203,7 @@ func (s *ArenaServer) handleConfig(w http.ResponseWriter, r *http.Request) {
 // handleRankings fetches rankings from the shopping graph and returns merchant_id -> rank.
 func (s *ArenaServer) handleRankings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
 	if s.graphURL == "" {
 		json.NewEncoder(w).Encode(map[string]any{"rankings": map[string]any{}})
 		return

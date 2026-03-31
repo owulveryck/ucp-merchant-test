@@ -179,6 +179,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   <h1>UCP <span>Arena</span></h1>
   <span class="product-info" id="product-info"></span>
   <div class="right">
+    <a href="/insights" style="color:#E5004C;text-decoration:none;font-weight:700;font-size:0.8rem;padding:0.25rem 0.5rem;border:1px solid #E5004C;border-radius:8px">Insights</a>
     <span class="merchant-count" id="merchant-count">0 merchants</span>
     <span><span class="live-dot"></span>LIVE<span class="conn-dot disconnected" id="conn-dot" title="SSE"></span></span>
   </div>
@@ -361,9 +362,9 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
       .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function(data) {
         currentRankings = data.rankings || {};
-        fetchMerchants();
       })
-      .catch(function() {});
+      .catch(function() {})
+      .then(function() { fetchMerchants(); });
   }
 
   // --- Merchant cards ---

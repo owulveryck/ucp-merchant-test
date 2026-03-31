@@ -122,6 +122,7 @@ func (s *ArenaServer) handleListMerchants(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(map[string]any{
 		"merchants": result,
 		"total":     len(result),

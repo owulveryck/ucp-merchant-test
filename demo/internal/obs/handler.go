@@ -47,6 +47,7 @@ func (h *Handler) Mux() http.Handler {
 	mux.HandleFunc("POST /arena/command", h.proxyArena)
 	mux.HandleFunc("GET /status", h.handleStatus)
 	mux.HandleFunc("GET /arena", h.handleArenaDashboard)
+	mux.HandleFunc("GET /insights", h.handleInsightsDashboard)
 	mux.HandleFunc("GET /", h.handleDashboard)
 	return corsMiddleware(mux)
 }
