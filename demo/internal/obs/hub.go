@@ -22,7 +22,8 @@ type Event struct {
 
 // Command is an instruction sent from the dashboard to the client agent.
 type Command struct {
-	Instruction string `json:"instruction"`
+	Instruction   string `json:"instruction"`
+	MerchantCount int    `json:"merchant_count,omitempty"`
 }
 
 // Hub collects events and broadcasts them to SSE subscribers.

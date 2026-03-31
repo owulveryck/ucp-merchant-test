@@ -62,7 +62,7 @@ func (p *Poller) pollAll() {
 	p.graph.mu.RUnlock()
 
 	for _, m := range merchants {
-		p.pollMerchant(m)
+		p.PollMerchant(m)
 	}
 }
 
@@ -84,7 +84,8 @@ func (p *Poller) emitEvent(eventType, summary string) {
 	resp.Body.Close()
 }
 
-func (p *Poller) pollMerchant(m *MerchantNode) {
+// PollMerchant triggers an immediate poll of a single merchant.
+func (p *Poller) PollMerchant(m *MerchantNode) {
 	result, err := p.client.SendAction(m.Endpoint, "list_products", map[string]any{
 		"limit": float64(50),
 	})

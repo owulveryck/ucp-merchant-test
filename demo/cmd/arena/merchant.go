@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
-	"net/http"
 	"strings"
 	"sync"
 
@@ -27,6 +26,8 @@ type MerchantConfig struct {
 	MaxCPCBid       int              `json:"max_cpc_bid"`
 	ShippingOptions []ShippingOption `json:"shipping_options"`
 	PricingAlgo     string           `json:"pricing_algo"`
+	AccentColor     string           `json:"accent_color"`
+	Emoji           string           `json:"emoji"`
 }
 
 // DiscountCode is a configurable discount.
@@ -53,6 +54,19 @@ var promoPool = []DiscountCode{
 	{Code: "DEAL300", Type: "fixed", Value: 300},
 }
 
+var accentColors = []string{
+	"#3B82F6", "#16A34A", "#F97316", "#8B5CF6", "#EC4899",
+	"#14B8A6", "#F59E0B", "#6366F1", "#10B981", "#EF4444",
+	"#06B6D4", "#D946EF",
+}
+
+var merchantEmojis = []string{
+	"\U0001F3EA", "\U0001F6CD", "\U0001F3EC", "\U0001F3AA", "\U0001F3AF",
+	"\u26A1", "\U0001F31F", "\U0001F525", "\U0001F48E", "\U0001F3B2",
+	"\U0001F3AE", "\U0001F680", "\U0001F984", "\U0001F308", "\U0001F340",
+	"\U0001F3B8", "\U0001F3AD", "\U0001F3A0", "\U0001F3C6", "\U0001F381",
+}
+
 // randomizeMerchantConfig generates a randomised config for a new arena merchant.
 func randomizeMerchantConfig(costPrice int) *MerchantConfig {
 	cfg := &MerchantConfig{
@@ -64,6 +78,8 @@ func randomizeMerchantConfig(costPrice int) *MerchantConfig {
 			{ID: "option_express", Title: "Express Shipping", Cost: 999 + rand.IntN(501)},   // [$9.99..$14.99]
 		},
 		PricingAlgo: "manual",
+		AccentColor: accentColors[rand.IntN(len(accentColors))],
+		Emoji:       merchantEmojis[rand.IntN(len(merchantEmojis))],
 	}
 
 	// Pick 0, 1 or 2 discount codes from the pool
@@ -183,7 +199,7 @@ func (m *arenaMerchant) fetchActualCPC() int {
 		return 1
 	}
 
-	resp, err := http.Get(m.graphURL + "/cpc/" + m.merchantID)
+	resp, err := httpClient.Get(m.graphURL + "/cpc/" + m.merchantID)
 	if err != nil {
 		return 1
 	}
@@ -569,9 +585,24 @@ func (m *arenaMerchant) CompleteCheckout(id, ownerID string, country ucp.Country
 		ConsultationCount: m.consultationCount,
 		NetProfit:         netProfit,
 	}
-	go m.notifier.Send(saleEvent)
+	// Send structured sale data via SendRaw (same path as notifyActivity, which works reliably)
+	saleData, _ := json.Marshal(map[string]any{
+		"type":               "sale",
+		"summary":            fmt.Sprintf("Vente ! Commande %s – $%.2f", orderID, float64(total)/100),
+		"order_id":           orderID,
+		"buyer":              buyerEmail,
+		"total":              total,
+		"total_revenue":      m.totalRevenue,
+		"total_ad_spend":     m.totalBoostSpend,
+		"consultation_count": m.consultationCount,
+		"net_profit":         netProfit,
+	})
+	go m.notifier.SendRaw(saleData)
 	if m.onSale != nil {
 		go m.onSale(saleEvent)
+	}
+	if m.onActivity != nil {
+		go m.onActivity("sale", fmt.Sprintf("Vente ! Commande %s", orderID))
 	}
 
 	return co, order, hash, nil
@@ -653,6 +684,7 @@ func (m *arenaMerchant) UpdateOrder(id string, req model.OrderUpdateRequest) (*m
 
 // ListPromotions returns the currently configured discount codes as promotions.
 func (m *arenaMerchant) ListPromotions() []merchant.Promotion {
+	m.notifyActivity("promotions_listed", "Promotions consultées")
 	m.config.mu.RLock()
 	defer m.config.mu.RUnlock()
 	promos := make([]merchant.Promotion, 0, len(m.config.DiscountCodes))

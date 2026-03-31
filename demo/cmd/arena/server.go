@@ -8,7 +8,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
+
+// httpClient is used for all outgoing HTTP calls (shopping graph, obs-hub) with a timeout.
+var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 // ArenaServer manages multiple tenant merchants for the conference demo.
 type ArenaServer struct {
@@ -44,6 +48,19 @@ func (s *ArenaServer) GetTenant(uuid string) *Tenant {
 	return s.tenants[uuid]
 }
 
+// HasTenantNamed returns true if a tenant with the given name (case-insensitive) already exists.
+func (s *ArenaServer) HasTenantNamed(name string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	lower := strings.ToLower(name)
+	for _, t := range s.tenants {
+		if strings.ToLower(t.Name) == lower {
+			return true
+		}
+	}
+	return false
+}
+
 // ListTenants returns all tenants.
 func (s *ArenaServer) ListTenants() []*Tenant {
 	s.mu.RLock()
@@ -56,6 +73,45 @@ func (s *ArenaServer) ListTenants() []*Tenant {
 		return result[i].ID < result[j].ID
 	})
 	return result
+}
+
+// RemoveTenant removes a tenant from the arena and deregisters it from the shopping graph.
+func (s *ArenaServer) RemoveTenant(id string) bool {
+	s.mu.Lock()
+	tenant, ok := s.tenants[id]
+	if !ok {
+		s.mu.Unlock()
+		return false
+	}
+	delete(s.tenants, id)
+	s.mu.Unlock()
+
+	// Deregister from shopping graph
+	go s.deregisterFromGraph(id)
+
+	// Notify presenter SSE
+	s.presenterN.Send(SaleEvent{Type: "merchant_left", MerchantID: id, Buyer: tenant.Name})
+
+	// Forward to obs-hub
+	s.forwardToObsHub("arena", "merchant_left", "Merchant left: "+tenant.Name, nil)
+
+	log.Printf("removed tenant %s (%s) from arena", tenant.Name, id)
+	return true
+}
+
+// deregisterFromGraph sends a DELETE to the shopping graph to remove a merchant.
+func (s *ArenaServer) deregisterFromGraph(id string) {
+	if s.graphURL == "" {
+		return
+	}
+	req, _ := http.NewRequest(http.MethodDelete, s.graphURL+"/merchants/"+id, nil)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Printf("deregister from graph: %v", err)
+		return
+	}
+	resp.Body.Close()
+	log.Printf("deregistered tenant %s from shopping graph", id)
 }
 
 // ServeHTTP implements http.Handler with top-level routing.
@@ -91,6 +147,9 @@ func (s *ArenaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case path == "/rankings":
 		s.handleRankings(w, r)
 		return
+	case path == "/health":
+		s.handleHealth(w, r)
+		return
 	}
 
 	// Extract tenant UUID from first path segment
@@ -123,7 +182,7 @@ func (s *ArenaServer) forwardToObsHub(source, eventType, summary string, data an
 			"summary": summary,
 			"data":    data,
 		})
-		resp, err := http.Post(s.obsURL+"/event", "application/json", bytes.NewReader(body))
+		resp, err := httpClient.Post(s.obsURL+"/event", "application/json", bytes.NewReader(body))
 		if err != nil {
 			log.Printf("forward to obs-hub: %v", err)
 			return
@@ -150,7 +209,7 @@ func (s *ArenaServer) handleRankings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, _ := json.Marshal(map[string]any{"query": s.productName, "limit": 300})
-	resp, err := http.Post(s.graphURL+"/search", "application/json", bytes.NewReader(body))
+	resp, err := httpClient.Post(s.graphURL+"/search", "application/json", bytes.NewReader(body))
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]any{"rankings": map[string]any{}})
 		return
@@ -174,6 +233,19 @@ func (s *ArenaServer) handleRankings(w http.ResponseWriter, r *http.Request) {
 		rankings[r.MerchantID] = map[string]int{"rank": r.Rank, "price": r.Price}
 	}
 	json.NewEncoder(w).Encode(map[string]any{"rankings": rankings})
+}
+
+// handleHealth returns a simple health check response.
+func (s *ArenaServer) handleHealth(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	n := len(s.tenants)
+	s.mu.RUnlock()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"status":  "ok",
+		"tenants": n,
+		"product": s.productName,
+	})
 }
 
 func setCORSHeaders(w http.ResponseWriter) {

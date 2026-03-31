@@ -20,10 +20,10 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 cleanup() {
-    echo -e "\n${RED}Shutting down...${NC}"
-    kill $GRAPH_PID $OBS_PID $ARENA_PID $CLIENT_PID 2>/dev/null || true
-    wait 2>/dev/null || true
-    echo -e "${GREEN}Done.${NC}"
+  echo -e "\n${RED}Shutting down...${NC}"
+  kill $GRAPH_PID $OBS_PID $ARENA_PID $CLIENT_PID 2>/dev/null || true
+  wait 2>/dev/null || true
+  echo -e "${GREEN}Done.${NC}"
 }
 trap cleanup EXIT
 
@@ -38,48 +38,49 @@ go build -o demo/bin/client ./demo/cmd/client/ 2>/dev/null || echo "Client build
 # Start Shopping Graph (dynamic mode)
 echo -e "${GREEN}Starting Shopping Graph on port $GRAPH_PORT (dynamic mode)...${NC}"
 demo/bin/shopping-graph \
-    --port "$GRAPH_PORT" \
-    --dynamic \
-    --obs-url "http://localhost:$OBS_PORT" \
-    --poll-interval 10s &
+  --port "$GRAPH_PORT" \
+  --dynamic \
+  --obs-url "http://localhost:$OBS_PORT" \
+  --poll-interval 10s &
 GRAPH_PID=$!
 sleep 1
 
 # Start Obs Hub
 echo -e "${GREEN}Starting Obs Hub on port $OBS_PORT...${NC}"
 demo/bin/obs-hub \
-    --port "$OBS_PORT" \
-    --graph-url "http://localhost:$GRAPH_PORT" \
-    --arena-url "http://localhost:$ARENA_PORT" &
+  --port "$OBS_PORT" \
+  --graph-url "http://localhost:$GRAPH_PORT" \
+  --arena-url "http://localhost:$ARENA_PORT" &
 OBS_PID=$!
 sleep 1
 
 # Start Arena
 echo -e "${GREEN}Starting Arena on port $ARENA_PORT...${NC}"
 demo/bin/arena \
-    --port "$ARENA_PORT" \
-    --cost-price "$COST_PRICE" \
-    --product-name "$PRODUCT_NAME" \
-    --graph-url "http://localhost:$GRAPH_PORT" \
-    --obs-url "http://localhost:$OBS_PORT" &
+  --port "$ARENA_PORT" \
+  --cost-price "$COST_PRICE" \
+  --product-name "$PRODUCT_NAME" \
+  --graph-url "http://localhost:$GRAPH_PORT" \
+  --obs-url "http://localhost:$OBS_PORT" &
 ARENA_PID=$!
 sleep 1
 
 # Start Client Agent (if GCP project set)
 CLIENT_PID=""
 if [ -n "$GOOGLE_CLOUD_PROJECT" ] && [ -f demo/bin/client ]; then
-    echo -e "${GREEN}Starting Client Agent...${NC}"
-    demo/bin/client \
-        --graph-url "http://localhost:$GRAPH_PORT" \
-        --obs-url "http://localhost:$OBS_PORT" &
-    CLIENT_PID=$!
+  echo -e "${GREEN}Starting Client Agent...${NC}"
+  demo/bin/client \
+    --graph-url "http://localhost:$GRAPH_PORT" \
+    --obs-url "http://localhost:$OBS_PORT" &
+  CLIENT_PID=$!
 else
-    echo -e "${BLUE}Client Agent skipped (set GOOGLE_CLOUD_PROJECT to enable)${NC}"
+  echo -e "${BLUE}Client Agent skipped (set GOOGLE_CLOUD_PROJECT to enable)${NC}"
 fi
 
 echo ""
 echo -e "${GREEN}=== Arena is ready ===${NC}"
 echo -e "  Landing page:  ${BLUE}http://localhost:$ARENA_PORT/${NC}"
+echo -e "  Landing page auto:  ${BLUE}http://localhost:$ARENA_PORT/auto${NC}"
 echo -e "  Arena Monitor: ${BLUE}http://localhost:$OBS_PORT/arena${NC}"
 echo -e "  Shopping Graph: ${BLUE}http://localhost:$GRAPH_PORT/health${NC}"
 echo -e "  Obs Hub:       ${BLUE}http://localhost:$OBS_PORT/${NC}"

@@ -110,6 +110,22 @@ type Orderer interface {
 	UpdateOrder(id string, req model.OrderUpdateRequest) (*model.Order, error)
 }
 
+// Promotion describes a discount code or promotional offer that a merchant
+// advertises to agents. Agents can discover promotions via the Promoter
+// interface and then apply the codes during checkout.
+type Promotion struct {
+	Code        string `json:"code"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+// Promoter is an optional interface that merchants can implement to
+// advertise available discount codes and promotions. Agents query this
+// to discover codes before applying them to a checkout.
+type Promoter interface {
+	ListPromotions() []Promotion
+}
+
 // Merchant composes all UCP capability interfaces into a single facade.
 //
 // Any UCP-compliant merchant implementation must satisfy this interface.

@@ -133,6 +133,14 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	mux.HandleFunc("/oauth2/token", oauthSrv.HandleToken)
 	mux.HandleFunc("/oauth2/revoke", oauthSrv.HandleRevoke)
 
+	// Leave arena
+	mux.HandleFunc("POST /leave", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w)
+		s.RemoveTenant(id)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "removed", "id": id})
+	})
+
 	// Specs and schemas
 	mux.HandleFunc("/specs/", disc.HandleSpecsAndSchemas)
 	mux.HandleFunc("/schemas/", disc.HandleSpecsAndSchemas)
@@ -178,7 +186,7 @@ func (s *ArenaServer) registerWithGraph(t *Tenant) {
 		"max_cpc_bid": t.Config.MaxCPCBid,
 	})
 
-	resp, err := http.Post(s.graphURL+"/merchants", "application/json", bytes.NewReader(body))
+	resp, err := httpClient.Post(s.graphURL+"/merchants", "application/json", bytes.NewReader(body))
 	if err != nil {
 		log.Printf("register with graph: %v", err)
 		return

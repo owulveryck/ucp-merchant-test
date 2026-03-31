@@ -20,6 +20,10 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .topbar .right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
 .topbar .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #E5004C; display: inline-block; margin-right: 4px; animation: pulse-dot 1.5s ease-in-out infinite; }
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.conn-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 6px; vertical-align: middle; }
+.conn-dot.connected { background: #16A34A; }
+.conn-dot.disconnected { background: #DC2626; animation: pulse-conn 1s ease-in-out infinite; }
+@keyframes pulse-conn { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 .topbar .merchant-count { font-size: 0.8rem; color: #666; }
 
 .winner-banner { display: none; background: #E5004C; padding: 1.2rem 1.5rem; text-align: center; flex-shrink: 0; animation: banner-in 0.4s ease-out; }
@@ -41,6 +45,19 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .activity-panel .panel-body .arena-sale { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #DCFCE7; border: 1px solid #16A34A; border-radius: 8px; color: #16A34A; }
 .activity-panel .panel-body .arena-config { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FFF7ED; border: 1px solid #F59E0B; border-radius: 8px; color: #D97706; }
 .activity-panel .panel-body .tool-call-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F3F4F6; border: 1px solid #9CA3AF; border-radius: 8px; color: #6B7280; }
+.proto-toggle { display: inline-block; font-size: 0.65rem; margin-left: 4px; color: #999; cursor: pointer; vertical-align: middle; user-select: none; }
+.proto-toggle:hover { color: #E5004C; }
+.proto-payload { display: none; margin-top: 0.35rem; padding: 0.4rem 0.5rem; background: #1A1A2E; color: #A5F3FC; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+.proto-payload.visible { display: block; }
+.proto-payload .pk { color: #F9A8D4; }
+.proto-payload .ps { color: #A5F3FC; }
+.proto-payload .pn { color: #FDE68A; }
+.proto-payload .pp { color: #D1D5DB; }
+.proto-badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+.proto-badge.req { background: #DBEAFE; color: #3B82F6; }
+.proto-badge.res { background: #DCFCE7; color: #16A34A; }
+.proto-badge.err { background: #FEF2F2; color: #DC2626; }
+.proto-duration { font-size: 0.6rem; color: #999; margin-left: 4px; }
 
 .merchants-area { flex: 1; overflow-y: auto; padding: 1.5rem; }
 .merchants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
@@ -163,7 +180,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   <span class="product-info" id="product-info"></span>
   <div class="right">
     <span class="merchant-count" id="merchant-count">0 merchants</span>
-    <span><span class="live-dot"></span>LIVE</span>
+    <span><span class="live-dot"></span>LIVE<span class="conn-dot disconnected" id="conn-dot" title="SSE"></span></span>
   </div>
 </div>
 
@@ -206,7 +223,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         </div>
         <div class="agent-merchant-count">
           <span>Merchants:</span>
-          <input type="range" id="merchant-count-input" min="1" max="10" value="3" />
+          <input type="range" id="merchant-count-input" min="1" max="100" value="3" />
           <span class="count-val" id="merchant-count-value">3</span>
         </div>
         <div class="agent-send-status" id="send-status"></div>
@@ -271,13 +288,61 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
     return '$' + (cents / 100).toFixed(2);
   }
 
-  function appendToPanel(className, text, rawText) {
+  function syntaxHighlight(json) {
+    var s = JSON.stringify(json, null, 2);
+    return s.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(m) {
+      if (/^"/.test(m)) {
+        if (/:$/.test(m)) return '<span class="pk">' + m + '</span>';
+        return '<span class="ps">' + m + '</span>';
+      }
+      if (/true|false/.test(m)) return '<span class="pn">' + m + '</span>';
+      if (/null/.test(m)) return '<span class="pp">' + m + '</span>';
+      return '<span class="pn">' + m + '</span>';
+    });
+  }
+
+  function appendToPanel(className, text, rawText, protoData) {
     var div = document.createElement('div');
     div.className = className;
-    div.textContent = text;
+    var textSpan = document.createElement('span');
+    textSpan.textContent = text;
+    div.appendChild(textSpan);
     div.setAttribute('data-raw', rawText || text);
-    div.addEventListener('click', function() {
-      showAgentModal(div.getAttribute('data-raw'), 5000);
+
+    if (protoData) {
+      var display = Object.assign({}, protoData);
+      delete display._type;
+      div.setAttribute('data-proto', JSON.stringify(display));
+      var badge = document.createElement('span');
+      badge.className = 'proto-badge ' + (protoData._type || 'req');
+      badge.textContent = protoData._type === 'res' ? 'RES' : protoData._type === 'err' ? 'ERR' : 'REQ';
+      div.appendChild(badge);
+      if (protoData.duration_ms) {
+        var dur = document.createElement('span');
+        dur.className = 'proto-duration';
+        dur.textContent = protoData.duration_ms + 'ms';
+        div.appendChild(dur);
+      }
+      var toggle = document.createElement('span');
+      toggle.className = 'proto-toggle';
+      toggle.textContent = '{ }';
+      toggle.title = 'Show A2A payload';
+      div.appendChild(toggle);
+      var payload = document.createElement('div');
+      payload.className = 'proto-payload';
+      payload.innerHTML = syntaxHighlight(display);
+      div.appendChild(payload);
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        payload.classList.toggle('visible');
+        toggle.textContent = payload.classList.contains('visible') ? 'Hide' : '{ }';
+      });
+    }
+
+    div.addEventListener('click', function(e) {
+      if (e.target.classList.contains('proto-toggle')) return;
+      var proto = div.getAttribute('data-proto');
+      showAgentModal(div.getAttribute('data-raw'), 5000, proto ? JSON.parse(proto) : null);
     });
     panelBody.appendChild(div);
     panelBody.scrollTop = panelBody.scrollHeight;
@@ -336,8 +401,10 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         rankBadge = '<span class="mc-rank' + rankCls + '">#' + rankNum + '</span>';
       }
 
-      html += '<div class="merchant-card' + activeClass + '" data-name="' + escapeHtml(m.name) + '" data-id="' + escapeHtml(m.id || m.name) + '">' +
-        '<div class="mc-name"><span>' + rankBadge + ' ' + escapeHtml(m.name) + '</span>' +
+      var cardStyle = m.accent_color ? ' style="border-left:4px solid ' + m.accent_color + '"' : '';
+      var emojiPrefix = m.emoji ? m.emoji + ' ' : '';
+      html += '<div class="merchant-card' + activeClass + '"' + cardStyle + ' data-name="' + escapeHtml(m.name) + '" data-id="' + escapeHtml(m.id || m.name) + '">' +
+        '<div class="mc-name"><span>' + rankBadge + ' ' + emojiPrefix + escapeHtml(m.name) + '</span>' +
         (m.sales_count > 0 ? '<span class="sales-badge">' + m.sales_count + ' sale' + (m.sales_count !== 1 ? 's' : '') + '</span>' : '') +
         '</div>' +
         '<div class="mc-row"><span class="mc-label">Price</span><span class="mc-value">' + formatPrice(m.price) + '</span></div>' +
@@ -484,8 +551,40 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
     }
   }
 
-  var es = new EventSource('/events');
-  es.onmessage = function(msg) {
+  // --- Audio feedback ---
+  var audioCtx;
+  function initAudio(){if(!audioCtx)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  document.addEventListener('click',initAudio,{once:true});
+  function playKaChing(){
+    if(!audioCtx)return;
+    var now=audioCtx.currentTime;
+    var g=audioCtx.createGain();g.gain.setValueAtTime(0.25,now);g.gain.exponentialRampToValueAtTime(0.01,now+0.5);g.connect(audioCtx.destination);
+    var o1=audioCtx.createOscillator();o1.type='sine';o1.frequency.value=523.25;o1.connect(g);o1.start(now);o1.stop(now+0.15);
+    var o2=audioCtx.createOscillator();o2.type='sine';o2.frequency.value=659.25;o2.connect(g);o2.start(now+0.12);o2.stop(now+0.35);
+    var o3=audioCtx.createOscillator();o3.type='sine';o3.frequency.value=783.99;o3.connect(g);o3.start(now+0.25);o3.stop(now+0.5);
+  }
+
+  // --- SSE with auto-reconnection ---
+  var connDot = document.getElementById('conn-dot');
+  var sseRetryDelay = 1000;
+  var es = null;
+  function sseConnect() {
+    if (es) return;
+    es = new EventSource('/events');
+    es.onopen = function() { connDot.className='conn-dot connected'; connDot.title='Connecte'; sseRetryDelay=1000; };
+    es.onerror = function() {
+      connDot.className='conn-dot disconnected'; connDot.title='Deconnecte';
+      es.close(); es=null;
+      setTimeout(sseConnect, sseRetryDelay);
+      sseRetryDelay = Math.min(sseRetryDelay*2, 8000);
+    };
+    es.onmessage = handleSSEMessage;
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) { if(es){es.close();es=null;connDot.className='conn-dot disconnected'} }
+    else { sseConnect(); fetchRankings(); }
+  });
+  function handleSSEMessage(msg) {
     try {
       var ev = JSON.parse(msg.data);
       var summary = ev.summary || '';
@@ -503,6 +602,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         } else if (ev.type === 'sale_completed') {
           appendToPanel('arena-sale', summary);
           showWinnerBanner('SOLD!', summary);
+          playKaChing();
           fetchRankings();
         } else if (ev.type === 'config_update') {
           appendToPanel('arena-config', summary);
@@ -517,9 +617,18 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         appendToPanel('thinking-entry', displayText, summary);
       }
       if (ev.type === 'agent_thinking' && summary) appendToPanel('thinking-entry', displayText, summary);
-      if (ev.type === 'tool_call' && summary) appendToPanel('tool-call-entry', displayText, summary);
-      if (ev.type === 'tool_result' && summary) appendToPanel('result-entry', displayText, summary);
-      if (ev.type === 'tool_error' && summary) appendToPanel('error-entry', displayText, summary);
+      if (ev.type === 'tool_call' && summary) {
+        var pd = ev.data ? Object.assign({_type:'req'}, ev.data) : null;
+        appendToPanel('tool-call-entry', displayText, summary, pd);
+      }
+      if (ev.type === 'tool_result' && summary) {
+        var pdr = ev.data ? Object.assign({_type:'res'}, ev.data) : null;
+        appendToPanel('result-entry', displayText, summary, pdr);
+      }
+      if (ev.type === 'tool_error' && summary) {
+        var pde = ev.data ? Object.assign({_type:'err'}, ev.data) : null;
+        appendToPanel('error-entry', displayText, summary, pde);
+      }
       if (ev.type === 'agent_error' && summary) appendToPanel('error-entry', displayText, summary);
       if (ev.type === 'agent_done' && summary) {
         panelHeader.textContent = 'Agent Result';
@@ -586,7 +695,8 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         fetchRankings();
       }
     } catch(e) { console.error(e); }
-  };
+  }
+  sseConnect();
 
   // --- Agent panel (inline, no modal) ---
   var cmdInput = document.getElementById('command-input');
@@ -687,12 +797,19 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
     marked.setOptions({ breaks: true });
   }
 
-  function showAgentModal(text, autoDismissMs) {
+  function showAgentModal(text, autoDismissMs, protoData) {
     autoDismissMs = autoDismissMs || 5000;
     if (typeof marked !== 'undefined') {
       modalBody.innerHTML = marked.parse(text);
     } else {
       modalBody.innerHTML = '<p>' + escapeHtml(text) + '</p>';
+    }
+    if (protoData) {
+      var protoDiv = document.createElement('div');
+      protoDiv.className = 'proto-payload visible';
+      protoDiv.style.marginTop = '1rem';
+      protoDiv.innerHTML = syntaxHighlight(protoData);
+      modalBody.appendChild(protoDiv);
     }
     modalOverlay.classList.add('visible');
     modalOpenedAt = Date.now();

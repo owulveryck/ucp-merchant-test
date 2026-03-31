@@ -1,6 +1,10 @@
 package a2a
 
-import "context"
+import (
+	"context"
+
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant"
+)
 
 // actionHandler processes a single UCP action and returns the response
 // data to be included in the A2A DataPart.
@@ -10,7 +14,7 @@ type actionHandler func(ctx context.Context, ac *actionContext) (map[string]any,
 // Action names match the UCP Shopping Service tool names used in the
 // MCP transport.
 func (s *Server) actionHandlers() map[string]actionHandler {
-	return map[string]actionHandler{
+	handlers := map[string]actionHandler{
 		// Catalog
 		"list_products":       s.handleListProducts,
 		"get_product_details": s.handleGetProductDetails,
@@ -32,4 +36,8 @@ func (s *Server) actionHandlers() map[string]actionHandler {
 		"list_orders":  s.handleListOrders,
 		"cancel_order": s.handleCancelOrder,
 	}
+	if _, ok := s.merchant.(merchant.Promoter); ok {
+		handlers["list_promotions"] = s.handleListPromotions
+	}
+	return handlers
 }

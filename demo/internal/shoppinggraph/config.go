@@ -10,6 +10,6 @@ type MerchantConfig struct {
 	ID            string   `yaml:"id"`
 	Name          string   `yaml:"name"`
 	Endpoint      string   `yaml:"endpoint"`
-	Score         int      `yaml:"score"`
+	MaxCPCBid     int      `yaml:"max_cpc_bid"`
 	DiscountHints []string `yaml:"discount_hints"`
 }

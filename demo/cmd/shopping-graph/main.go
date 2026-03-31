@@ -40,7 +40,7 @@ func main() {
 				ID:            mc.ID,
 				Name:          mc.Name,
 				Endpoint:      mc.Endpoint,
-				Score:         mc.Score,
+				MaxCPCBid:     mc.MaxCPCBid,
 				DiscountHints: mc.DiscountHints,
 			}
 		}
@@ -53,7 +53,7 @@ func main() {
 	poller.Start()
 	defer poller.Stop()
 
-	handler := shoppinggraph.NewHandler(graph)
+	handler := shoppinggraph.NewHandler(graph, poller)
 
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("Shopping Graph starting on http://localhost:%d", *port)

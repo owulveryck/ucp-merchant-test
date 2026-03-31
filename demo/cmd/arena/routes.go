@@ -2,7 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand/v2"
 	"net/http"
+	"strings"
+	"unicode"
 )
 
 func (s *ArenaServer) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -14,7 +18,27 @@ func (s *ArenaServer) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenant := s.RegisterTenant(req.Name)
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		http.Error(w, `{"detail":"name is required"}`, http.StatusBadRequest)
+		return
+	}
+	if len([]rune(name)) > 30 {
+		http.Error(w, `{"detail":"30 caractères max"}`, http.StatusBadRequest)
+		return
+	}
+	for _, c := range name {
+		if !unicode.IsLetter(c) && !unicode.IsDigit(c) && c != ' ' && c != '-' && c != '_' {
+			http.Error(w, `{"detail":"caractères invalides"}`, http.StatusBadRequest)
+			return
+		}
+	}
+	if s.HasTenantNamed(name) {
+		http.Error(w, `{"detail":"nom déjà pris"}`, http.StatusConflict)
+		return
+	}
+
+	tenant := s.RegisterTenant(name)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -25,20 +49,36 @@ func (s *ArenaServer) handleRegister(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+var autoNameAdjectives = []string{"Cyber", "Mega", "Turbo", "Hyper", "Ultra", "Pixel", "Neon", "Star", "Zen", "Flash"}
+var autoNameNouns = []string{"Shop", "Deals", "Bazar", "Market", "Store", "Corner", "Hub", "Express", "Zone", "Outlet"}
+
+func (s *ArenaServer) handleAuto(w http.ResponseWriter, r *http.Request) {
+	name := fmt.Sprintf("%s%s%d",
+		autoNameAdjectives[rand.IntN(len(autoNameAdjectives))],
+		autoNameNouns[rand.IntN(len(autoNameNouns))],
+		rand.IntN(100),
+	)
+	tenant := s.RegisterTenant(name)
+	http.Redirect(w, r, "/"+tenant.ID+"/dashboard", http.StatusSeeOther)
+}
+
 func (s *ArenaServer) handleListMerchants(w http.ResponseWriter, r *http.Request) {
 	tenants := s.ListTenants()
 
 	type merchantInfo struct {
-		ID          string `json:"id"`
-		Name        string `json:"name"`
-		Price       int    `json:"price"`
-		Stock       int    `json:"stock"`
-		Boost       int    `json:"boost"`
-		Margin      int    `json:"margin"`
-		BoostCost   int    `json:"boost_cost"`
-		NetMargin   int    `json:"net_margin"`
-		TotalProfit int    `json:"total_profit"`
-		SalesCount  int    `json:"sales_count"`
+		ID                string `json:"id"`
+		Name              string `json:"name"`
+		Price             int    `json:"price"`
+		Stock             int    `json:"stock"`
+		MaxCPCBid         int    `json:"max_cpc_bid"`
+		Margin            int    `json:"margin"`
+		ActualCPC         int    `json:"actual_cpc"`
+		TotalAdSpend      int    `json:"total_ad_spend"`
+		NetProfit         int    `json:"net_profit"`
+		SalesCount        int    `json:"sales_count"`
+		ConsultationCount int    `json:"consultation_count"`
+		AccentColor       string `json:"accent_color"`
+		Emoji             string `json:"emoji"`
 	}
 
 	result := make([]merchantInfo, 0, len(tenants))
@@ -46,29 +86,38 @@ func (s *ArenaServer) handleListMerchants(w http.ResponseWriter, r *http.Request
 		t.Config.mu.RLock()
 		price := t.Config.SellingPrice
 		stock := t.Config.Stock
-		boost := t.Config.BoostScore
+		maxCPCBid := t.Config.MaxCPCBid
+		accentColor := t.Config.AccentColor
+		emoji := t.Config.Emoji
 		t.Config.mu.RUnlock()
 
 		margin := price - s.costPrice
-		boostCost := boost * margin / 100
-		netMargin := margin - boostCost
 
 		t.Merchant.mu.Lock()
-		totalProfit := t.Merchant.totalProfit
+		totalRevenue := t.Merchant.totalRevenue
+		totalAdSpend := t.Merchant.totalBoostSpend
+		totalUnitsSold := t.Merchant.totalUnitsSold
+		consultationCount := t.Merchant.consultationCount
 		salesCount := t.Merchant.salesCount
+		actualCPC := t.Merchant.lastActualCPC
 		t.Merchant.mu.Unlock()
 
+		netProfit := totalRevenue - (s.costPrice * totalUnitsSold) - totalAdSpend
+
 		result = append(result, merchantInfo{
-			ID:          t.ID,
-			Name:        t.Name,
-			Price:       price,
-			Stock:       stock,
-			Boost:       boost,
-			Margin:      margin,
-			BoostCost:   boostCost,
-			NetMargin:   netMargin,
-			TotalProfit: totalProfit,
-			SalesCount:  salesCount,
+			ID:                t.ID,
+			Name:              t.Name,
+			Price:             price,
+			Stock:             stock,
+			MaxCPCBid:         maxCPCBid,
+			Margin:            margin,
+			ActualCPC:         actualCPC,
+			TotalAdSpend:      totalAdSpend,
+			NetProfit:         netProfit,
+			SalesCount:        salesCount,
+			ConsultationCount: consultationCount,
+			AccentColor:       accentColor,
+			Emoji:             emoji,
 		})
 	}
 

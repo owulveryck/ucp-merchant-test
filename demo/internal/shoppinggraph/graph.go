@@ -23,7 +23,8 @@ type MerchantNode struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
 	Endpoint      string    `json:"endpoint"`
-	Score         int       `json:"score"`
+	MaxCPCBid     int       `json:"max_cpc_bid"`
+	LastActualCPC int       `json:"last_actual_cpc"`
 	Online        bool      `json:"online"`
 	LastPoll      time.Time `json:"last_poll"`
 	DiscountHints []string  `json:"discount_hints,omitempty"`
@@ -47,6 +48,9 @@ type SearchResult struct {
 	PriceDisplay  string   `json:"price_display"`
 	InStock       bool     `json:"in_stock"`
 	DiscountHints []string `json:"discount_hints,omitempty"`
+	Sponsored     bool     `json:"sponsored"`
+	ActualCPC     int      `json:"actual_cpc,omitempty"`
+	QualityScore  float64  `json:"quality_score,omitempty"`
 }
 
 // RankingAlgorithm identifies a search ranking strategy.
@@ -142,13 +146,24 @@ func (g *ShoppingGraph) RemoveMerchant(id string) {
 	g.Groups = GroupProducts(g.Products)
 }
 
-// SetBoost updates the boost score for a merchant.
-func (g *ShoppingGraph) SetBoost(merchantID string, boost int) {
+// SetBid updates the max CPC bid for a merchant.
+func (g *ShoppingGraph) SetBid(merchantID string, bid int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if m, ok := g.Merchants[merchantID]; ok {
-		m.Score = boost
+		m.MaxCPCBid = bid
 	}
+}
+
+// GetCPC returns the last actual CPC for a merchant and resets it.
+func (g *ShoppingGraph) GetCPC(merchantID string) int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if m, ok := g.Merchants[merchantID]; ok {
+		cpc := m.LastActualCPC
+		return cpc
+	}
+	return 0
 }
 
 // MarkOffline marks a merchant as offline.

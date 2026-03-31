@@ -41,6 +41,8 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 		"consultation_count": consultationCount,
 		"sales_count":        salesCount,
 		"pricing_algo":       cfg.PricingAlgo,
+		"accent_color":       cfg.AccentColor,
+		"emoji":              cfg.Emoji,
 	})
 }
 
@@ -108,7 +110,7 @@ func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 				return
 			}
 			req.Header.Set("Content-Type", "application/json")
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := httpClient.Do(req)
 			if err != nil {
 				log.Printf("update bid: %v", err)
 				return
@@ -125,7 +127,7 @@ func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 			if err != nil {
 				return
 			}
-			resp, err := http.DefaultClient.Do(pollReq)
+			resp, err := httpClient.Do(pollReq)
 			if err != nil {
 				log.Printf("trigger re-poll: %v", err)
 				return

@@ -43,7 +43,7 @@ func NewMCPServer(agent *Agent) *MCPServer {
 			return mcp.NewToolResultError("instruction parameter is required"), nil
 		}
 
-		result, err := agent.Run(ctx, instruction)
+		result, err := agent.Run(ctx, instruction, 3)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("agent error: %v", err)), nil
 		}

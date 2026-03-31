@@ -135,10 +135,17 @@ func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) 
 			go func(idx int, fc *genai.FunctionCall) {
 				defer wg.Done()
 				log.Printf("Tool call: %s(%v)", fc.Name, fc.Args)
+				start := time.Now()
 				result, err := a.executeTool(fc.Name, fc.Args)
+				durationMs := time.Since(start).Milliseconds()
 				if err != nil {
 					log.Printf("Tool error: %s: %v", fc.Name, err)
-					a.emitEvent("tool_error", fmt.Sprintf("Tool %s failed: %v", fc.Name, err))
+					a.emitEvent("tool_error", fmt.Sprintf("Tool %s failed: %v", fc.Name, err), map[string]any{
+						"action":      fc.Name,
+						"params":      fc.Args,
+						"error":       err.Error(),
+						"duration_ms": durationMs,
+					})
 					responseParts[idx] = &genai.Part{
 						FunctionResponse: &genai.FunctionResponse{
 							ID:       fc.ID,
@@ -156,6 +163,11 @@ func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) 
 								Response: map[string]any{"result": parsed},
 							},
 						}
+						a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)), map[string]any{
+							"action":      fc.Name,
+							"response":    parsed,
+							"duration_ms": durationMs,
+						})
 					} else {
 						responseParts[idx] = &genai.Part{
 							FunctionResponse: &genai.FunctionResponse{
@@ -164,8 +176,12 @@ func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) 
 								Response: map[string]any{"result": result},
 							},
 						}
+						a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)), map[string]any{
+							"action":      fc.Name,
+							"response":    result,
+							"duration_ms": durationMs,
+						})
 					}
-					a.emitEvent("tool_result", fmt.Sprintf("Tool %s returned (%d bytes)", fc.Name, len(result)))
 				}
 			}(i, fc)
 		}
@@ -260,7 +276,7 @@ func (a *Agent) searchGraph(query string, limit int) (map[string]any, error) {
 	return result, nil
 }
 
-func (a *Agent) emitEvent(eventType, summary string) {
+func (a *Agent) emitEvent(eventType, summary string, eventData ...any) {
 	if a.obsURL == "" {
 		return
 	}
@@ -269,6 +285,9 @@ func (a *Agent) emitEvent(eventType, summary string) {
 		"source":  "client-agent",
 		"type":    eventType,
 		"summary": summary,
+	}
+	if len(eventData) > 0 && eventData[0] != nil {
+		event["data"] = eventData[0]
 	}
 
 	data, _ := json.Marshal(event)

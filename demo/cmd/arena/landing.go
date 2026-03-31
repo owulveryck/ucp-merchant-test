@@ -33,31 +33,42 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 .win-dots{padding:.5rem 1rem;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;gap:6px}
 .win-dots::before{content:'';width:10px;height:10px;border-radius:50%%;background:#E5004C;display:inline-block}
 .win-dots::after{content:'';width:10px;height:10px;border-radius:50%%;background:#CCC;display:inline-block}
-.win-body{padding:2rem}
+.win-body{padding:2.5rem}
 .qr-section{text-align:center}
-.qr-placeholder{width:200px;height:200px;background:#fff;border-radius:8px;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #E0E0E0}
+.qr-placeholder{width:280px;height:280px;background:#fff;border-radius:8px;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #E0E0E0}
 .qr-placeholder img{width:100%%;height:100%%}
-.url{font-size:1.4rem;font-weight:700;color:#E5004C;word-break:break-all;margin:.5rem 0}
-.url-label{font-size:.9rem;color:#999;margin-bottom:.5rem}
+.url{font-size:1.8rem;font-weight:700;color:#E5004C;word-break:break-all;margin:.5rem 0}
+.url-label{font-size:1.1rem;color:#999;margin-bottom:.5rem}
 .join-form{width:100%%;max-width:400px}
-.join-form h2{font-size:1.2rem;margin-bottom:1rem;color:#1A1A2E;font-weight:700}
+.join-form h2{font-size:1.4rem;margin-bottom:1rem;color:#1A1A2E;font-weight:700}
 .join-form input{width:100%%;padding:.8rem 1rem;border:1px solid #CCC;border-radius:8px;background:#FFFFFF;color:#1A1A2E;font-size:1rem;margin-bottom:1rem;outline:none;font-family:'Outfit',system-ui,sans-serif}
 .join-form input:focus{border-color:#E5004C}
 .join-form button{width:100%%;padding:.8rem;border:none;border-radius:8px;background:#E5004C;color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;transition:transform .1s,opacity .2s}
 .join-form button:hover{opacity:.9;transform:scale(1.02)}
 .join-form button:active{transform:scale(.98)}
-.product-info{font-size:.9rem;color:#666;margin-top:.5rem}
-.merchants{width:100%%;max-width:500px}
-.merchants h3{color:#999;font-size:.9rem;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.product-info{font-size:1.05rem;color:#666;margin-top:.5rem}
+.merchants{width:100%%;max-width:600px}
+.merchants h3{color:#999;font-size:1.1rem;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
 #merchant-list{list-style:none}
-#merchant-list li{padding:.5rem .8rem;background:#FFFFFF;border:1px solid #E0E0E0;border-radius:8px;margin-bottom:.3rem;display:flex;justify-content:space-between;align-items:center;font-size:.9rem;transition:background .5s ease,border-color .5s ease}
-#merchant-list li .m-rank{color:#999;font-size:.75rem;width:2rem;text-align:center;flex-shrink:0}
+#merchant-list li{padding:.7rem 1rem;background:#FFFFFF;border:1px solid #E0E0E0;border-radius:12px;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;font-size:1.1rem;transition:background .5s ease,border-color .5s ease}
+#merchant-list li .m-rank{color:#999;font-size:1rem;width:2.5rem;text-align:center;flex-shrink:0}
 #merchant-list li .m-name{flex:1;margin:0 .5rem;color:#1A1A2E}
 .merchant-price{color:#E5004C;font-weight:600}
 #merchant-list li.state-checkout{background:#EFF6FF;border-color:#3B82F6}
 #merchant-list li.state-negotiate{background:#FFFBEB;border-color:#F59E0B}
 #merchant-list li.state-sale{background:#F0FDF4;border-color:#16A34A}
 .error{color:#DC2626;font-size:.9rem;margin-bottom:.5rem;display:none}
+@media(min-width:1200px){
+  .logo{font-size:4rem}
+  .subtitle{font-size:1.5rem}
+  .qr-placeholder{width:350px;height:350px}
+  .url{font-size:2.2rem}
+  #merchant-list li{font-size:1.3rem;padding:.9rem 1.2rem}
+  #merchant-list li .m-rank{font-size:1.2rem;width:3rem}
+  .merchants{max-width:700px}
+  .join-form h2{font-size:1.6rem}
+  .product-info{font-size:1.2rem}
+}
 </style>
 </head>
 <body>
@@ -68,7 +79,7 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 <div class="win-dots"></div>
 <div class="win-body qr-section">
 <div class="qr-placeholder">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%s/auto" alt="QR Code" onerror="this.parentElement.textContent='QR'">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s/auto" alt="QR Code" onerror="this.parentElement.textContent='QR'">
 </div>
 <div class="url-label">Scannez ou rendez-vous sur</div>
 <div class="url">%s</div>
@@ -82,7 +93,7 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 <div class="product-info">Produit : %s | Prix d'achat : $%.2f<br>Encherissez pour plus de visibilite !</div>
 <br>
 <div class="error" id="error"></div>
-<input type="text" id="name" placeholder="Votre nom ou pseudo" autocomplete="off">
+<input type="text" id="name" placeholder="Votre nom ou pseudo" autocomplete="off" maxlength="30">
 <button onclick="register()">Rejoindre</button>
 </div>
 </div>
@@ -97,6 +108,7 @@ let merchants=[];
 let rankings={};
 let merchantStates={};
 let stateTimers={};
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 async function register(){
   const name=document.getElementById('name').value.trim();
@@ -143,7 +155,8 @@ function renderMerchants(){
     if(graphPrice>0 && graphPrice!==m.price){
       priceLabel+=' (graph: $'+(graphPrice/100).toFixed(2)+')';
     }
-    li.innerHTML='<span class="m-rank">'+rankText+'</span><span class="m-name">'+m.name+'</span><span class="merchant-price">'+priceLabel+bidInfo+'</span>';
+    const emojiPfx=m.emoji?m.emoji+' ':'';
+    li.innerHTML='<span class="m-rank">'+rankText+'</span><span class="m-name">'+esc(emojiPfx+m.name)+'</span><span class="merchant-price">'+priceLabel+bidInfo+'</span>';
     // Preserve state class
     const state=merchantStates[m.id];
     li.className=state||'';
@@ -204,16 +217,21 @@ function sseHandler(e){
       setMerchantState(d.merchant_id,'state-checkout');
     } else if(d.type==='checkout_updated'){
       setMerchantState(d.merchant_id,'state-negotiate');
+    } else if(d.type==='merchant_left'){
+      fetchRankings().then(fetchMerchants);
     } else if(d.type==='checkout_canceled'){
       delete merchantStates[d.merchant_id];
       const el=document.getElementById('m-'+d.merchant_id);
       if(el)el.className='';
     }
-  }catch(ex){}
+  }catch(ex){console.error('SSE handler error:',ex)}
 }
+let sseRetryDelay=1000;
 function sseConnect(){
   if(evtSrc)return;
   evtSrc=new EventSource('/events');
+  evtSrc.onopen=function(){sseRetryDelay=1000};
+  evtSrc.onerror=function(){evtSrc.close();evtSrc=null;setTimeout(sseConnect,sseRetryDelay);sseRetryDelay=Math.min(sseRetryDelay*2,8000)};
   evtSrc.addEventListener('message',sseHandler);
 }
 function sseDisconnect(){

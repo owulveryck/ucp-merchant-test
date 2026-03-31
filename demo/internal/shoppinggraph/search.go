@@ -12,7 +12,55 @@ type SearchRequest struct {
 	Limit int    `json:"limit,omitempty"`
 }
 
-// Search finds products matching a query, ranked by relevance and merchant score.
+// scoreDefault computes a balanced quality score (range ~0-10).
+// Relevance 3 + Price 4 + Stock 2 + Bid 1.
+func scoreDefault(jaccardSim float64, price int, avgPrice float64, inStock bool, bid int) float64 {
+	relevance := jaccardSim * 3.0
+	pricePoints := 0.0
+	if price > 0 {
+		pricePoints = math.Min(4.0, 4.0*avgPrice/float64(price))
+	}
+	stockPoints := 0.0
+	if inStock {
+		stockPoints = 2.0
+	}
+	bidPoints := math.Min(1.0, float64(bid)/100.0)
+	return relevance + pricePoints + stockPoints + bidPoints
+}
+
+// scoreJaccardPrice computes a price-dominant score with relevance tiebreaker (range ~0-10).
+// Price 6 + Relevance 2 + Stock 2.
+func scoreJaccardPrice(jaccardSim float64, price int, avgPrice float64, inStock bool) float64 {
+	pricePoints := 0.0
+	if price > 0 {
+		pricePoints = math.Min(6.0, 6.0*avgPrice/float64(price))
+	}
+	relevance := jaccardSim * 2.0
+	stockPoints := 0.0
+	if inStock {
+		stockPoints = 2.0
+	}
+	return relevance + pricePoints + stockPoints
+}
+
+// scorePriceOnly computes a pure price ranking with stock bonus (range ~0-10).
+// Price 8 + Stock 2.
+func scorePriceOnly(price int, avgPrice float64, inStock bool) float64 {
+	pricePoints := 0.0
+	if price > 0 {
+		pricePoints = math.Min(8.0, 8.0*avgPrice/float64(price))
+	}
+	stockPoints := 0.0
+	if inStock {
+		stockPoints = 2.0
+	}
+	return pricePoints + stockPoints
+}
+
+// Search finds products matching a query using a Google Ads-style auction model.
+// Sponsored results (merchants with bid > 0) are ranked by Ad Rank (bid * quality),
+// priced via second-price auction, and returned first.
+// Organic results (all candidates) are ranked by quality score only.
 func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 	if limit <= 0 {
 		limit = 10
@@ -23,87 +71,198 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 		return nil
 	}
 
-	g.mu.RLock()
-	algo := g.RankAlgo
-	defer g.mu.RUnlock()
+	g.mu.Lock()
+	defer g.mu.Unlock()
 
-	type scored struct {
-		product *ProductNode
-		score   float64
+	type candidate struct {
+		product      *ProductNode
+		merchant     *MerchantNode
+		jaccardSim   float64
+		qualityScore float64
+		adRank       float64
+		bid          int
+		sponsored    bool
+		hints        []string
 	}
 
-	var candidates []scored
+	// Step 1: Find candidates with Jaccard >= 0.1, exclude offline
+	var candidates []candidate
 	for _, p := range g.Products {
 		sim := JaccardSimilarity(queryTokens, p.Tokens)
 		if sim < 0.1 {
 			continue
 		}
-		merchantScore := 1.0
-		if m, ok := g.Merchants[p.MerchantID]; ok {
-			merchantScore = float64(m.Score) / 100.0
-			if !m.Online {
-				continue
-			}
+		m, ok := g.Merchants[p.MerchantID]
+		if !ok || !m.Online {
+			continue
 		}
-		stockBoost := 1.0
-		if p.Quantity > 0 {
-			stockBoost = 1.5
-		}
-
-		var s float64
-		switch algo {
-		case RankJaccardPrice:
-			s = sim * merchantScore * stockBoost * (1.0 / math.Log2(float64(p.Price)+2))
-		case RankPriceOnly:
-			// Use negative price so higher score = lower price
-			s = -float64(p.Price)
-		default: // RankJaccard
-			s = sim * merchantScore * stockBoost
-		}
-		candidates = append(candidates, scored{
-			product: p,
-			score:   s,
+		candidates = append(candidates, candidate{
+			product:    p,
+			merchant:   m,
+			jaccardSim: sim,
+			bid:        m.MaxCPCBid,
+			sponsored:  m.MaxCPCBid > 0,
+			hints:      m.DiscountHints,
 		})
 	}
 
 	// Fallback: if no Jaccard matches, return all in-stock products
 	if len(candidates) == 0 {
 		for _, p := range g.Products {
-			if m, ok := g.Merchants[p.MerchantID]; ok && !m.Online {
+			m, ok := g.Merchants[p.MerchantID]
+			if !ok || !m.Online {
 				continue
 			}
 			if p.Quantity > 0 {
-				candidates = append(candidates, scored{product: p, score: 1.0})
+				candidates = append(candidates, candidate{
+					product:    p,
+					merchant:   m,
+					jaccardSim: 1.0,
+					bid:        m.MaxCPCBid,
+					sponsored:  m.MaxCPCBid > 0,
+					hints:      m.DiscountHints,
+				})
 			}
 		}
 	}
 
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].score > candidates[j].score
-	})
-
-	if len(candidates) > limit {
-		candidates = candidates[:limit]
+	if len(candidates) == 0 {
+		return nil
 	}
 
-	results := make([]SearchResult, len(candidates))
-	for i, c := range candidates {
-		var hints []string
-		if m, ok := g.Merchants[c.product.MerchantID]; ok {
-			hints = m.DiscountHints
+	// Step 2: Compute average price
+	totalPrice := 0
+	for _, c := range candidates {
+		totalPrice += c.product.Price
+	}
+	avgPrice := float64(totalPrice) / float64(len(candidates))
+
+	// Step 3: Compute quality scores based on selected ranking algorithm
+	algo := g.RankAlgo
+	for i := range candidates {
+		c := &candidates[i]
+		switch algo {
+		case RankJaccardPrice:
+			c.qualityScore = scoreJaccardPrice(c.jaccardSim, c.product.Price, avgPrice, c.product.Quantity > 0)
+		case RankPriceOnly:
+			c.qualityScore = scorePriceOnly(c.product.Price, avgPrice, c.product.Quantity > 0)
+		default: // RankJaccard
+			c.qualityScore = scoreDefault(c.jaccardSim, c.product.Price, avgPrice, c.product.Quantity > 0, c.bid)
 		}
-		results[i] = SearchResult{
-			Rank:          i + 1,
+		if c.sponsored {
+			c.adRank = float64(c.bid) * c.qualityScore
+		}
+	}
+
+	// Step 4: Separate sponsored and organic
+	var sponsored []candidate
+	var organic []candidate
+	for _, c := range candidates {
+		if c.sponsored {
+			sponsored = append(sponsored, c)
+		}
+		// All candidates appear in organic (including sponsored ones)
+		organic = append(organic, c)
+	}
+
+	// Sort sponsored by adRank desc, merchant ID as tiebreaker for stability
+	sort.Slice(sponsored, func(i, j int) bool {
+		if sponsored[i].adRank != sponsored[j].adRank {
+			return sponsored[i].adRank > sponsored[j].adRank
+		}
+		return sponsored[i].merchant.ID < sponsored[j].merchant.ID
+	})
+
+	// Second-price auction for CPC
+	for i := range sponsored {
+		var actualCPC int
+		if i == len(sponsored)-1 {
+			// Last position: floor price of 1 cent
+			actualCPC = 1
+		} else {
+			// actualCPC = min(bid, ceil(nextAdRank / qualityScore) + 1)
+			nextAdRank := sponsored[i+1].adRank
+			qs := sponsored[i].qualityScore
+			if qs <= 0 {
+				qs = 0.1
+			}
+			computed := int(math.Ceil(nextAdRank/qs)) + 1
+			if computed > sponsored[i].bid {
+				actualCPC = sponsored[i].bid
+			} else {
+				actualCPC = computed
+			}
+		}
+		if actualCPC < 1 {
+			actualCPC = 1
+		}
+		// Store LastActualCPC on the merchant node
+		sponsored[i].merchant.LastActualCPC = actualCPC
+	}
+
+	// Sort organic by qualityScore desc, merchant ID as tiebreaker for stability
+	sort.Slice(organic, func(i, j int) bool {
+		if organic[i].qualityScore != organic[j].qualityScore {
+			return organic[i].qualityScore > organic[j].qualityScore
+		}
+		return organic[i].merchant.ID < organic[j].merchant.ID
+	})
+
+	// Step 5: Merge results: sponsored first, then organic (deduplicated)
+	seen := make(map[string]bool)
+	var results []SearchResult
+	rank := 1
+
+	for _, c := range sponsored {
+		key := c.merchant.ID + ":" + c.product.ProductID
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		results = append(results, SearchResult{
+			Rank:          rank,
 			ProductID:     c.product.ProductID,
 			Title:         c.product.Title,
-			MerchantID:    c.product.MerchantID,
-			MerchantName:  c.product.MerchantName,
-			MerchantURL:   c.product.MerchantURL,
+			MerchantID:    c.merchant.ID,
+			MerchantName:  c.merchant.Name,
+			MerchantURL:   c.merchant.Endpoint,
 			Price:         c.product.Price,
 			PriceDisplay:  fmt.Sprintf("$%.2f", float64(c.product.Price)/100),
 			InStock:       c.product.Quantity > 0,
-			DiscountHints: hints,
-		}
+			DiscountHints: c.hints,
+			Sponsored:     true,
+			ActualCPC:     c.merchant.LastActualCPC,
+			QualityScore:  c.qualityScore,
+		})
+		rank++
 	}
+
+	for _, c := range organic {
+		key := c.merchant.ID + ":" + c.product.ProductID
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		results = append(results, SearchResult{
+			Rank:          rank,
+			ProductID:     c.product.ProductID,
+			Title:         c.product.Title,
+			MerchantID:    c.merchant.ID,
+			MerchantName:  c.merchant.Name,
+			MerchantURL:   c.merchant.Endpoint,
+			Price:         c.product.Price,
+			PriceDisplay:  fmt.Sprintf("$%.2f", float64(c.product.Price)/100),
+			InStock:       c.product.Quantity > 0,
+			DiscountHints: c.hints,
+			Sponsored:     false,
+			QualityScore:  c.qualityScore,
+		})
+		rank++
+	}
+
+	if len(results) > limit {
+		results = results[:limit]
+	}
+
 	return results
 }

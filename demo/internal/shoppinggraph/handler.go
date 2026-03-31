@@ -7,12 +7,13 @@ import (
 
 // Handler provides HTTP endpoints for the shopping graph.
 type Handler struct {
-	graph *ShoppingGraph
+	graph  *ShoppingGraph
+	poller *Poller
 }
 
 // NewHandler creates a new HTTP handler for the shopping graph.
-func NewHandler(graph *ShoppingGraph) *Handler {
-	return &Handler{graph: graph}
+func NewHandler(graph *ShoppingGraph, poller *Poller) *Handler {
+	return &Handler{graph: graph, poller: poller}
 }
 
 // Mux returns an http.ServeMux with all routes registered.
@@ -24,7 +25,9 @@ func (h *Handler) Mux() *http.ServeMux {
 	mux.HandleFunc("PUT /ranking", h.handlePutRanking)
 	mux.HandleFunc("POST /merchants", h.handleAddMerchant)
 	mux.HandleFunc("DELETE /merchants/{id}", h.handleRemoveMerchant)
-	mux.HandleFunc("PUT /boost", h.handleSetBoost)
+	mux.HandleFunc("PUT /bid", h.handleSetBid)
+	mux.HandleFunc("GET /cpc/{id}", h.handleGetCPC)
+	mux.HandleFunc("POST /poll/{id}", h.handlePollMerchant)
 	return mux
 }
 
@@ -85,21 +88,21 @@ func (h *Handler) handleAddMerchant(w http.ResponseWriter, r *http.Request) {
 		ID            string   `json:"id"`
 		Name          string   `json:"name"`
 		Endpoint      string   `json:"endpoint"`
-		Score         int      `json:"score"`
+		MaxCPCBid     int      `json:"max_cpc_bid"`
 		DiscountHints []string `json:"discount_hints,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
 		http.Error(w, `{"detail":"invalid request"}`, http.StatusBadRequest)
 		return
 	}
-	if req.Score == 0 {
-		req.Score = 50
+	if req.MaxCPCBid == 0 {
+		req.MaxCPCBid = 50
 	}
 	h.graph.AddMerchant(&MerchantNode{
 		ID:            req.ID,
 		Name:          req.Name,
 		Endpoint:      req.Endpoint,
-		Score:         req.Score,
+		MaxCPCBid:     req.MaxCPCBid,
 		DiscountHints: req.DiscountHints,
 	})
 	w.WriteHeader(http.StatusCreated)
@@ -117,7 +120,7 @@ func (h *Handler) handleRemoveMerchant(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "removed", "id": id})
 }
 
-func (h *Handler) handleSetBoost(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleSetBid(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		MerchantID string `json:"merchant_id"`
 		Amount     int    `json:"amount"`
@@ -126,9 +129,40 @@ func (h *Handler) handleSetBoost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"detail":"invalid request"}`, http.StatusBadRequest)
 		return
 	}
-	h.graph.SetBoost(req.MerchantID, req.Amount)
+	h.graph.SetBid(req.MerchantID, req.Amount)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
+}
+
+func (h *Handler) handleGetCPC(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"detail":"missing id"}`, http.StatusBadRequest)
+		return
+	}
+	cpc := h.graph.GetCPC(id)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"actual_cpc": cpc})
+}
+
+func (h *Handler) handlePollMerchant(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"detail":"missing id"}`, http.StatusBadRequest)
+		return
+	}
+	h.graph.mu.RLock()
+	m, ok := h.graph.Merchants[id]
+	h.graph.mu.RUnlock()
+	if !ok {
+		http.Error(w, `{"detail":"merchant not found"}`, http.StatusNotFound)
+		return
+	}
+	if h.poller != nil {
+		h.poller.PollMerchant(m)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "poll_triggered"})
 }
 
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
