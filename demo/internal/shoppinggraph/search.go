@@ -43,6 +43,24 @@ func scoreJaccardPrice(jaccardSim float64, price int, avgPrice float64, inStock 
 	return relevance + pricePoints + stockPoints
 }
 
+// scoreArena computes a simple composite score for the arena demo (range ~0-10).
+// Price 5 + Stock 2 + Bid 3 (scaled to maxBid among candidates).
+func scoreArena(price int, avgPrice float64, inStock bool, bid int, maxBid int) float64 {
+	pricePoints := 0.0
+	if price > 0 {
+		pricePoints = math.Min(5.0, 5.0*avgPrice/float64(price))
+	}
+	stockPoints := 0.0
+	if inStock {
+		stockPoints = 2.0
+	}
+	bidPoints := 0.0
+	if maxBid > 0 {
+		bidPoints = 3.0 * float64(bid) / float64(maxBid)
+	}
+	return pricePoints + stockPoints + bidPoints
+}
+
 // scorePriceOnly computes a pure price ranking with stock bonus (range ~0-10).
 // Price 8 + Stock 2.
 func scorePriceOnly(price int, avgPrice float64, inStock bool) float64 {
@@ -139,9 +157,22 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 
 	// Step 3: Compute quality scores based on selected ranking algorithm
 	algo := g.RankAlgo
+
+	// For arena algo, find maxBid across all candidates
+	maxBid := 0
+	if algo == RankArena {
+		for _, c := range candidates {
+			if c.bid > maxBid {
+				maxBid = c.bid
+			}
+		}
+	}
+
 	for i := range candidates {
 		c := &candidates[i]
 		switch algo {
+		case RankArena:
+			c.qualityScore = scoreArena(c.product.Price, avgPrice, c.product.Quantity > 0, c.bid, maxBid)
 		case RankJaccardPrice:
 			c.qualityScore = scoreJaccardPrice(c.jaccardSim, c.product.Price, avgPrice, c.product.Quantity > 0)
 		case RankPriceOnly:
@@ -154,7 +185,76 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 		}
 	}
 
-	// Step 4: Separate sponsored and organic
+	// For arena algorithm: single sorted list by score, no sponsored/organic split
+	if algo == RankArena {
+		sort.Slice(candidates, func(i, j int) bool {
+			if candidates[i].qualityScore != candidates[j].qualityScore {
+				return candidates[i].qualityScore > candidates[j].qualityScore
+			}
+			return candidates[i].merchant.ID < candidates[j].merchant.ID
+		})
+
+		// CPC: second-price auction among bidders in score order
+		for i := range candidates {
+			if candidates[i].bid <= 0 {
+				continue
+			}
+			// Find next bidder
+			var nextScore float64
+			for j := i + 1; j < len(candidates); j++ {
+				if candidates[j].bid > 0 {
+					nextScore = float64(candidates[j].bid) * candidates[j].qualityScore
+					break
+				}
+			}
+			qs := candidates[i].qualityScore
+			if qs <= 0 {
+				qs = 0.1
+			}
+			actualCPC := 1
+			if nextScore > 0 {
+				computed := int(math.Ceil(nextScore/qs)) + 1
+				actualCPC = min(computed, candidates[i].bid)
+			}
+			if actualCPC < 1 {
+				actualCPC = 1
+			}
+			candidates[i].merchant.LastActualCPC = actualCPC
+		}
+
+		seen := make(map[string]bool)
+		var results []SearchResult
+		rank := 1
+		for _, c := range candidates {
+			key := c.merchant.ID + ":" + c.product.ProductID
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			results = append(results, SearchResult{
+				Rank:          rank,
+				ProductID:     c.product.ProductID,
+				Title:         c.product.Title,
+				MerchantID:    c.merchant.ID,
+				MerchantName:  c.merchant.Name,
+				MerchantURL:   c.merchant.Endpoint,
+				Price:         c.product.Price,
+				PriceDisplay:  fmt.Sprintf("$%.2f", float64(c.product.Price)/100),
+				InStock:       c.product.Quantity > 0,
+				DiscountHints: c.hints,
+				Sponsored:     c.sponsored,
+				ActualCPC:     c.merchant.LastActualCPC,
+				QualityScore:  c.qualityScore,
+			})
+			rank++
+		}
+		if len(results) > limit {
+			results = results[:limit]
+		}
+		return results
+	}
+
+	// Step 4: Separate sponsored and organic (non-arena algorithms)
 	var sponsored []candidate
 	var organic []candidate
 	for _, c := range candidates {
@@ -187,11 +287,7 @@ func (g *ShoppingGraph) Search(query string, limit int) []SearchResult {
 				qs = 0.1
 			}
 			computed := int(math.Ceil(nextAdRank/qs)) + 1
-			if computed > sponsored[i].bid {
-				actualCPC = sponsored[i].bid
-			} else {
-				actualCPC = computed
-			}
+			actualCPC = min(computed, sponsored[i].bid)
 		}
 		if actualCPC < 1 {
 			actualCPC = 1

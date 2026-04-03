@@ -57,6 +57,7 @@ type SearchResult struct {
 type RankingAlgorithm string
 
 const (
+	RankArena        RankingAlgorithm = "arena"
 	RankJaccard      RankingAlgorithm = "jaccard"
 	RankJaccardPrice RankingAlgorithm = "jaccard_price"
 	RankPriceOnly    RankingAlgorithm = "price"
@@ -76,7 +77,7 @@ type ShoppingGraph struct {
 func NewShoppingGraph() *ShoppingGraph {
 	return &ShoppingGraph{
 		Merchants: make(map[string]*MerchantNode),
-		RankAlgo:  RankJaccard,
+		RankAlgo:  RankArena,
 	}
 }
 
