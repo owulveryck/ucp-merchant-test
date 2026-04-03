@@ -17,6 +17,9 @@ import (
 	"github.com/owulveryck/ucp-merchant-test/demo/internal/a2aclient"
 )
 
+// agentHTTPClient is used for non-SSE HTTP calls (search, obs events) with a timeout.
+var agentHTTPClient = &http.Client{Timeout: 10 * time.Second}
+
 func buildSystemPrompt(merchantCount int) string {
 	return fmt.Sprintf(`You are a shopping assistant that finds the best deals across multiple merchants.
 
@@ -265,7 +268,7 @@ func (a *Agent) searchGraph(query string, limit int) (map[string]any, error) {
 		"limit": limit,
 	})
 
-	resp, err := http.Post(a.graphURL+"/search", "application/json", bytes.NewReader(reqBody))
+	resp, err := agentHTTPClient.Post(a.graphURL+"/search", "application/json", bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("search graph: %w", err)
 	}
@@ -293,7 +296,7 @@ func (a *Agent) emitEvent(eventType, summary string, eventData ...any) {
 	}
 
 	data, _ := json.Marshal(event)
-	resp, err := http.Post(a.obsURL+"/event", "application/json", bytes.NewReader(data))
+	resp, err := agentHTTPClient.Post(a.obsURL+"/event", "application/json", bytes.NewReader(data))
 	if err != nil {
 		log.Printf("obs event error: %v", err)
 		return

@@ -54,6 +54,9 @@ func (h *Hub) Add(e Event) {
 
 	h.mu.Lock()
 	h.events = append(h.events, e)
+	if len(h.events) > 5000 {
+		h.events = h.events[len(h.events)-5000:]
+	}
 	subs := make([]chan Event, 0, len(h.subscribers))
 	for ch := range h.subscribers {
 		subs = append(subs, ch)
@@ -87,11 +90,11 @@ func (h *Hub) Subscribe() chan Event {
 }
 
 // Unsubscribe removes a subscriber channel.
+// The channel is not closed; it will be garbage collected.
 func (h *Hub) Unsubscribe(ch chan Event) {
 	h.mu.Lock()
 	delete(h.subscribers, ch)
 	h.mu.Unlock()
-	close(ch)
 }
 
 // SendCommand sends a command to the commands channel (non-blocking).

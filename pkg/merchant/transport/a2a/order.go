@@ -2,7 +2,10 @@ package a2a
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	"github.com/owulveryck/ucp-merchant-test/pkg/model"
 )
 
 func (s *Server) handleGetOrder(_ context.Context, ac *actionContext) (map[string]any, error) {
@@ -47,6 +50,24 @@ func (s *Server) handleListOrders(_ context.Context, ac *actionContext) (map[str
 	}
 
 	return map[string]any{"orders": summaries}, nil
+}
+
+func (s *Server) handleUpdateOrder(_ context.Context, ac *actionContext) (map[string]any, error) {
+	id, _ := ac.data["id"].(string)
+
+	// JSON roundtrip to convert map[string]any -> OrderUpdateRequest
+	raw, _ := json.Marshal(ac.data)
+	var req model.OrderUpdateRequest
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return nil, fmt.Errorf("invalid update_order request: %w", err)
+	}
+
+	ord, err := s.merchant.UpdateOrder(id, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return toMap(ord)
 }
 
 func (s *Server) handleCancelOrder(_ context.Context, ac *actionContext) (map[string]any, error) {

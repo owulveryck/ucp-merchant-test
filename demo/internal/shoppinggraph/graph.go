@@ -156,12 +156,13 @@ func (g *ShoppingGraph) SetBid(merchantID string, bid int) {
 	}
 }
 
-// GetCPC returns the last actual CPC for a merchant and resets it.
+// GetCPC returns the last actual CPC for a merchant and resets it (consume-once).
 func (g *ShoppingGraph) GetCPC(merchantID string) int {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if m, ok := g.Merchants[merchantID]; ok {
 		cpc := m.LastActualCPC
+		m.LastActualCPC = 0
 		return cpc
 	}
 	return 0

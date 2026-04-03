@@ -392,7 +392,7 @@ async function loadConfig(){
     const bl=document.getElementById('bid-slider');
     if(currentAlgo!=='manual'){sl.classList.add('algo-active');bl.classList.add('algo-active');recalcAlgoPrice()}
     else{sl.classList.remove('algo-active');bl.classList.remove('algo-active')}
-  }catch(e){}
+  }catch(e){console.error('loadConfig:',e)}
 }
 
 function updateDisplays(){
@@ -651,8 +651,10 @@ function addActivity(cls,text,costAnnotation){
   const ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
   const div=document.createElement('div');
   div.className='activity-entry '+cls;
-  const costHtml=costAnnotation?'<span class="act-cost">'+costAnnotation+'</span>':'';
-  div.innerHTML='<span class="act-time">'+ts+'</span><span class="act-text">'+text+'</span>'+costHtml;
+  var timeEl=document.createElement('span');timeEl.className='act-time';timeEl.textContent=ts;
+  var textEl=document.createElement('span');textEl.className='act-text';textEl.textContent=text;
+  div.appendChild(timeEl);div.appendChild(textEl);
+  if(costAnnotation){var costEl=document.createElement('span');costEl.className='act-cost';costEl.innerHTML=costAnnotation;div.appendChild(costEl)}
   actLog.appendChild(div);
   actLog.scrollTop=actLog.scrollHeight;
   actCount++;

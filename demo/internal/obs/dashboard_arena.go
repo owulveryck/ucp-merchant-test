@@ -35,7 +35,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 
 .activity-panel { width: 300px; background: #FFFFFF; border-right: 1px solid #E0E0E0; display: flex; flex-direction: column; flex-shrink: 0; }
 .activity-panel .panel-header { font-weight: 700; font-size: 0.75rem; color: #E5004C; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 0.75rem; border-bottom: 1px solid #E0E0E0; }
-.activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #666; }
+.activity-panel .panel-body { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #666; }
 .activity-panel .panel-body .thinking-entry, .activity-panel .panel-body .result-entry, .activity-panel .panel-body .error-entry, .activity-panel .panel-body .arena-registration, .activity-panel .panel-body .arena-sale, .activity-panel .panel-body .arena-config, .activity-panel .panel-body .tool-call-entry { cursor: pointer; transition: opacity 0.15s; }
 .activity-panel .panel-body .thinking-entry:hover, .activity-panel .panel-body .result-entry:hover, .activity-panel .panel-body .error-entry:hover, .activity-panel .panel-body .arena-registration:hover, .activity-panel .panel-body .arena-sale:hover, .activity-panel .panel-body .arena-config:hover, .activity-panel .panel-body .tool-call-entry:hover { opacity: 0.75; }
 .activity-panel .panel-body .thinking-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F9FAFB; border-radius: 8px; color: #2D2D2D; }
@@ -45,7 +45,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .activity-panel .panel-body .arena-sale { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #DCFCE7; border: 1px solid #16A34A; border-radius: 8px; color: #16A34A; }
 .activity-panel .panel-body .arena-config { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #FFF7ED; border: 1px solid #F59E0B; border-radius: 8px; color: #D97706; }
 .activity-panel .panel-body .tool-call-entry { margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: #F3F4F6; border: 1px solid #9CA3AF; border-radius: 8px; color: #6B7280; }
-.proto-toggle { display: inline-block; font-size: 0.65rem; margin-left: 4px; color: #999; cursor: pointer; vertical-align: middle; user-select: none; }
+.proto-toggle { display: inline-block; font-size: 0.75rem; margin-left: 4px; color: #999; cursor: pointer; vertical-align: middle; user-select: none; }
 .proto-toggle:hover { color: #E5004C; }
 .proto-payload { display: none; margin-top: 0.35rem; padding: 0.4rem 0.5rem; background: #1A1A2E; color: #A5F3FC; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
 .proto-payload.visible { display: block; }
@@ -53,11 +53,11 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .proto-payload .ps { color: #A5F3FC; }
 .proto-payload .pn { color: #FDE68A; }
 .proto-payload .pp { color: #D1D5DB; }
-.proto-badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+.proto-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
 .proto-badge.req { background: #DBEAFE; color: #3B82F6; }
 .proto-badge.res { background: #DCFCE7; color: #16A34A; }
 .proto-badge.err { background: #FEF2F2; color: #DC2626; }
-.proto-duration { font-size: 0.6rem; color: #999; margin-left: 4px; }
+.proto-duration { font-size: 0.7rem; color: #999; margin-left: 4px; }
 
 .merchants-area { flex: 1; overflow-y: auto; padding: 1.5rem; }
 .merchants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
@@ -81,7 +81,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .mc-rank.top-1 { background: #FFD700; color: #1A1A2E; }
 .mc-rank.top-2 { background: #C0C0C0; color: #1A1A2E; }
 .mc-rank.top-3 { background: #CD7F32; color: #FFF; }
-.merchant-card .mc-row { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; font-size: 0.85rem; color: #666; border-bottom: 1px solid #E0E0E0; }
+.merchant-card .mc-row { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; font-size: 1rem; color: #666; border-bottom: 1px solid #E0E0E0; }
 .merchant-card .mc-row:last-child { border-bottom: none; }
 .merchant-card .mc-row .mc-label { color: #999; }
 .merchant-card .mc-row .mc-value { font-weight: 600; color: #1A1A2E; font-variant-numeric: tabular-nums; }
@@ -799,7 +799,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   }
 
   function showAgentModal(text, autoDismissMs, protoData) {
-    autoDismissMs = autoDismissMs || 5000;
+    autoDismissMs = autoDismissMs || 12000;
     if (typeof marked !== 'undefined') {
       modalBody.innerHTML = marked.parse(text);
     } else {
@@ -829,6 +829,26 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
     modalProgress.style.transition = 'none';
     modalProgress.style.width = '0%';
   }
+
+  // Pause modal auto-dismiss on hover
+  var modalRemaining = 0;
+  var modalPausedAt = 0;
+  modalOverlay.querySelector('.agent-modal').addEventListener('mouseenter', function() {
+    if (modalDismissTimer) {
+      modalRemaining = Math.max(0, (modalOpenedAt + 12000) - Date.now());
+      clearTimeout(modalDismissTimer);
+      modalDismissTimer = null;
+      modalPausedAt = Date.now();
+      modalProgress.style.transition = 'none';
+    }
+  });
+  modalOverlay.querySelector('.agent-modal').addEventListener('mouseleave', function() {
+    if (modalRemaining > 0 && modalOverlay.classList.contains('visible')) {
+      modalProgress.style.transition = 'width ' + modalRemaining + 'ms linear';
+      modalProgress.style.width = '0%';
+      modalDismissTimer = setTimeout(hideAgentModal, modalRemaining);
+    }
+  });
 
   document.getElementById('agent-modal-close').addEventListener('click', hideAgentModal);
   modalOverlay.addEventListener('click', function(e) {

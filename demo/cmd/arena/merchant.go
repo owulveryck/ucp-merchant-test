@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
+	"net/http"
 	"strings"
 	"sync"
 
@@ -512,6 +513,9 @@ func (m *arenaMerchant) CompleteCheckout(id, ownerID string, country ucp.Country
 	m.config.Stock -= qty
 	m.config.mu.Unlock()
 
+	// Trigger graph re-poll to update stock visibility
+	go m.triggerGraphRepoll()
+
 	// Record buyer email for new customer tracking
 	if co.Buyer != nil && co.Buyer.Email != "" {
 		m.purchaseHistory[co.Buyer.Email] = true
@@ -655,9 +659,44 @@ func (m *arenaMerchant) ListOrders(ownerID string) ([]*model.Order, error) {
 func (m *arenaMerchant) CancelOrder(id, ownerID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, ok := m.orders[id]; !ok {
+
+	order, ok := m.orders[id]
+	if !ok {
 		return fmt.Errorf("order not found: %s: %w", id, merchant.ErrNotFound)
 	}
+
+	// Restore stock
+	qty := 0
+	for _, li := range order.LineItems {
+		qty += li.Quantity.Total
+	}
+	m.config.mu.Lock()
+	m.config.Stock += qty
+	m.config.mu.Unlock()
+
+	// Reverse revenue tracking
+	total := 0
+	for _, t := range order.Totals {
+		if t.Type == "total" {
+			total = t.Amount
+		}
+	}
+	m.totalRevenue -= total
+	m.totalUnitsSold -= qty
+	if m.salesCount > 0 {
+		m.salesCount--
+	}
+
+	// Mark line items as canceled
+	for i := range order.LineItems {
+		order.LineItems[i].Status = "canceled"
+	}
+
+	m.notifyActivity("order_canceled", fmt.Sprintf("Commande annulee (%s)", id))
+
+	// Trigger graph re-poll to update stock
+	go m.triggerGraphRepoll()
+
 	return nil
 }
 
@@ -704,6 +743,19 @@ func (m *arenaMerchant) ListPromotions() []merchant.Promotion {
 		})
 	}
 	return promos
+}
+
+// triggerGraphRepoll sends a POST to the shopping graph to re-poll this merchant's products.
+func (m *arenaMerchant) triggerGraphRepoll() {
+	if m.graphURL == "" || m.merchantID == "" {
+		return
+	}
+	req, _ := http.NewRequest(http.MethodPost, m.graphURL+"/poll/"+m.merchantID, nil)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return
+	}
+	resp.Body.Close()
 }
 
 // Reset clears all transient state.

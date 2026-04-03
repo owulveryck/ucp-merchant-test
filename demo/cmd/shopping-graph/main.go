@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -51,14 +54,33 @@ func main() {
 	client := a2aclient.NewClient("john.doe@example.com", "US", *obsURL)
 	poller := shoppinggraph.NewPoller(graph, client, *pollInterval, client.ObsURL())
 	poller.Start()
-	defer poller.Stop()
 
 	handler := shoppinggraph.NewHandler(graph, poller)
 
 	addr := fmt.Sprintf(":%d", *port)
-	log.Printf("Shopping Graph starting on http://localhost:%d", *port)
-	log.Printf("Search endpoint: POST http://localhost:%d/search", *port)
-	if err := http.ListenAndServe(addr, handler.Mux()); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: handler.Mux(),
 	}
+
+	go func() {
+		log.Printf("Shopping Graph starting on http://localhost:%d", *port)
+		log.Printf("Search endpoint: POST http://localhost:%d/search", *port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down shopping graph...")
+	poller.Stop()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Shopping graph shutdown error: ", err)
+	}
+	log.Println("Shopping graph stopped")
 }

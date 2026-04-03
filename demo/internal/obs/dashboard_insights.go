@@ -45,9 +45,9 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 /* --- Timeline --- */
 .tl-scroll{overflow-x:auto;overflow-y:auto;height:100%;padding:0.5rem}
 .tl-lane{display:flex;align-items:center;margin-bottom:2px;min-height:28px}
-.tl-label{width:100px;flex-shrink:0;font-size:0.7rem;font-weight:700;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0.5rem;text-align:right}
+.tl-label{width:100px;flex-shrink:0;font-size:0.85rem;font-weight:700;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0.5rem;text-align:right}
 .tl-track{flex:1;position:relative;height:24px;background:#F9FAFB;border-radius:4px;overflow:visible}
-.tl-event{position:absolute;height:22px;top:1px;border-radius:4px;font-size:0.6rem;font-weight:600;display:flex;align-items:center;justify-content:center;color:#fff;min-width:18px;cursor:default;transition:opacity 0.15s;z-index:1;white-space:nowrap;padding:0 4px}
+.tl-event{position:absolute;height:22px;top:1px;border-radius:4px;font-size:0.75rem;font-weight:600;display:flex;align-items:center;justify-content:center;color:#fff;min-width:18px;cursor:default;transition:opacity 0.15s;z-index:1;white-space:nowrap;padding:0 4px}
 .tl-event:hover{opacity:0.8;z-index:10}
 .tl-event.search{background:#6B7280}
 .tl-event.lookup{background:#E5004C}
@@ -59,7 +59,7 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 .tl-event.complete{background:#16A34A}
 .tl-event.cancel{background:#DC2626}
 .tl-event.thinking{background:#9CA3AF}
-.tl-legend{display:flex;gap:0.75rem;flex-wrap:wrap;padding:0.4rem 0.5rem;border-top:1px solid #E0E0E0;font-size:0.65rem;flex-shrink:0}
+.tl-legend{display:flex;gap:0.75rem;flex-wrap:wrap;padding:0.4rem 0.5rem;border-top:1px solid #E0E0E0;font-size:0.75rem;flex-shrink:0}
 .tl-legend-item{display:flex;align-items:center;gap:3px}
 .tl-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .tl-no-data{text-align:center;padding:2rem;color:#999;font-size:0.85rem}
@@ -67,8 +67,8 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
 .tl-time-mark{position:absolute;top:0;height:100%;border-left:1px dashed #E0E0E0;padding-left:3px;line-height:16px}
 
 /* --- Leaderboard --- */
-.lb-table{width:100%;border-collapse:collapse;font-size:0.8rem}
-.lb-table th{text-align:left;padding:0.4rem 0.5rem;color:#999;font-weight:600;font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid #E0E0E0;position:sticky;top:0;background:#fff;z-index:1}
+.lb-table{width:100%;border-collapse:collapse;font-size:0.95rem}
+.lb-table th{text-align:left;padding:0.4rem 0.5rem;color:#999;font-weight:600;font-size:0.85rem;text-transform:uppercase;border-bottom:1px solid #E0E0E0;position:sticky;top:0;background:#fff;z-index:1}
 .lb-table td{padding:0.4rem 0.5rem;border-bottom:1px solid #F3F4F6;font-variant-numeric:tabular-nums}
 .lb-table tr:hover{background:#FDF0EE}
 .lb-rank{font-weight:800;width:2rem;text-align:center}

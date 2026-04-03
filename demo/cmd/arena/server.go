@@ -122,6 +122,11 @@ func (s *ArenaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limit request body size for POST/PUT
+	if r.Method == http.MethodPost || r.Method == http.MethodPut {
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	}
+
 	path := r.URL.Path
 
 	// Top-level routes

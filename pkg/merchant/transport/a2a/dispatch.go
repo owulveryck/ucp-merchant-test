@@ -34,6 +34,7 @@ func (s *Server) actionHandlers() map[string]actionHandler {
 		// Orders
 		"get_order":    s.handleGetOrder,
 		"list_orders":  s.handleListOrders,
+		"update_order": s.handleUpdateOrder,
 		"cancel_order": s.handleCancelOrder,
 	}
 	if _, ok := s.merchant.(merchant.Promoter); ok {
