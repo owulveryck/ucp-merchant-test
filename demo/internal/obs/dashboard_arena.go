@@ -219,7 +219,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         </div>
         <hr class="agent-separator">
         <div class="agent-input-wrap">
-          <input type="text" id="command-input" placeholder="What should I buy?" autocomplete="off" disabled />
+          <input type="text" id="command-input" placeholder="Moins cher: 'Achète un casque' | Plus rapide: '...rapidement'" autocomplete="off" disabled />
           <button id="btn-send" disabled>Send</button>
         </div>
         <div class="agent-merchant-count">
@@ -231,8 +231,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
       </div>
     </div>
     <div class="agent-note">
-      The buying agent is an independent process (Gemini).
-      It is not part of the arena — it discovers and negotiates with merchants on its own via the Shopping Graph.
+      Agent acheteur indépendant (Gemini). Tapez "rapide/vite/express" pour livraison la plus rapide, sinon optimise le prix le moins cher.
     </div>
   </div>
 </div>
