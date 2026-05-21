@@ -43,22 +43,19 @@ func scoreJaccardPrice(jaccardSim float64, price int, avgPrice float64, inStock 
 	return relevance + pricePoints + stockPoints
 }
 
-// scoreArena computes a simple composite score for the arena demo (range ~0-10).
-// Price 5 + Stock 2 + Bid 3 (scaled to maxBid among candidates).
+// scoreArena computes a client-centric quality score for the arena demo (range ~0-10).
+// Price 8 + Stock 2. Bid is NOT included — it only affects display order (sponsored vs organic).
 func scoreArena(price int, avgPrice float64, inStock bool, bid int, maxBid int) float64 {
 	pricePoints := 0.0
 	if price > 0 {
-		pricePoints = math.Min(5.0, 5.0*avgPrice/float64(price))
+		pricePoints = math.Min(8.0, 8.0*avgPrice/float64(price))
 	}
 	stockPoints := 0.0
 	if inStock {
 		stockPoints = 2.0
 	}
-	bidPoints := 0.0
-	if maxBid > 0 {
-		bidPoints = 3.0 * float64(bid) / float64(maxBid)
-	}
-	return pricePoints + stockPoints + bidPoints
+	// Bid removed: it's for ad placement, not value to customer
+	return pricePoints + stockPoints
 }
 
 // scorePriceOnly computes a pure price ranking with stock bonus (range ~0-10).
