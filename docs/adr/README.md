@@ -21,14 +21,14 @@ Les ADR capturent le **contexte**, les **alternatives considérées**, et les **
 | # | Titre | Statut | Date | Lien |
 |---|-------|--------|------|------|
 | 001 | Architecture Multi-Agent Shopping | ✅ Accepté | 2026-03-11 | [Voir ADR →](001-multi-agent-shopping-architecture.md) |
-| 002 | Protocole A2A pour Communication Inter-Agents | ✅ Accepté | 2026-03-11 | [Voir ADR →](002-a2a-protocol-inter-agent-communication.md) |
+| 002 | Architecture Multi-Transport (REST, MCP, A2A) | ✅ Accepté | 2026-03-10-11 | [Voir ADR →](002-multi-transport-architecture.md) |
 
 ### Tableau Détaillé
 
 | # | Titre | Décision Architecturale | Pourquoi c'est Important | Impact Concret |
 |---|-------|------------------------|--------------------------|----------------|
 | **[001](001-multi-agent-shopping-architecture.md)** | Architecture Multi-Agent Shopping | **Système distribué** avec 4 composants indépendants :<br><br>• Shopping Graph (recherche cross-merchant)<br>• Client Agent (Gemini, 8 tools)<br>• Observability Hub (dashboard SSE)<br>• 3 Merchants (SuperShop, MegaMart, BudgetBuy) | • Démontre l'utilité des protocoles A2A et MCP<br>• Permet la comparaison de prix cross-merchant<br>• Observabilité du raisonnement agent en temps réel<br>• Architecture extensible | • 4 binaires séparés à lancer<br>• Module `demo/` créé avec go.work<br>• Move `internal/` → `pkg/` pour réutilisabilité<br>• Évolutions : Arena mode, Ranking algorithm, Buying modes |
-| **[002](002-a2a-protocol-inter-agent-communication.md)** | Protocole A2A pour Communication Inter-Agents | **A2A** comme standard de communication agent-to-agent<br><br>Alternatives rejetées :<br>• REST (pas de discovery standard)<br>• gRPC (complexité protobuf)<br>• Message Queue (over-engineering)<br>• MCP (sémantique LLM→Tool, pas Agent→Service) | • **Interopérabilité** : Spec ouverte (a2a.dev)<br>• **Sécurité** : OAuth2+PKCE (pas API keys)<br>• **Discovery** : Agent card JSON automatique<br>• **Session management** : Built-in pour contexte conversationnel | • Custom client A2A : ~400 lignes (auth.go, client.go, types.go)<br>• Server A2A : ~2000 lignes (executor, 16 handlers, tests)<br>• Shopping Graph polle catalogues via A2A<br>• Client Agent fait checkout/order via A2A |
+| **[002](002-multi-transport-architecture.md)** | Architecture Multi-Transport (REST, MCP, A2A) | **3 protocoles simultanés** pour différents clients :<br><br>• **REST** : Web/mobile, tests, debug<br>• **MCP** : Claude Desktop, IDEs, LLM clients<br>• **A2A** : Shopping Graph, Client Agent (agents autonomes) | • **Flexibilité** : Chaque client choisit son protocole<br>• **Zero duplication** : Tous délèguent à `merchant.Merchant`<br>• **Extensibilité** : Pattern établi pour ajouter GraphQL/gRPC<br>• **Conformité** : UCP (REST), MCP, A2A specs respectées | • REST : ~400 LOC (endpoints HTTP)<br>• MCP : ~900 LOC (via mcp-go library)<br>• A2A : ~2400 LOC (client 400 + server 2000)<br>• Tests : 60 UCP + 43 MCP + unit tests A2A<br>• Architecture validée par ajout A2A sans refonte |
 
 ### Lien entre les ADR
 
@@ -40,13 +40,14 @@ Les ADR capturent le **contexte**, les **alternatives considérées**, et les **
                    │ nécessite
                    ▼
 ┌─────────────────────────────────────────┐
-│  ADR 002 : Protocole A2A                │
-│  → Définit COMMENT (communication)      │
+│  ADR 002 : Multi-Transport              │
+│  → Définit COMMENT (3 protocoles)       │
+│  REST (web) + MCP (LLM) + A2A (agents)  │
 └─────────────────────────────────────────┘
 ```
 
 **ADR 001** = Décision système (distribué vs monolithique)  
-**ADR 002** = Décision protocole (A2A vs REST/gRPC/MQ/MCP)
+**ADR 002** = Décision transports (3 protocoles pour 3 types de clients)
 
 ---
 
