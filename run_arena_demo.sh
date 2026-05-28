@@ -77,31 +77,65 @@ echo ""
 echo "$SHOPPING_GRAPH_PID" > .pids
 echo "$ARENA_PID" >> .pids
 
-echo -e "${GREEN}✅ Tout est prêt !${NC}"
+echo -e "${GREEN}✅ Tous les services sont lancés !${NC}"
 echo ""
-echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo -e "${YELLOW}📊 Interface Arena :${NC}"
-echo -e ""
-echo -e "   Ouvre ton navigateur sur : ${GREEN}http://localhost:8080${NC}"
-echo -e ""
-echo -e "   Tu peux :"
-echo -e "   ✅ Créer des merchants (SuperShop, MegaMart, etc.)"
-echo -e "   ✅ Ajuster les prix en temps réel"
-echo -e "   ✅ Modifier les codes promo"
-echo -e "   ✅ Changer les options de livraison"
-echo -e "   ✅ Voir l'activité en direct"
-echo -e ""
-echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
+echo "┌──────────────────────────────────────────────────────────┐"
+echo "│  🌐 Ouvrez dans votre navigateur:                        │"
+echo "│     http://localhost:8080/                               │"
+echo "│                                                           │"
+echo "│  📝 ÉTAPES:                                              │"
+echo "│     1. Créez 2-3 marchands                               │"
+echo "│     2. Configurez des prix différents                    │"
+echo "│     3. Testez AUTO_COMPETE avec un checkout              │"
+echo "│                                                           │"
+echo "│  🤖 Pour tester AUTO_COMPETE :                           │"
+echo "│     - Dans l'interface Arena, créez un checkout          │"
+echo "│     - Utilisez le code promo: AUTO_COMPETE               │"
+echo "│     - Regardez le prix s'ajuster automatiquement !       │"
+echo "│                                                           │"
+echo "│  📊 Intelligence Compétitive:                            │"
+echo "│     - Onglet \"Competitive Intel\" dans le dashboard      │"
+echo "│     - Voir les prix concurrents en temps réel            │"
+echo "│                                                           │"
+echo "│  📝 Voir les logs des agents:                            │"
+echo "│     tail -f logs/arena.log                               │"
+echo "│                                                           │"
+echo "│  🛑 Pour arrêter: Ctrl+C                                 │"
+echo "└──────────────────────────────────────────────────────────┘"
 echo ""
-echo -e "${YELLOW}🤖 Pour tester AUTO_COMPETE :${NC}"
+
+# Fonction pour arrêter proprement
+cleanup() {
+    echo ""
+    echo -e "${YELLOW}🛑 Arrêt de tous les services...${NC}"
+
+    # Arrêter les processus
+    if [ -n "$SHOPPING_GRAPH_PID" ]; then
+        kill $SHOPPING_GRAPH_PID 2>/dev/null || true
+    fi
+    if [ -n "$ARENA_PID" ]; then
+        kill $ARENA_PID 2>/dev/null || true
+    fi
+
+    # Forcer si nécessaire
+    pkill -f "shopping-graph" 2>/dev/null || true
+    pkill -f "cmd/arena" 2>/dev/null || true
+
+    rm -f .pids
+
+    echo -e "${GREEN}✅ Tous les services sont arrêtés${NC}"
+    echo ""
+    echo -e "${BLUE}Logs sauvegardés dans logs/${NC}"
+    echo "  - logs/shopping-graph.log"
+    echo "  - logs/arena.log"
+    echo ""
+    exit 0
+}
+
+# Capturer Ctrl+C
+trap cleanup SIGINT SIGTERM
+
+# Attendre indéfiniment (les services tournent en arrière-plan)
+echo -e "${YELLOW}Appuyez sur Ctrl+C pour arrêter tous les services${NC}"
 echo ""
-echo -e "   1. Crée 2-3 merchants dans l'interface Arena"
-echo -e "   2. Définis leurs prix (ex: MegaMart moins cher)"
-echo -e "   3. Crée un checkout avec code ${GREEN}AUTO_COMPETE${NC}"
-echo -e "   4. Regarde les logs : ${YELLOW}tail -f logs/arena.log${NC}"
-echo ""
-echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo ""
-echo -e "${GREEN}Pour arrêter :${NC}"
-echo -e "  ${YELLOW}./stop_demo.sh${NC}"
-echo ""
+wait
