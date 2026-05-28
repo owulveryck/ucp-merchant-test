@@ -210,6 +210,12 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 		handlePutConfig(w, r, m.config, s.costPrice, s, id, m)
 	})
 
+	// Test AUTO_COMPETE API
+	mux.HandleFunc("POST /api/test-auto-compete", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w)
+		handleTestAutoCompete(w, r, m, id)
+	})
+
 	// Competitive Intelligence API
 	mux.HandleFunc("GET /api/competitive-intel", func(w http.ResponseWriter, r *http.Request) {
 		handleCompetitiveIntel(w, r, m, s.graphURL, id, s.costPrice)

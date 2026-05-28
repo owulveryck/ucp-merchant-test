@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/owulveryck/ucp-merchant-test/pkg/model"
+	"github.com/owulveryck/ucp-merchant-test/pkg/ucp"
 )
 
 func handleGetConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig, costPrice int, m *arenaMerchant) {
@@ -143,4 +146,52 @@ func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 	}
 
 	handleGetConfig(w, r, cfg, costPrice, m)
+}
+
+func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerchant, tenantID string) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Step 1: Create checkout with product
+	checkoutReq := &model.CheckoutRequest{
+		Currency: ucp.Currency("USD"),
+		LineItems: []model.LineItemRequest{
+			{
+				Item:     &model.ItemRef{ID: m.product.ID},
+				Quantity: 1,
+			},
+		},
+	}
+
+	checkout, _, err := m.CreateCheckout("test-user", ucp.Country("US"), checkoutReq)
+	if err != nil {
+		log.Printf("[TestAutoCompete] CreateCheckout failed: %v", err)
+		http.Error(w, `{"error":"failed to create checkout"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[TestAutoCompete] Checkout created: %s", checkout.ID)
+
+	// Step 2: Update checkout with AUTO_COMPETE
+	updateReq := &model.CheckoutRequest{
+		Discounts: &model.DiscountsRequest{
+			Codes: []string{"AUTO_COMPETE"},
+		},
+	}
+
+	checkout, _, err = m.UpdateCheckout(checkout.ID, "test-user", updateReq)
+	if err != nil {
+		log.Printf("[TestAutoCompete] UpdateCheckout failed: %v", err)
+		http.Error(w, `{"error":"failed to apply AUTO_COMPETE"}`, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[TestAutoCompete] AUTO_COMPETE applied to checkout %s", checkout.ID)
+
+	// Return success with checkout info
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":     true,
+		"checkout_id": checkout.ID,
+		"discounts":   checkout.Discounts,
+		"totals":      checkout.Totals,
+	})
 }

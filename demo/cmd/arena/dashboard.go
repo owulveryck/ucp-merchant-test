@@ -957,54 +957,24 @@ async function testAutoCompete(){
 
   btn.disabled=true;
   btn.style.opacity='0.6';
-  statusEl.textContent='Création du checkout...';
+  statusEl.textContent='Application AUTO_COMPETE...';
   statusEl.style.color='#3B82F6';
 
   try{
-    // Step 1: Create checkout with product
-    const checkoutResp=await fetch('/'+TID+'/a2a',{
+    const resp=await fetch(API+'/test-auto-compete',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        jsonrpc:'2.0',
-        id:1,
-        method:'checkout/create',
-        params:{
-          line_items:[{item_id:'casque_audio',quantity:1}]
-        }
-      })
+      headers:{'Content-Type':'application/json'}
     });
-    const checkoutData=await checkoutResp.json();
 
-    if(checkoutData.error){
-      throw new Error(checkoutData.error.message||'Checkout creation failed');
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.error||'Request failed');
     }
 
-    const checkoutId=checkoutData.result?.checkout_id;
-    if(!checkoutId){
-      throw new Error('No checkout ID returned');
-    }
+    const data=await resp.json();
 
-    statusEl.textContent='Application AUTO_COMPETE...';
-
-    // Step 2: Update checkout with AUTO_COMPETE code
-    const updateResp=await fetch('/'+TID+'/a2a',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        jsonrpc:'2.0',
-        id:2,
-        method:'checkout/update',
-        params:{
-          checkout_id:checkoutId,
-          discount_codes:['AUTO_COMPETE']
-        }
-      })
-    });
-    const updateData=await updateResp.json();
-
-    if(updateData.error){
-      throw new Error(updateData.error.message||'Discount application failed');
+    if(!data.success){
+      throw new Error('AUTO_COMPETE failed');
     }
 
     statusEl.textContent='✅ AUTO_COMPETE appliqué ! Regardez ci-dessous 👇';
