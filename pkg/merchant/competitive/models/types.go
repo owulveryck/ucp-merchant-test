@@ -9,7 +9,7 @@ type PriceIntelligence struct {
 	ProductID   string
 	OurPrice    int // in cents
 	Competitors []CompetitorPrice
-	LowestPrice int
+	LowestPrice int    // Lowest EFFECTIVE price (after discounts)
 	LowestBy    string // merchant ID
 	AvgPrice    int
 	MaxPrice    int
@@ -20,11 +20,13 @@ type PriceIntelligence struct {
 
 // CompetitorPrice represents a single competitor's price.
 type CompetitorPrice struct {
-	MerchantID   string
-	MerchantName string
-	Price        int
-	InStock      bool
-	Timestamp    time.Time
+	MerchantID     string
+	MerchantName   string
+	Price          int       // Displayed price (before discounts)
+	InStock        bool
+	Timestamp      time.Time
+	DiscountHints  []string  // Available discount codes
+	EffectivePrice int       // Estimated price after best discount
 }
 
 // MarketInsight contains the market analysis for a product.

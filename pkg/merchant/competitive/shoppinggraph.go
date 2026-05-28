@@ -96,14 +96,22 @@ func (c *ShoppingGraphClient) GetCompetitorPrices(productID string) ([]models.Co
 	prices := make([]models.CompetitorPrice, 0, len(results))
 	now := time.Now()
 	for i, result := range results {
-		log.Printf("[DEBUG ShoppingGraph] Result %d: MerchantID=%s, MerchantName=%s, Price=%d, InStock=%v",
-			i, result.MerchantID, result.MerchantName, result.Price, result.InStock)
+		log.Printf("[DEBUG ShoppingGraph] Result %d: MerchantID=%s, MerchantName=%s, Price=%d, InStock=%v, DiscountHints=%v",
+			i, result.MerchantID, result.MerchantName, result.Price, result.InStock, result.DiscountHints)
+
+		// Estimate effective price after best discount
+		effectivePrice := estimateEffectivePrice(result.Price, result.DiscountHints)
+
+		log.Printf("[DEBUG ShoppingGraph] Effective price: %d (discount hints applied)", effectivePrice)
+
 		prices = append(prices, models.CompetitorPrice{
-			MerchantID:   result.MerchantID,
-			MerchantName: result.MerchantName,
-			Price:        result.Price,
-			InStock:      result.InStock,
-			Timestamp:    now,
+			MerchantID:     result.MerchantID,
+			MerchantName:   result.MerchantName,
+			Price:          result.Price,
+			InStock:        result.InStock,
+			Timestamp:      now,
+			DiscountHints:  result.DiscountHints,
+			EffectivePrice: effectivePrice,
 		})
 	}
 
@@ -222,4 +230,72 @@ func (pc *priceCache) clear() {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
 	pc.entries = make(map[string]cachedPrice)
+}
+
+// estimateEffectivePrice estimates the final price after applying the best discount hint.
+// Parses discount code patterns to estimate percentage/fixed discounts.
+func estimateEffectivePrice(basePrice int, discountHints []string) int {
+	if len(discountHints) == 0 {
+		return basePrice
+	}
+
+	bestPrice := basePrice
+
+	for _, code := range discountHints {
+		estimatedPrice := basePrice
+
+		// Pattern matching for common discount code formats:
+		// - WELCOME10, SAVE20, etc. → percentage discount
+		// - FIXED500 → $5 fixed discount (500 cents)
+		// - 10OFF, 20OFF → percentage discount
+
+		// Try to extract percentage from code name
+		var percent int
+		var fixed int
+
+		// Check for patterns like "WELCOME10", "SAVE20", "10OFF"
+		if len(code) >= 2 {
+			lastTwo := code[len(code)-2:]
+			if lastTwo[0] >= '0' && lastTwo[0] <= '9' && lastTwo[1] >= '0' && lastTwo[1] <= '9' {
+				// Two digits at the end, likely a percentage
+				percent = int(lastTwo[0]-'0')*10 + int(lastTwo[1]-'0')
+				log.Printf("[DEBUG estimateEffectivePrice] Code %s → estimated %d%% discount", code, percent)
+			} else if lastTwo[1] >= '0' && lastTwo[1] <= '9' {
+				// One digit at the end
+				percent = int(lastTwo[1] - '0')
+				log.Printf("[DEBUG estimateEffectivePrice] Code %s → estimated %d%% discount", code, percent)
+			}
+		}
+
+		// Check for FIXED pattern (e.g., FIXED500 = $5 off)
+		if len(code) > 5 && code[:5] == "FIXED" {
+			// Parse remaining digits
+			fixedStr := code[5:]
+			fixed = 0
+			for _, ch := range fixedStr {
+				if ch >= '0' && ch <= '9' {
+					fixed = fixed*10 + int(ch-'0')
+				}
+			}
+			log.Printf("[DEBUG estimateEffectivePrice] Code %s → estimated $%.2f fixed discount", code, float64(fixed)/100)
+		}
+
+		// Apply the discount
+		if percent > 0 {
+			estimatedPrice = basePrice * (100 - percent) / 100
+		} else if fixed > 0 {
+			estimatedPrice = basePrice - fixed
+		} else {
+			// Unknown pattern, assume 10% default
+			estimatedPrice = basePrice * 90 / 100
+			log.Printf("[DEBUG estimateEffectivePrice] Code %s → unknown pattern, assuming 10%% discount", code)
+		}
+
+		// Keep track of best (lowest) price
+		if estimatedPrice < bestPrice {
+			bestPrice = estimatedPrice
+		}
+	}
+
+	return bestPrice
 }

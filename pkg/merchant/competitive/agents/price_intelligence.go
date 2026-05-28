@@ -70,10 +70,19 @@ func (a *PriceIntelligenceAgent) Analyze(productID string, ourPrice int) (models
 		}, nil
 	}
 
-	// Calculate statistics
+	// Calculate statistics using EFFECTIVE prices (after discounts)
 	allPrices := []int{ourPrice}
 	for _, comp := range validCompetitors {
-		allPrices = append(allPrices, comp.Price)
+		// Use effective price (after discount) for comparison
+		priceToUse := comp.EffectivePrice
+		if priceToUse == 0 {
+			priceToUse = comp.Price // Fallback if effective price not calculated
+		}
+
+		log.Printf("[DEBUG PriceIntel] Competitor %s: displayed=%d, effective=%d, hints=%v",
+			comp.MerchantName, comp.Price, comp.EffectivePrice, comp.DiscountHints)
+
+		allPrices = append(allPrices, priceToUse)
 	}
 
 	sort.Ints(allPrices)
@@ -89,15 +98,26 @@ func (a *PriceIntelligenceAgent) Analyze(productID string, ourPrice int) (models
 	}
 	avg := sum / len(allPrices)
 
-	// Find who has the lowest price
+	// Find who has the lowest EFFECTIVE price
 	lowestBy := a.merchantID
 	lowestPrice := ourPrice
 	for _, comp := range validCompetitors {
-		if comp.Price < lowestPrice {
-			lowestPrice = comp.Price
+		effectivePrice := comp.EffectivePrice
+		if effectivePrice == 0 {
+			effectivePrice = comp.Price
+		}
+
+		if effectivePrice < lowestPrice {
+			lowestPrice = effectivePrice
 			lowestBy = comp.MerchantID
+
+			log.Printf("[DEBUG PriceIntel] NEW LOWEST: %s with effective price %d (was %d with hints %v)",
+				comp.MerchantName, effectivePrice, comp.Price, comp.DiscountHints)
 		}
 	}
+
+	log.Printf("[DEBUG PriceIntel] FINAL LOWEST: %s with price $%.2f",
+		lowestBy, float64(lowestPrice)/100)
 
 	// Calculate our rank (1 = cheapest)
 	ourRank := 1
