@@ -81,7 +81,7 @@ func (c *ShoppingGraphClient) GetLowestPrice(productID string) (price int, merch
 }
 
 // GetCompetitorPrices returns all competitor prices for a product.
-// Implements CompetitorPriceSource interface.
+// Implements the new models.CompetitorPriceSource interface.
 func (c *ShoppingGraphClient) GetCompetitorPrices(productID string) ([]models.CompetitorPrice, error) {
 	results, err := c.search(productID, 50)
 	if err != nil {
@@ -97,6 +97,28 @@ func (c *ShoppingGraphClient) GetCompetitorPrices(productID string) ([]models.Co
 			Price:        result.Price,
 			InStock:      result.InStock,
 			Timestamp:    now,
+		})
+	}
+
+	return prices, nil
+}
+
+// GetCompetitorPricesLegacy returns all competitor prices using the legacy type.
+// This is for backward compatibility with the old CompetitivePricingAgent.
+func (c *ShoppingGraphClient) GetCompetitorPricesLegacy(productID string) ([]CompetitorPrice, error) {
+	results, err := c.search(productID, 50)
+	if err != nil {
+		return nil, fmt.Errorf("shopping graph search failed: %w", err)
+	}
+
+	prices := make([]CompetitorPrice, 0, len(results))
+	for _, result := range results {
+		prices = append(prices, CompetitorPrice{
+			MerchantID:   result.MerchantID,
+			MerchantName: result.MerchantName,
+			ProductID:    result.ProductID,
+			Price:        result.Price,
+			InStock:      result.InStock,
 		})
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/owulveryck/ucp-merchant-test/pkg/auth"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/a2a"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/discovery"
 )
@@ -49,6 +50,54 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	m := newArenaMerchant("casque_audio", s.productName, s.costPrice, baseURL, notifier)
 	m.graphURL = s.graphURL
 	m.merchantID = id
+
+	// Set up competitive pricing agent if enabled
+	if s.competitivePricing && s.graphURL != "" {
+		log.Printf("Enabling competitive pricing for tenant %s (strategy=%s, minMargin=%d%%)",
+			name, s.pricingStrategy, s.minMargin)
+
+		// Create Shopping Graph client adapter (for backward compatibility)
+		sgClient := competitive.NewLegacyShoppingGraphAdapter(s.graphURL)
+
+		// Map strategy string to type
+		var strategy competitive.PricingStrategy
+		switch s.pricingStrategy {
+		case "match":
+			strategy = competitive.StrategyMatchPrice
+		case "beat":
+			strategy = competitive.StrategyBeatPrice
+		case "auto":
+			strategy = competitive.StrategyAutoDiscount
+		default:
+			strategy = competitive.StrategyBeatPrice
+		}
+
+		// Create pricing agent config
+		config := competitive.Config{
+			Strategy:         strategy,
+			MinMarginPercent: s.minMargin,
+			BeatByPercent:    s.beatByPercent,
+			BeatByMinAmount:  50,
+			CostPricePercent: 60,
+			TimeoutMs:        500,
+			EnableCache:      true,
+			CacheTTLSeconds:  10,
+		}
+
+		// Create competitive pricing agent
+		pricingAgent := competitive.NewCompetitivePricingAgent(
+			nil,      // No base discount lookup for arena merchants
+			sgClient, // Shopping Graph client adapter
+			id,       // Merchant ID (to exclude self from comparisons)
+			config,
+		)
+
+		// Inject into merchant
+		m.pricingAgent = pricingAgent
+
+		log.Printf("Competitive pricing agent configured for %s", name)
+	}
+
 	m.onActivity = func(eventType, summary string) {
 		s.forwardToObsHub(name, eventType, summary, nil)
 		// Only forward actionable events to presenter (skip catalog polling noise)
@@ -109,6 +158,11 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	})
 	mux.HandleFunc("PUT /api/config", func(w http.ResponseWriter, r *http.Request) {
 		handlePutConfig(w, r, m.config, s.costPrice, s, id, m)
+	})
+
+	// Competitive Intelligence API
+	mux.HandleFunc("GET /api/competitive-intel", func(w http.ResponseWriter, r *http.Request) {
+		handleCompetitiveIntel(w, r, m, s.graphURL, id, s.costPrice)
 	})
 
 	// SSE notifications
