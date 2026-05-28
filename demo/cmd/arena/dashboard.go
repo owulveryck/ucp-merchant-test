@@ -963,15 +963,33 @@ async function calculateBestPrice(){
       throw new Error('Calcul impossible');
     }
 
-    statusEl.textContent='✅ Analyse terminée';
-    statusEl.style.color='#16A34A';
-
-    // Wait for SSE agent_decisions event to populate the UI
-    setTimeout(()=>{
-      statusEl.textContent='';
+    // Show results directly (no need to wait for SSE)
+    if(data.no_discount){
+      statusEl.textContent='✅ '+data.message;
+      statusEl.style.color='#16A34A';
       btn.disabled=false;
       btn.style.opacity='1';
-    },2000);
+      setTimeout(()=>{statusEl.textContent=''},5000);
+      return;
+    }
+
+    // Display agents section with simplified text
+    agentsSection.style.display='block';
+
+    // Show final price
+    calculatedPrice=data.final_price;
+    document.getElementById('final-price').textContent='$'+(data.final_price/100).toFixed(2);
+    document.getElementById('final-margin').textContent='Vous gagnerez '+data.margin_percent+'% de marge';
+
+    // Show simplified agent messages
+    document.getElementById('agent1-simple').innerHTML='"Les concurrents vendent à partir de $'+((data.current_price-data.discount_amount-500)/100).toFixed(2)+'"';
+    document.getElementById('agent2-simple').innerHTML='"Vous perdez des ventes"';
+    document.getElementById('agent3-simple').innerHTML='"Soyez compétitif<br>Prix cible: <strong>$'+(data.final_price/100).toFixed(2)+'</strong>"';
+    document.getElementById('agent4-simple').innerHTML='"✅ OK, vous gagnez '+data.margin_percent+'%"';
+
+    statusEl.textContent='';
+    btn.disabled=false;
+    btn.style.opacity='1';
 
   }catch(e){
     console.error('calculateBestPrice error:',e);

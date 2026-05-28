@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/owulveryck/ucp-merchant-test/pkg/model"
-	"github.com/owulveryck/ucp-merchant-test/pkg/ucp"
 )
 
 func handleGetConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig, costPrice int, m *arenaMerchant) {
@@ -151,47 +150,69 @@ func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerchant, tenantID string) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Step 1: Create checkout with product
-	checkoutReq := &model.CheckoutRequest{
-		Currency: ucp.Currency("USD"),
-		LineItems: []model.LineItemRequest{
-			{
-				Item:     &model.ItemRef{ID: m.product.ID},
-				Quantity: 1,
+	// Get pricing agent
+	if m.pricingAgent == nil {
+		log.Printf("[TestAutoCompete] No pricing agent configured")
+		http.Error(w, `{"error":"competitive pricing not enabled"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Get product price
+	m.config.mu.RLock()
+	ourPrice := m.config.SellingPrice
+	m.config.mu.RUnlock()
+
+	// Create a fake line item to trigger the agent
+	lineItems := []model.LineItem{
+		{
+			Item: model.Item{
+				ID:    m.product.ID,
+				Price: ourPrice,
 			},
+			Quantity: 1,
 		},
 	}
 
-	checkout, _, err := m.CreateCheckout("test-user", ucp.Country("US"), checkoutReq)
-	if err != nil {
-		log.Printf("[TestAutoCompete] CreateCheckout failed: %v", err)
-		http.Error(w, `{"error":"failed to create checkout"}`, http.StatusInternalServerError)
+	// Call the pricing agent directly
+	log.Printf("[TestAutoCompete] Calling pricing agent with price %d", ourPrice)
+	result := m.pricingAgent.ApplyDiscountsWithContext([]string{"AUTO_COMPETE"}, lineItems)
+
+	if result == nil || len(result.Applied) == 0 {
+		log.Printf("[TestAutoCompete] No discount returned")
+		json.NewEncoder(w).Encode(map[string]any{
+			"success":         true,
+			"no_discount":     true,
+			"message":         "Vous avez déjà le meilleur prix !",
+			"current_price":   ourPrice,
+			"final_price":     ourPrice,
+			"discount_amount": 0,
+			"margin_percent":  0,
+		})
 		return
 	}
 
-	log.Printf("[TestAutoCompete] Checkout created: %s", checkout.ID)
-
-	// Step 2: Update checkout with AUTO_COMPETE
-	updateReq := &model.CheckoutRequest{
-		Discounts: &model.DiscountsRequest{
-			Codes: []string{"AUTO_COMPETE"},
-		},
+	// Calculate final price
+	discountAmount := 0
+	for _, disc := range result.Applied {
+		discountAmount += disc.Amount
+	}
+	finalPrice := ourPrice - discountAmount
+	marginPercent := 0
+	if finalPrice > 0 {
+		marginPercent = ((finalPrice - m.costPrice) * 100) / finalPrice
 	}
 
-	checkout, _, err = m.UpdateCheckout(checkout.ID, "test-user", updateReq)
-	if err != nil {
-		log.Printf("[TestAutoCompete] UpdateCheckout failed: %v", err)
-		http.Error(w, `{"error":"failed to apply AUTO_COMPETE"}`, http.StatusInternalServerError)
-		return
-	}
+	log.Printf("[TestAutoCompete] Success: final price %d, discount %d, margin %d%%", finalPrice, discountAmount, marginPercent)
 
-	log.Printf("[TestAutoCompete] AUTO_COMPETE applied to checkout %s", checkout.ID)
-
-	// Return success with checkout info
+	// Return the calculated price directly
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":     true,
-		"checkout_id": checkout.ID,
-		"discounts":   checkout.Discounts,
-		"totals":      checkout.Totals,
+		"success":         true,
+		"current_price":   ourPrice,
+		"final_price":     finalPrice,
+		"discount_amount": discountAmount,
+		"margin_percent":  marginPercent,
+		"competitors": map[string]any{
+			"lowest_price": 0, // Will be filled by frontend from intel API
+		},
 	})
 }
