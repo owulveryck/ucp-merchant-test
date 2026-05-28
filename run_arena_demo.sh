@@ -43,7 +43,7 @@ echo -e "${GREEN}✓ Shopping Graph démarré (PID: $SHOPPING_GRAPH_PID)${NC}"
 # Lancer Arena
 echo -e "${YELLOW}🚀 Lancement Arena (port 8080)...${NC}"
 cd demo
-go run ./cmd/arena --port 8080 > ../logs/arena.log 2>&1 &
+go run ./cmd/arena --port 8080 --graph-url http://localhost:9000 --competitive-pricing --min-margin 10 --cost-price 5000 > ../logs/arena.log 2>&1 &
 ARENA_PID=$!
 cd ..
 sleep 3

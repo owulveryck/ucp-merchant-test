@@ -58,7 +58,7 @@ echo -e "${GREEN}✓ Obs Hub démarré (PID: $OBS_PID)${NC}"
 
 # 3. Arena
 echo -e "${YELLOW}[3/4]${NC} Lancement Arena (port 8888)..."
-go run ./demo/cmd/arena --port 8888 --graph-url http://localhost:9000 --obs-url http://localhost:9002 --cost-price 5000 > logs/arena.log 2>&1 &
+go run ./demo/cmd/arena --port 8888 --graph-url http://localhost:9000 --obs-url http://localhost:9002 --cost-price 5000 --competitive-pricing --min-margin 10 > logs/arena.log 2>&1 &
 ARENA_PID=$!
 sleep 3
 
