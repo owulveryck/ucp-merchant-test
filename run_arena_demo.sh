@@ -77,6 +77,9 @@ echo ""
 echo "$SHOPPING_GRAPH_PID" > .pids
 echo "$ARENA_PID" >> .pids
 
+# Initialiser TAIL_PID pour cleanup
+TAIL_PID=""
+
 echo -e "${GREEN}✅ Tous les services sont lancés !${NC}"
 echo ""
 echo "┌──────────────────────────────────────────────────────────┐"
@@ -116,10 +119,14 @@ cleanup() {
     if [ -n "$ARENA_PID" ]; then
         kill $ARENA_PID 2>/dev/null || true
     fi
+    if [ -n "$TAIL_PID" ]; then
+        kill $TAIL_PID 2>/dev/null || true
+    fi
 
     # Forcer si nécessaire
     pkill -f "shopping-graph" 2>/dev/null || true
     pkill -f "cmd/arena" 2>/dev/null || true
+    pkill -f "tail" 2>/dev/null || true
 
     rm -f .pids
 
@@ -138,4 +145,17 @@ trap cleanup SIGINT SIGTERM
 # Attendre indéfiniment (les services tournent en arrière-plan)
 echo -e "${YELLOW}Appuyez sur Ctrl+C pour arrêter tous les services${NC}"
 echo ""
+echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}   📊 LOGS DES AGENTS MULTI-AGENTS EN TEMPS RÉEL${NC}"
+echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+echo ""
+
+# Attendre que le fichier de log existe
+sleep 2
+
+# Suivre les logs en temps réel, filtrer pour les agents
+tail -f logs/arena.log 2>/dev/null | grep --line-buffered -E "Agent|Orchestrator|Strategy|Intelligence|Margin|Validator|DiscountAdapter" &
+TAIL_PID=$!
+
+# Attendre
 wait

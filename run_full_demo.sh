@@ -88,6 +88,9 @@ echo "$OBS_PID" >> .pids
 echo "$ARENA_PID" >> .pids
 echo "$CLIENT_PID" >> .pids
 
+# Initialiser TAIL_PID pour cleanup
+TAIL_PID=""
+
 echo ""
 echo -e "${GREEN}✅ Tous les services sont lancés !${NC}"
 echo ""
@@ -137,8 +140,8 @@ chmod +x acheter.sh
 cleanup() {
     echo ""
     echo -e "${YELLOW}🛑 Arrêt de tous les services...${NC}"
-    kill $SHOPPING_PID $OBS_PID $ARENA_PID $CLIENT_PID 2>/dev/null || true
-    killall shopping-graph arena obs-hub client 2>/dev/null || true
+    kill $SHOPPING_PID $OBS_PID $ARENA_PID $CLIENT_PID $TAIL_PID 2>/dev/null || true
+    killall shopping-graph arena obs-hub client tail 2>/dev/null || true
     rm -f .pids
     echo -e "${GREEN}✅ Tous les services sont arrêtés${NC}"
     exit 0
@@ -148,4 +151,17 @@ trap cleanup SIGINT SIGTERM
 
 echo -e "${YELLOW}Appuyez sur Ctrl+C pour arrêter tous les services${NC}"
 echo ""
+echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}   📊 LOGS DES AGENTS MULTI-AGENTS EN TEMPS RÉEL${NC}"
+echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+echo ""
+
+# Attendre que le fichier de log existe
+sleep 2
+
+# Suivre les logs en temps réel, filtrer pour les agents
+tail -f logs/arena.log 2>/dev/null | grep --line-buffered -E "Agent|Orchestrator|Strategy|Intelligence|Margin|Validator|DiscountAdapter" &
+TAIL_PID=$!
+
+# Attendre
 wait

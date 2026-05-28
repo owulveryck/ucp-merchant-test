@@ -15,6 +15,9 @@ import (
 )
 
 func main() {
+	// Enable file:line in logs for clickable links (Command+Click)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	port := flag.Int("port", 9002, "port to listen on")
 	graphURL := flag.String("graph-url", "http://localhost:9000", "shopping graph base URL")
 	arenaURL := flag.String("arena-url", "http://localhost:8888", "arena server base URL")

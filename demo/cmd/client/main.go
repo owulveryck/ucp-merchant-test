@@ -19,6 +19,9 @@ import (
 )
 
 func main() {
+	// Enable file:line in logs for clickable links (Command+Click)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	project := flag.String("project", os.Getenv("GOOGLE_CLOUD_PROJECT"), "GCP project for Vertex AI")
 	location := flag.String("location", envOrDefault("GOOGLE_CLOUD_LOCATION", "us-central1"), "Vertex AI location")
 	model := flag.String("model", "gemini-2.5-flash", "Gemini model name")
