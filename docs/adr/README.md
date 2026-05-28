@@ -22,6 +22,7 @@ Les ADR capturent le **contexte**, les **alternatives considérées**, et les **
 |---|-------|--------|------|------|
 | 001 | Architecture Multi-Agent Shopping | ✅ Accepté | 2026-03-11 | [Voir ADR →](001-multi-agent-shopping-architecture.md) |
 | 002 | Architecture Multi-Transport (REST, MCP, A2A) | ✅ Accepté | 2026-03-10-11 | [Voir ADR →](002-multi-transport-architecture.md) |
+| 003 | Agent de Pricing Dynamique Compétitif | ✅ Accepté | 2026-03-30 | [Voir ADR →](003-competitive-pricing-agent.md) |
 
 ### Tableau Détaillé
 
@@ -29,6 +30,7 @@ Les ADR capturent le **contexte**, les **alternatives considérées**, et les **
 |---|-------|------------------------|--------------------------|----------------|
 | **[001](001-multi-agent-shopping-architecture.md)** | Architecture Multi-Agent Shopping | **Système distribué** avec 4 composants indépendants :<br><br>• Shopping Graph (recherche cross-merchant)<br>• Client Agent (Gemini, 8 tools)<br>• Observability Hub (dashboard SSE)<br>• 3 Merchants (SuperShop, MegaMart, BudgetBuy) | • Démontre l'utilité des protocoles A2A et MCP<br>• Permet la comparaison de prix cross-merchant<br>• Observabilité du raisonnement agent en temps réel<br>• Architecture extensible | • 4 binaires séparés à lancer<br>• Module `demo/` créé avec go.work<br>• Move `internal/` → `pkg/` pour réutilisabilité<br>• Évolutions : Arena mode, Ranking algorithm, Buying modes |
 | **[002](002-multi-transport-architecture.md)** | Architecture Multi-Transport (REST, MCP, A2A) | **3 protocoles simultanés** pour différents clients :<br><br>• **REST** : Web/mobile, tests, debug<br>• **MCP** : Claude Desktop, IDEs, LLM clients<br>• **A2A** : Shopping Graph, Client Agent (agents autonomes) | • **Flexibilité** : Chaque client choisit son protocole<br>• **Zero duplication** : Tous délèguent à `merchant.Merchant`<br>• **Extensibilité** : Pattern établi pour ajouter GraphQL/gRPC<br>• **Conformité** : UCP (REST), MCP, A2A specs respectées | • REST : ~400 LOC (endpoints HTTP)<br>• MCP : ~900 LOC (via mcp-go library)<br>• A2A : ~2400 LOC (client 400 + server 2000)<br>• Tests : 60 UCP + 43 MCP + unit tests A2A<br>• Architecture validée par ajout A2A sans refonte |
+| **[003](003-competitive-pricing-agent.md)** | Agent de Pricing Dynamique Compétitif | **Agent de pricing** qui calcule des discounts dynamiques :<br><br>• Query Shopping Graph pour prix concurrents<br>• 3 stratégies (Match, Beat, Auto)<br>• Validation marge minimale<br>• UI Intelligence Compétitive (dashboard Arena) | • **Compétitivité** : Bat automatiquement les concurrents<br>• **Rentabilité** : Marge minimale garantie (10%)<br>• **Transparence** : UI montre prix concurrents + recommandations<br>• **Intégration** : Injection via `discount.DiscountLookup` | • Agent : ~700 LOC (pkg/merchant/competitive/)<br>• UI : ~180 LOC (arena/competitive_intel.go)<br>• Latence : <1s (cache 10s TTL)<br>• Code spécial : "AUTO_COMPETE"<br>• Cache hit rate : ~85% |
 
 ### Lien entre les ADR
 
