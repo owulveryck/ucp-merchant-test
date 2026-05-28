@@ -108,6 +108,7 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 
 		// Set callback to send agent decisions to dashboard via SSE
 		discountAdapter.SetAgentDecisionsCallback(func(decisions *competitive.AgentDecisions) {
+			log.Printf("[Tenant %s] Agent decisions callback triggered!", name)
 			event := map[string]interface{}{
 				"type": "agent_decisions",
 				"agent1": map[string]interface{}{
@@ -139,7 +140,9 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 				},
 			}
 			data, _ := json.Marshal(event)
+			log.Printf("[Tenant %s] Sending agent_decisions SSE event: %s", name, string(data))
 			notifier.SendRaw(data)
+			log.Printf("[Tenant %s] SSE event sent", name)
 		})
 
 		// Inject into merchant

@@ -83,8 +83,13 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 		result, decisions := a.orchestrator.CalculateDiscountWithTrace(productID, ourPrice, context)
 
 		// Notify dashboard if callback is set
+		log.Printf("[DiscountAdapter] DEBUG: callback=%v, decisions=%v", a.onAgentDecisions != nil, decisions != nil)
 		if a.onAgentDecisions != nil && decisions != nil {
+			log.Printf("[DiscountAdapter] Calling agent decisions callback...")
 			a.onAgentDecisions(decisions)
+			log.Printf("[DiscountAdapter] Callback completed")
+		} else {
+			log.Printf("[DiscountAdapter] Callback NOT called (callback nil=%v, decisions nil=%v)", a.onAgentDecisions == nil, decisions == nil)
 		}
 
 		if result.Approved && !result.Rejected {
