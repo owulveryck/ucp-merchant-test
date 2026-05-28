@@ -56,15 +56,19 @@ type CompetitorPrice struct {
 
 // SearchResult represents a product search result from the Shopping Graph.
 type SearchResult struct {
-	Rank          int      // Search ranking position
-	ProductID     string   // Product identifier
-	Title         string   // Product title/name
-	MerchantID    string   // Merchant offering this product
-	MerchantName  string   // Merchant display name
-	Price         int      // Price in minor currency units
-	InStock       bool     // Availability status
-	DiscountHints []string // Available discount codes
-	Sponsored     bool     // True if result was promoted via CPC bidding
+	Rank          int      `json:"rank"`           // Search ranking position
+	ProductID     string   `json:"product_id"`     // Product identifier
+	Title         string   `json:"title"`          // Product title/name
+	MerchantID    string   `json:"merchant_id"`    // Merchant offering this product
+	MerchantName  string   `json:"merchant_name"`  // Merchant display name
+	MerchantURL   string   `json:"merchant_url"`   // Merchant endpoint URL
+	Price         int      `json:"price"`          // Price in minor currency units
+	PriceDisplay  string   `json:"price_display"`  // Formatted price string
+	InStock       bool     `json:"in_stock"`       // Availability status
+	DiscountHints []string `json:"discount_hints"` // Available discount codes
+	Sponsored     bool     `json:"sponsored"`      // True if result was promoted via CPC bidding
+	ActualCPC     int      `json:"actual_cpc"`     // Actual cost-per-click paid
+	QualityScore  float64  `json:"quality_score"`  // Ad quality score
 }
 
 // DiscountCalculation represents the result of a competitive pricing calculation.
