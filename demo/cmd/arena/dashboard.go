@@ -233,6 +233,15 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
     <div class="funnel-rate" id="f-rate2"></div>
   </div>
 
+  <!-- Test AUTO_COMPETE Button -->
+  <div style="margin-bottom:.6rem">
+    <button onclick="testAutoCompete()" style="width:100%%;padding:.8rem;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;gap:.5rem">
+      <span style="font-size:1.2rem">🤖</span>
+      <span>Tester AUTO_COMPETE</span>
+    </button>
+    <div id="test-status" style="text-align:center;font-size:.85rem;color:#666;margin-top:.4rem;min-height:1.2rem"></div>
+  </div>
+
   <!-- Competitive Intelligence -->
   <div class="promo-section-title">🎯 Intelligence Compétitive</div>
   <div id="competitive-intel" style="background:#FFFBEB;border:2px solid#D97706;border-radius:8px;padding:.6rem;margin-bottom:.6rem">
@@ -940,6 +949,85 @@ loadConfig=async function(){
 
 // Refresh competitive intel every 10 seconds
 setInterval(loadCompetitiveIntel,10000);
+
+// --- Test AUTO_COMPETE ---
+async function testAutoCompete(){
+  const statusEl=document.getElementById('test-status');
+  const btn=event.target.closest('button');
+
+  btn.disabled=true;
+  btn.style.opacity='0.6';
+  statusEl.textContent='Création du checkout...';
+  statusEl.style.color='#3B82F6';
+
+  try{
+    // Step 1: Create checkout with product
+    const checkoutResp=await fetch('/'+TID+'/a2a',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        jsonrpc:'2.0',
+        id:1,
+        method:'checkout/create',
+        params:{
+          line_items:[{item_id:'casque_audio',quantity:1}]
+        }
+      })
+    });
+    const checkoutData=await checkoutResp.json();
+
+    if(checkoutData.error){
+      throw new Error(checkoutData.error.message||'Checkout creation failed');
+    }
+
+    const checkoutId=checkoutData.result?.checkout_id;
+    if(!checkoutId){
+      throw new Error('No checkout ID returned');
+    }
+
+    statusEl.textContent='Application AUTO_COMPETE...';
+
+    // Step 2: Update checkout with AUTO_COMPETE code
+    const updateResp=await fetch('/'+TID+'/a2a',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        jsonrpc:'2.0',
+        id:2,
+        method:'checkout/update',
+        params:{
+          checkout_id:checkoutId,
+          discount_codes:['AUTO_COMPETE']
+        }
+      })
+    });
+    const updateData=await updateResp.json();
+
+    if(updateData.error){
+      throw new Error(updateData.error.message||'Discount application failed');
+    }
+
+    statusEl.textContent='✅ AUTO_COMPETE appliqué ! Regardez ci-dessous 👇';
+    statusEl.style.color='#16A34A';
+
+    // Auto-clear status after 5 seconds
+    setTimeout(()=>{
+      statusEl.textContent='';
+      btn.disabled=false;
+      btn.style.opacity='1';
+    },5000);
+
+  }catch(e){
+    console.error('testAutoCompete error:',e);
+    statusEl.textContent='❌ Erreur: '+e.message;
+    statusEl.style.color='#DC2626';
+    setTimeout(()=>{
+      statusEl.textContent='';
+      btn.disabled=false;
+      btn.style.opacity='1';
+    },3000);
+  }
+}
 
 // --- Leave arena ---
 let hasLeft=false;
