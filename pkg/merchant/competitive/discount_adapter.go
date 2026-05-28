@@ -16,6 +16,7 @@ type DiscountAdapter struct {
 	orchestrator     *Orchestrator
 	config           models.BusinessConfig
 	onAgentDecisions func(*AgentDecisions) // Callback to notify of agent decisions
+	lastDecisions    *AgentDecisions       // Last agent decisions for retrieval
 }
 
 // NewDiscountAdapter creates a new discount adapter.
@@ -82,6 +83,9 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 		// Orchestrator calculates the discount (with trace for dashboard)
 		result, decisions := a.orchestrator.CalculateDiscountWithTrace(productID, ourPrice, context)
 
+		// Store decisions for later retrieval
+		a.lastDecisions = decisions
+
 		// Notify dashboard if callback is set
 		log.Printf("[DiscountAdapter] DEBUG: callback=%v, decisions=%v", a.onAgentDecisions != nil, decisions != nil)
 		if a.onAgentDecisions != nil && decisions != nil {
@@ -141,4 +145,10 @@ func (a *DiscountAdapter) ApplyDiscountsWithContext(
 	lineItems []ucpmodel.LineItem,
 ) *ucpmodel.Discounts {
 	return a.ApplyCompetitiveDiscounts(codes, lineItems)
+}
+
+// GetLastDecisions returns the most recent agent decisions.
+// Returns nil if no pricing calculation has been performed yet.
+func (a *DiscountAdapter) GetLastDecisions() *AgentDecisions {
+	return a.lastDecisions
 }

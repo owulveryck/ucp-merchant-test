@@ -967,6 +967,18 @@ async function calculateBestPrice(){
     if(data.no_discount){
       statusEl.textContent='✅ '+data.message;
       statusEl.style.color='#16A34A';
+
+      // Still show agents section even if no discount
+      if(data.reasoning){
+        agentsSection.style.display='block';
+        document.getElementById('agent1-simple').innerHTML='"'+data.reasoning.agent1+'"';
+        document.getElementById('agent2-simple').innerHTML='"'+data.reasoning.agent2+'"';
+        document.getElementById('agent3-simple').innerHTML='"'+data.reasoning.agent3+'"';
+        document.getElementById('agent4-simple').innerHTML='"'+data.reasoning.agent4+'"';
+        document.getElementById('final-price').textContent='$'+(data.current_price/100).toFixed(2);
+        document.getElementById('final-margin').textContent='Prix optimal maintenu';
+      }
+
       btn.disabled=false;
       btn.style.opacity='1';
       setTimeout(()=>{statusEl.textContent=''},5000);
@@ -981,11 +993,19 @@ async function calculateBestPrice(){
     document.getElementById('final-price').textContent='$'+(data.final_price/100).toFixed(2);
     document.getElementById('final-margin').textContent='Vous gagnerez '+data.margin_percent+'% de marge';
 
-    // Show simplified agent messages
-    document.getElementById('agent1-simple').innerHTML='"Les concurrents vendent à partir de $'+((data.current_price-data.discount_amount-500)/100).toFixed(2)+'"';
-    document.getElementById('agent2-simple').innerHTML='"Vous perdez des ventes"';
-    document.getElementById('agent3-simple').innerHTML='"Soyez compétitif<br>Prix cible: <strong>$'+(data.final_price/100).toFixed(2)+'</strong>"';
-    document.getElementById('agent4-simple').innerHTML='"✅ OK, vous gagnez '+data.margin_percent+'%"';
+    // Show agent reasoning from API response
+    if(data.reasoning){
+      document.getElementById('agent1-simple').innerHTML='"'+data.reasoning.agent1+'"';
+      document.getElementById('agent2-simple').innerHTML='"'+data.reasoning.agent2+'"';
+      document.getElementById('agent3-simple').innerHTML='"'+data.reasoning.agent3+'"';
+      document.getElementById('agent4-simple').innerHTML='"'+data.reasoning.agent4+'"';
+    }else{
+      // Fallback if reasoning not provided
+      document.getElementById('agent1-simple').innerHTML='"Analyse terminée"';
+      document.getElementById('agent2-simple').innerHTML='"Prix analysé"';
+      document.getElementById('agent3-simple').innerHTML='"Prix cible: <strong>$'+(data.final_price/100).toFixed(2)+'</strong>"';
+      document.getElementById('agent4-simple').innerHTML='"✅ OK, marge '+data.margin_percent+'%"';
+    }
 
     statusEl.textContent='';
     btn.disabled=false;

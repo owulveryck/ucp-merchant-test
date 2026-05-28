@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive"
 	"github.com/owulveryck/ucp-merchant-test/pkg/model"
 )
 
@@ -177,8 +179,30 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 	log.Printf("[TestAutoCompete] Calling pricing agent with price %d", ourPrice)
 	result := m.pricingAgent.ApplyDiscountsWithContext([]string{"AUTO_COMPETE"}, lineItems)
 
+	// Get agent decisions (type assert to DiscountAdapter)
+	var decisions *competitive.AgentDecisions
+	if adapter, ok := m.pricingAgent.(*competitive.DiscountAdapter); ok {
+		decisions = adapter.GetLastDecisions()
+	}
+
 	if result == nil || len(result.Applied) == 0 {
 		log.Printf("[TestAutoCompete] No discount returned")
+
+		// Format "no discount" messages
+		agent1Msg := "Aucun concurrent trouvé"
+		agent2Msg := "Position inconnue"
+		agent3Msg := "Prix actuel optimal"
+		agent4Msg := "✅ Prix maintenu"
+
+		if decisions != nil {
+			intel := decisions.Intel
+			agent1Msg = fmt.Sprintf("Rang %d/%d - Prix le plus bas: $%.2f",
+				intel.OurRank, intel.TotalCount, float64(intel.LowestPrice)/100)
+			agent2Msg = fmt.Sprintf("Position: %s", decisions.Insight.Position)
+			agent3Msg = "Vous avez déjà le meilleur prix !"
+			agent4Msg = "✅ Aucun changement nécessaire"
+		}
+
 		json.NewEncoder(w).Encode(map[string]any{
 			"success":         true,
 			"no_discount":     true,
@@ -187,6 +211,12 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 			"final_price":     ourPrice,
 			"discount_amount": 0,
 			"margin_percent":  0,
+			"reasoning": map[string]string{
+				"agent1": agent1Msg,
+				"agent2": agent2Msg,
+				"agent3": agent3Msg,
+				"agent4": agent4Msg,
+			},
 		})
 		return
 	}
@@ -204,15 +234,58 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 
 	log.Printf("[TestAutoCompete] Success: final price %d, discount %d, margin %d%%", finalPrice, discountAmount, marginPercent)
 
-	// Return the calculated price directly
+	// Format agent decisions into simple French messages
+	agent1Msg := "Analyse en cours..."
+	agent2Msg := "Analyse en cours..."
+	agent3Msg := "Calcul du prix..."
+	agent4Msg := "Validation..."
+
+	if decisions != nil {
+		intel := decisions.Intel
+		insight := decisions.Insight
+		rec := decisions.Recommendation
+		val := decisions.Validation
+
+		// Agent 1: Price Intelligence
+		competitorCount := intel.TotalCount - 1 // Exclude ourselves
+		agent1Msg = fmt.Sprintf("Trouvé %d concurrent(s). Le moins cher: $%.2f (rang %d/%d)",
+			competitorCount, float64(intel.LowestPrice)/100, intel.OurRank, intel.TotalCount)
+
+		// Agent 2: Market Analysis
+		positionMsg := "position moyenne"
+		if insight.Position == "expensive" {
+			positionMsg = "trop cher"
+		} else if insight.Position == "cheap" {
+			positionMsg = "bon prix"
+		}
+		agent2Msg = fmt.Sprintf("Vous êtes %s. %s", positionMsg, insight.Reasoning)
+
+		// Agent 3: Strategy Recommender
+		agent3Msg = fmt.Sprintf("Stratégie: %s<br>Prix cible: <strong>$%.2f</strong><br>%s",
+			rec.Strategy, float64(rec.TargetPrice)/100, rec.Reasoning)
+
+		// Agent 4: Margin Validator
+		if val.Approved && !val.Rejected {
+			agent4Msg = fmt.Sprintf("✅ Approuvé avec %d%% de marge", val.Margin)
+		} else if val.Rejected {
+			agent4Msg = fmt.Sprintf("❌ Rejeté: %s", val.RejectionReason)
+		} else if len(val.Warnings) > 0 {
+			agent4Msg = fmt.Sprintf("⚠️ Ajusté: %s (marge: %d%%)", val.Warnings[0], val.Margin)
+		}
+	}
+
+	// Return the calculated price with agent reasoning
 	json.NewEncoder(w).Encode(map[string]any{
 		"success":         true,
 		"current_price":   ourPrice,
 		"final_price":     finalPrice,
 		"discount_amount": discountAmount,
 		"margin_percent":  marginPercent,
-		"competitors": map[string]any{
-			"lowest_price": 0, // Will be filled by frontend from intel API
+		"reasoning": map[string]string{
+			"agent1": agent1Msg,
+			"agent2": agent2Msg,
+			"agent3": agent3Msg,
+			"agent4": agent4Msg,
 		},
 	})
 }
