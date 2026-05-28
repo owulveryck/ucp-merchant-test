@@ -1,0 +1,119 @@
+package competitive
+
+import (
+	"log"
+
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/models"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/discount"
+	ucpmodel "github.com/owulveryck/ucp-merchant-test/pkg/model"
+)
+
+// DiscountAdapter adapts the Orchestrator to implement discount.DiscountLookup.
+// It handles both static discount codes (via baseData) and dynamic competitive
+// pricing (via orchestrator when code is "AUTO_COMPETE").
+type DiscountAdapter struct {
+	baseData     discount.DiscountLookup
+	orchestrator *Orchestrator
+	config       models.BusinessConfig
+}
+
+// NewDiscountAdapter creates a new discount adapter.
+func NewDiscountAdapter(
+	baseData discount.DiscountLookup,
+	orchestrator *Orchestrator,
+	config models.BusinessConfig,
+) *DiscountAdapter {
+	return &DiscountAdapter{
+		baseData:     baseData,
+		orchestrator: orchestrator,
+		config:       config,
+	}
+}
+
+// FindDiscountByCode implements discount.DiscountLookup.
+func (a *DiscountAdapter) FindDiscountByCode(code string) *discount.Discount {
+	if code == "AUTO_COMPETE" {
+		return &discount.Discount{
+			Code:        "AUTO_COMPETE",
+			Type:        "competitive",
+			Value:       0, // Dynamic, calculated later
+			Description: "Dynamic competitive pricing",
+		}
+	}
+	return a.baseData.FindDiscountByCode(code)
+}
+
+// ApplyCompetitiveDiscounts applies competitive pricing discounts.
+// This is used instead of the standard discount.ApplyDiscounts when AUTO_COMPETE is detected.
+func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
+	codes []string,
+	lineItems []ucpmodel.LineItem,
+) *ucpmodel.Discounts {
+
+	// Check if AUTO_COMPETE is in the codes
+	hasAutoCompete := false
+	for _, code := range codes {
+		if code == "AUTO_COMPETE" {
+			hasAutoCompete = true
+			break
+		}
+	}
+
+	// If no AUTO_COMPETE, delegate to standard discount logic
+	if !hasAutoCompete {
+		req := &ucpmodel.DiscountsRequest{Codes: codes}
+		return discount.ApplyDiscounts(req, lineItems, a.baseData)
+	}
+
+	log.Printf("[DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing")
+
+	// Calculate competitive discount for each line item
+	totalDiscount := 0
+
+	for _, item := range lineItems {
+		// Get product price from line item
+		productID := item.Item.ID
+		ourPrice := item.Item.Price
+
+		// Use configured context
+		context := a.config
+
+		// Orchestrator calculates the discount
+		result := a.orchestrator.CalculateDiscount(productID, ourPrice, context)
+
+		if result.Approved && !result.Rejected {
+			// Apply discount for this item's quantity
+			itemDiscount := result.FinalDiscount * item.Quantity
+			totalDiscount += itemDiscount
+
+			log.Printf("[DiscountAdapter] Product %s: discount $%.2f x %d = $%.2f",
+				productID,
+				float64(result.FinalDiscount)/100,
+				item.Quantity,
+				float64(itemDiscount)/100)
+		}
+	}
+
+	if totalDiscount == 0 {
+		log.Printf("[DiscountAdapter] No competitive discount applied")
+		return nil
+	}
+
+	log.Printf("[DiscountAdapter] Total competitive discount: $%.2f", float64(totalDiscount)/100)
+
+	return &ucpmodel.Discounts{
+		Codes: codes,
+		Applied: []ucpmodel.AppliedDiscount{
+			{
+				Code:   "AUTO_COMPETE",
+				Title:  "Competitive Pricing",
+				Amount: totalDiscount,
+			},
+		},
+	}
+}
+
+// UpdateConfig updates the business configuration.
+func (a *DiscountAdapter) UpdateConfig(config models.BusinessConfig) {
+	a.config = config
+}
