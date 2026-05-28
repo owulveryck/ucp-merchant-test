@@ -12,9 +12,10 @@ import (
 // It handles both static discount codes (via baseData) and dynamic competitive
 // pricing (via orchestrator when code is "AUTO_COMPETE").
 type DiscountAdapter struct {
-	baseData     discount.DiscountLookup
-	orchestrator *Orchestrator
-	config       models.BusinessConfig
+	baseData         discount.DiscountLookup
+	orchestrator     *Orchestrator
+	config           models.BusinessConfig
+	onAgentDecisions func(*AgentDecisions) // Callback to notify of agent decisions
 }
 
 // NewDiscountAdapter creates a new discount adapter.
@@ -78,8 +79,13 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 		// Use configured context
 		context := a.config
 
-		// Orchestrator calculates the discount
-		result := a.orchestrator.CalculateDiscount(productID, ourPrice, context)
+		// Orchestrator calculates the discount (with trace for dashboard)
+		result, decisions := a.orchestrator.CalculateDiscountWithTrace(productID, ourPrice, context)
+
+		// Notify dashboard if callback is set
+		if a.onAgentDecisions != nil && decisions != nil {
+			a.onAgentDecisions(decisions)
+		}
 
 		if result.Approved && !result.Rejected {
 			// Apply discount for this item's quantity
@@ -116,6 +122,11 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 // UpdateConfig updates the business configuration.
 func (a *DiscountAdapter) UpdateConfig(config models.BusinessConfig) {
 	a.config = config
+}
+
+// SetAgentDecisionsCallback sets the callback for agent decisions notifications.
+func (a *DiscountAdapter) SetAgentDecisionsCallback(callback func(*AgentDecisions)) {
+	a.onAgentDecisions = callback
 }
 
 // ApplyDiscountsWithContext is an alias for ApplyCompetitiveDiscounts.

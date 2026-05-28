@@ -1,0 +1,12 @@
+2026/05/28 12:51:21 main.go:43: Arena starting on http://localhost:8888
+2026/05/28 12:51:21 main.go:44: Landing:   http://localhost:8888/
+2026/05/28 14:21:36 tenant.go:263: registered tenant MonMagasin (31b5936f) with shopping graph
+2026/05/28 14:21:36 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/28 14:21:36 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/05/28 14:22:01 tenant.go:263: registered tenant MarchandA (637f7d26) with shopping graph
+2026/05/28 14:22:06 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/28 14:22:06 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/05/28 14:23:20 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/28 14:23:20 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/28 14:23:20 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/05/28 14:23:20 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)

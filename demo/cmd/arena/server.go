@@ -25,19 +25,29 @@ type ArenaServer struct {
 	port        int
 	baseURL     string    // external base URL for public-facing endpoints; empty = localhost
 	presenterN  *Notifier // SSE for presenter dashboard
+
+	// Competitive pricing configuration
+	competitivePricing bool
+	pricingStrategy    string
+	minMargin          int
+	beatByPercent      int
 }
 
 // NewArenaServer creates a new arena server.
-func NewArenaServer(costPrice int, productName, graphURL, obsURL string, port int, baseURL string) *ArenaServer {
+func NewArenaServer(costPrice int, productName, graphURL, obsURL string, port int, baseURL string, competitivePricing bool, pricingStrategy string, minMargin, beatByPercent int) *ArenaServer {
 	return &ArenaServer{
-		tenants:     make(map[string]*Tenant),
-		costPrice:   costPrice,
-		productName: productName,
-		graphURL:    graphURL,
-		obsURL:      obsURL,
-		port:        port,
-		baseURL:     strings.TrimRight(baseURL, "/"),
-		presenterN:  NewNotifier(),
+		tenants:            make(map[string]*Tenant),
+		costPrice:          costPrice,
+		productName:        productName,
+		graphURL:           graphURL,
+		obsURL:             obsURL,
+		port:               port,
+		baseURL:            strings.TrimRight(baseURL, "/"),
+		presenterN:         NewNotifier(),
+		competitivePricing: competitivePricing,
+		pricingStrategy:    pricingStrategy,
+		minMargin:          minMargin,
+		beatByPercent:      beatByPercent,
 	}
 }
 

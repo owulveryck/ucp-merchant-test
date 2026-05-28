@@ -233,6 +233,60 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
     <div class="funnel-rate" id="f-rate2"></div>
   </div>
 
+  <!-- Competitive Intelligence -->
+  <div class="promo-section-title">🎯 Intelligence Compétitive</div>
+  <div id="competitive-intel" style="background:#FFFBEB;border:2px solid#D97706;border-radius:8px;padding:.6rem;margin-bottom:.6rem">
+    <div id="intel-loading" style="text-align:center;color:#999">Chargement...</div>
+    <div id="intel-content" style="display:none">
+      <div id="intel-message" style="font-size:.95rem;margin-bottom:.5rem;font-weight:600"></div>
+      <div id="intel-recommendation" style="display:none;background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.4rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+          <span style="color:#666;font-size:.85rem">Prix suggéré:</span>
+          <span id="intel-rec-price" style="font-size:1.2rem;font-weight:800;color:#D97706"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+          <span style="color:#666;font-size:.85rem">Économie:</span>
+          <span id="intel-savings" style="font-size:.95rem;font-weight:700;color:#16A34A"></span>
+        </div>
+        <button id="apply-rec-btn" onclick="applyRecommendedPrice()" style="width:100%%;padding:.5rem;background:#D97706;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.95rem">✨ Appliquer ce prix</button>
+      </div>
+      <div id="intel-competitors" style="font-size:.85rem;color:#666"></div>
+    </div>
+  </div>
+
+  <!-- Agent Decisions (Multi-Agent Reasoning) -->
+  <div id="agent-decisions-section" style="display:none;margin-bottom:.6rem">
+    <div class="promo-section-title">🤖 Réflexion des Agents</div>
+    <div style="background:#F0F9FF;border:2px solid#3B82F6;border-radius:8px;padding:.6rem">
+
+      <!-- Agent 1: Price Intelligence -->
+      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.4rem">
+        <div style="font-size:.8rem;font-weight:700;color:#3B82F6;margin-bottom:.2rem">🔍 Agent 1: Intelligence Prix</div>
+        <div id="agent1-info" style="font-size:.75rem;color:#666"></div>
+      </div>
+
+      <!-- Agent 2: Market Analysis -->
+      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.4rem">
+        <div style="font-size:.8rem;font-weight:700;color:#8B5CF6;margin-bottom:.2rem">📊 Agent 2: Analyse Marché</div>
+        <div id="agent2-info" style="font-size:.75rem;color:#666"></div>
+      </div>
+
+      <!-- Agent 3: Strategy Recommender -->
+      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.4rem">
+        <div style="font-size:.8rem;font-weight:700;color:#F97316;margin-bottom:.2rem">💡 Agent 3: Stratégie</div>
+        <div id="agent3-info" style="font-size:.75rem;color:#666"></div>
+        <div id="agent3-reasoning" style="font-size:.7rem;color:#999;margin-top:.2rem;font-style:italic"></div>
+      </div>
+
+      <!-- Agent 4: Margin Validator -->
+      <div style="background:#FFF;border-radius:6px;padding:.4rem">
+        <div style="font-size:.8rem;font-weight:700;color:#16A34A;margin-bottom:.2rem">✓ Agent 4: Validation Marge</div>
+        <div id="agent4-info" style="font-size:.75rem;color:#666"></div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Promos -->
   <div class="promo-section-title">Codes promo</div>
   <div id="discounts"></div>
@@ -691,7 +745,49 @@ function showSaleCelebration(saleTotal,orderID,summary){
 function handleSSEMessage(e){
   try{
     const d=JSON.parse(e.data);
-    if(d.type==='sale'){
+    if(d.type==='agent_decisions'){
+      // Display agent reasoning
+      const section=document.getElementById('agent-decisions-section');
+      section.style.display='block';
+
+      // Agent 1: Price Intelligence
+      const a1=d.agent1||{};
+      document.getElementById('agent1-info').innerHTML=
+        'Rang: <strong>'+a1.rank+'/'+a1.total+'</strong><br>'+
+        'Prix le plus bas: <strong>$'+(a1.lowest_price/100).toFixed(2)+'</strong> ('+a1.lowest_by+')<br>'+
+        'Prix moyen: <strong>$'+(a1.avg_price/100).toFixed(2)+'</strong>';
+
+      // Agent 2: Market Analysis
+      const a2=d.agent2||{};
+      document.getElementById('agent2-info').innerHTML=
+        'Position: <strong>'+a2.position+'</strong><br>'+
+        'Tendance: <strong>'+a2.trend+'</strong><br>'+
+        'Opportunité: <strong>'+a2.opportunity+'</strong><br>'+
+        '<em style="font-size:.7rem">'+a2.reasoning+'</em>';
+
+      // Agent 3: Strategy Recommender
+      const a3=d.agent3||{};
+      document.getElementById('agent3-info').innerHTML=
+        'Stratégie: <strong>'+a3.strategy+'</strong><br>'+
+        'Prix cible: <strong>$'+(a3.target/100).toFixed(2)+'</strong><br>'+
+        'Discount: <strong>$'+(a3.discount/100).toFixed(2)+'</strong><br>'+
+        'Confiance: <strong>'+Math.round(a3.confidence)+'%%</strong>';
+      const reasoningHTML=(a3.reasoning||[]).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent3-reasoning').innerHTML=reasoningHTML;
+
+      // Agent 4: Margin Validator
+      const a4=d.agent4||{};
+      const status=a4.rejected?'❌ REJETÉ':a4.approved?'✅ APPROUVÉ':'⚠️  AJUSTÉ';
+      const statusColor=a4.rejected?'#DC2626':a4.approved?'#16A34A':'#F97316';
+      document.getElementById('agent4-info').innerHTML=
+        '<span style="color:'+statusColor+';font-weight:700">'+status+'</span><br>'+
+        'Prix final: <strong>$'+(a4.final/100).toFixed(2)+'</strong><br>'+
+        'Marge: <strong>'+a4.margin+'%%</strong>'+(a4.warnings&&a4.warnings.length>0?'<br><em style="font-size:.7rem;color:#F97316">'+a4.warnings.join(', ')+'</em>':'');
+
+      // Auto-hide after 15 seconds
+      setTimeout(()=>{section.style.display='none'},15000);
+
+    } else if(d.type==='sale'){
       showSaleCelebration(d.total,d.order_id,d.summary);
       lastCelebratedSales=(config.sales_count||0)+1;
       loadConfig();
@@ -778,6 +874,72 @@ setInterval(()=>{
     }
   });
 },3000);
+
+// --- Competitive Intelligence ---
+let recommendedPrice=null;
+async function loadCompetitiveIntel(){
+  try{
+    const r=await fetch(API+'/competitive-intel');
+    const intel=await r.json();
+    document.getElementById('intel-loading').style.display='none';
+    document.getElementById('intel-content').style.display='block';
+
+    const msgEl=document.getElementById('intel-message');
+    const recEl=document.getElementById('intel-recommendation');
+    const compEl=document.getElementById('intel-competitors');
+
+    // Display message
+    msgEl.textContent=intel.message||'';
+
+    // Display recommendation if needed
+    if(intel.recommended_price&&intel.recommended_price<intel.our_price&&!intel.would_win){
+      recommendedPrice=intel.recommended_price;
+      recEl.style.display='block';
+      document.getElementById('intel-rec-price').textContent=intel.recommended_price_display||'';
+      const savings=intel.our_price-intel.recommended_price;
+      document.getElementById('intel-savings').textContent='-$'+(savings/100).toFixed(2)+' (marge: '+intel.margin_percent+'%%)';
+    }else{
+      recEl.style.display='none';
+    }
+
+    // Display competitors table
+    if(intel.competitors&&intel.competitors.length>0){
+      let html='<div style="margin-top:.4rem;font-size:.85rem"><strong>Concurrents:</strong></div>';
+      intel.competitors.slice(0,5).forEach(c=>{
+        const badge=c.is_us?'<span style="background:#E5004C;color:#fff;padding:.1rem .3rem;border-radius:4px;font-size:.7rem;margin-left:.3rem">VOUS</span>':'';
+        html+='<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid #F0F0F0">';
+        html+='<span>'+c.merchant_name+badge+'</span>';
+        html+='<span style="font-weight:700">'+c.price_display+'</span>';
+        html+='</div>';
+      });
+      compEl.innerHTML=html;
+    }else{
+      compEl.innerHTML='<div style="margin-top:.4rem;color:#999">Aucun concurrent trouvé</div>';
+    }
+  }catch(e){
+    console.error('Competitive intel error:',e);
+    document.getElementById('intel-loading').textContent='Erreur de chargement';
+  }
+}
+
+function applyRecommendedPrice(){
+  if(!recommendedPrice)return;
+  config.selling_price=recommendedPrice;
+  document.getElementById('price-slider').value=recommendedPrice;
+  document.getElementById('price-display').textContent='$'+(recommendedPrice/100).toFixed(2);
+  schedSave();
+  setTimeout(loadCompetitiveIntel,500); // Reload after save
+}
+
+// Load competitive intel on config load
+const origLoadConfig=loadConfig;
+loadConfig=async function(){
+  await origLoadConfig();
+  loadCompetitiveIntel();
+}
+
+// Refresh competitive intel every 10 seconds
+setInterval(loadCompetitiveIntel,10000);
 
 // --- Leave arena ---
 let hasLeft=false;

@@ -29,6 +29,9 @@ type simpleMerchant struct {
 	catalog  *catalogStore
 	shopData shopDataSource
 
+	// Discount lookup (injectable for competitive pricing)
+	discountLookup discount.DiscountLookup
+
 	// In-memory state
 	checkouts   map[string]*model.Checkout
 	orders      map[string]*model.Order
@@ -55,10 +58,20 @@ type simpleMerchant struct {
 // newSimpleMerchant creates a new simpleMerchant with the given catalog and
 // data source. The listenPort and scheme functions are used for generating
 // resource URLs in checkout and order responses.
-func newSimpleMerchant(cat *catalogStore, data shopDataSource, listenPort func() int, schemeFn func() string) *simpleMerchant {
+//
+// The optional discountLookup parameter allows injection of custom discount
+// logic (e.g., competitive pricing agent). If nil, defaults to using data
+// as the discount lookup.
+func newSimpleMerchant(cat *catalogStore, data shopDataSource, discountLookup discount.DiscountLookup, listenPort func() int, schemeFn func() string) *simpleMerchant {
+	// Default to shopData if no custom discount lookup provided
+	if discountLookup == nil {
+		discountLookup = data
+	}
+
 	return &simpleMerchant{
 		catalog:              cat,
 		shopData:             data,
+		discountLookup:       discountLookup,
 		checkouts:            map[string]*model.Checkout{},
 		orders:               map[string]*model.Order{},
 		carts:                map[string]*model.Cart{},
@@ -289,7 +302,7 @@ func (m *simpleMerchant) UpdateCheckout(id, ownerID string, req *model.CheckoutR
 	// Handle discounts
 	shippingCost := mfulfillment.GetCurrentShippingCost(co)
 	if req.Discounts != nil {
-		co.Discounts = discount.ApplyDiscounts(req.Discounts, co.LineItems, m.shopData)
+		co.Discounts = discount.ApplyDiscounts(req.Discounts, co.LineItems, m.discountLookup)
 	}
 
 	// Handle fulfillment

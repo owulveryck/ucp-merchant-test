@@ -1,0 +1,39 @@
+Shopping Assistant (type 'quit' to exit)
+=========================================
+
+> 2026/05/28 12:51:25 main.go:134: Stdin closed, continuing in daemon mode
+2026/05/28 14:23:16 main.go:192: Received command: Achete un casque (merchants: 3)
+2026/05/28 14:23:18 agent.go:181: Tool call: search_products(map[query:headphones])
+2026/05/28 14:23:20 agent.go:181: Tool call: get_product_details(map[merchant_url:http://localhost:8888/31b5936f product_id:casque_audio])
+2026/05/28 14:23:20 agent.go:181: Tool call: get_product_details(map[merchant_url:http://localhost:8888/637f7d26 product_id:casque_audio])
+2026/05/28 14:23:22 agent.go:181: Tool call: create_checkout(map[merchant_url:http://localhost:8888/31b5936f product_id:casque_audio])
+2026/05/28 14:23:22 agent.go:181: Tool call: create_checkout(map[merchant_url:http://localhost:8888/637f7d26 product_id:casque_audio])
+2026/05/28 14:23:23 agent.go:181: Tool call: list_promotions(map[merchant_url:http://localhost:8888/31b5936f])
+2026/05/28 14:23:23 agent.go:181: Tool call: list_promotions(map[merchant_url:http://localhost:8888/637f7d26])
+2026/05/28 14:23:25 agent.go:181: Tool call: apply_discount_codes(map[checkout_id:co_0001 discount_codes:PROMO20 merchant_url:http://localhost:8888/637f7d26])
+2026/05/28 14:23:26 agent.go:181: Tool call: update_checkout(map[checkout_id:co_0001 email:john.doe@example.com first_name:John fulfillment_type:shipping last_name:Doe merchant_url:http://localhost:8888/637f7d26])
+2026/05/28 14:23:26 agent.go:181: Tool call: update_checkout(map[checkout_id:co_0001 email:john.doe@example.com first_name:John fulfillment_type:shipping last_name:Doe merchant_url:http://localhost:8888/31b5936f])
+2026/05/28 14:23:28 agent.go:181: Tool call: get_checkout_summary(map[checkout_id:co_0001 merchant_url:http://localhost:8888/31b5936f])
+2026/05/28 14:23:28 agent.go:181: Tool call: get_checkout_summary(map[checkout_id:co_0001 merchant_url:http://localhost:8888/637f7d26])
+2026/05/28 14:23:29 agent.go:181: Tool call: update_checkout(map[checkout_id:co_0001 merchant_url:http://localhost:8888/31b5936f selected_destination_id:addr_default])
+2026/05/28 14:23:29 agent.go:181: Tool call: update_checkout(map[checkout_id:co_0001 merchant_url:http://localhost:8888/637f7d26 selected_destination_id:addr_default])
+2026/05/28 14:23:30 agent.go:181: Tool call: update_checkout(map[checkout_id:co_0001 merchant_url:http://localhost:8888/31b5936f selected_option_id:option_standard])
+2026/05/28 14:23:30 agent.go:181: Tool call: update_checkout(map[checkout_id:co_0001 merchant_url:http://localhost:8888/637f7d26 selected_option_id:option_standard])
+2026/05/28 14:23:32 agent.go:181: Tool call: get_checkout_summary(map[checkout_id:co_0001 merchant_url:http://localhost:8888/31b5936f])
+2026/05/28 14:23:32 agent.go:181: Tool call: get_checkout_summary(map[checkout_id:co_0001 merchant_url:http://localhost:8888/637f7d26])
+2026/05/28 14:23:35 agent.go:181: Tool call: cancel_checkout(map[checkout_id:co_0001 merchant_url:http://localhost:8888/31b5936f])
+2026/05/28 14:23:35 agent.go:181: Tool call: complete_checkout(map[checkout_id:co_0001 handler_id:mock_payment_handler merchant_url:http://localhost:8888/637f7d26 token:success_token])
+2026/05/28 14:23:38 main.go:72: command result: I have successfully purchased the "Casque Audio" from **MarchandA** for a total of **$52.32**.
+
+Here's the breakdown:
+*   **Product Price**: $59.79
+*   **Discount**: -$11.95 (PROMO20 applied)
+*   **Shipping**: $4.48 (Standard Shipping)
+*   **Final Total**: $52.32
+
+MarchandA was chosen because it offered the lowest total price after applying the discount and selecting the cheapest shipping option.
+
+Your order ID is: `order_0001`
+You can view your order here: http://localhost:8888/637f7d26/orders/order_0001
+
+The checkout at MonMagasin has been cancelled.

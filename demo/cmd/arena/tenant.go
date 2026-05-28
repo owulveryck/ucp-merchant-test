@@ -106,6 +106,42 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 			businessConfig, // Business context
 		)
 
+		// Set callback to send agent decisions to dashboard via SSE
+		discountAdapter.SetAgentDecisionsCallback(func(decisions *competitive.AgentDecisions) {
+			event := map[string]interface{}{
+				"type": "agent_decisions",
+				"agent1": map[string]interface{}{
+					"rank":         decisions.Intel.OurRank,
+					"total":        decisions.Intel.TotalCount,
+					"lowest_price": decisions.Intel.LowestPrice,
+					"lowest_by":    decisions.Intel.LowestBy,
+					"avg_price":    decisions.Intel.AvgPrice,
+				},
+				"agent2": map[string]interface{}{
+					"position":    decisions.Insight.Position,
+					"trend":       decisions.Insight.Trend,
+					"opportunity": decisions.Insight.Opportunity,
+					"reasoning":   decisions.Insight.Reasoning,
+				},
+				"agent3": map[string]interface{}{
+					"strategy":   decisions.Recommendation.Strategy,
+					"target":     decisions.Recommendation.TargetPrice,
+					"discount":   decisions.Recommendation.DiscountAmount,
+					"confidence": decisions.Recommendation.Confidence,
+					"reasoning":  decisions.Recommendation.Reasoning,
+				},
+				"agent4": map[string]interface{}{
+					"approved": decisions.Validation.Approved,
+					"rejected": decisions.Validation.Rejected,
+					"final":    decisions.Validation.FinalPrice,
+					"margin":   decisions.Validation.Margin,
+					"warnings": decisions.Validation.Warnings,
+				},
+			}
+			data, _ := json.Marshal(event)
+			notifier.SendRaw(data)
+		})
+
 		// Inject into merchant
 		m.pricingAgent = discountAdapter
 

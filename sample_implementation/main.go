@@ -66,6 +66,7 @@ func newMux() *http.ServeMux {
 	merchantInstance = newSimpleMerchant(
 		catalogInstance,
 		shopData,
+		nil, // Use default discount lookup (shopData)
 		func() int { return listenPort },
 		func() string { return scheme() },
 	)
