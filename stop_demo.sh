@@ -26,6 +26,7 @@ pkill -f "shopping-graph" 2>/dev/null || true
 pkill -f "sample_implementation.*8182" 2>/dev/null || true
 pkill -f "sample_implementation.*8183" 2>/dev/null || true
 pkill -f "sample_implementation.*8184" 2>/dev/null || true
+pkill -f "cmd/arena" 2>/dev/null || true
 
 sleep 1
 
