@@ -47,6 +47,7 @@ echo -e "${YELLOW}🚀 Lancement SuperShop (port 8182)...${NC}"
 go run ./sample_implementation \
     --port 8182 \
     --data-dir demo/data/merchant_a \
+    --data-format json \
     --merchant-name SuperShop \
     > logs/superShop.log 2>&1 &
 SUPERSH0P_PID=$!
@@ -64,6 +65,7 @@ echo -e "${YELLOW}🚀 Lancement MegaMart (port 8183)...${NC}"
 go run ./sample_implementation \
     --port 8183 \
     --data-dir demo/data/merchant_b \
+    --data-format json \
     --merchant-name MegaMart \
     > logs/megaMart.log 2>&1 &
 MEGAMART_PID=$!
@@ -81,6 +83,7 @@ echo -e "${YELLOW}🚀 Lancement BudgetBuy (port 8184)...${NC}"
 go run ./sample_implementation \
     --port 8184 \
     --data-dir demo/data/merchant_c \
+    --data-format json \
     --merchant-name BudgetBuy \
     > logs/budgetBuy.log 2>&1 &
 BUDGETBUY_PID=$!
