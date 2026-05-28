@@ -117,3 +117,12 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 func (a *DiscountAdapter) UpdateConfig(config models.BusinessConfig) {
 	a.config = config
 }
+
+// ApplyDiscountsWithContext is an alias for ApplyCompetitiveDiscounts.
+// This method exists for compatibility with the arena merchant interface.
+func (a *DiscountAdapter) ApplyDiscountsWithContext(
+	codes []string,
+	lineItems []ucpmodel.LineItem,
+) *ucpmodel.Discounts {
+	return a.ApplyCompetitiveDiscounts(codes, lineItems)
+}

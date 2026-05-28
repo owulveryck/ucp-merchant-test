@@ -11,6 +11,9 @@ import (
 
 	"github.com/owulveryck/ucp-merchant-test/pkg/auth"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/agents"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/history"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/models"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/a2a"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/discovery"
 )
@@ -51,51 +54,62 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	m.graphURL = s.graphURL
 	m.merchantID = id
 
-	// Set up competitive pricing agent if enabled
+	// Set up competitive pricing with multi-agent architecture
 	if s.competitivePricing && s.graphURL != "" {
-		log.Printf("Enabling competitive pricing for tenant %s (strategy=%s, minMargin=%d%%)",
-			name, s.pricingStrategy, s.minMargin)
+		log.Printf("Enabling MULTI-AGENT competitive pricing for tenant %s (minMargin=%d%%)",
+			name, s.minMargin)
 
-		// Create Shopping Graph client adapter (for backward compatibility)
-		sgClient := competitive.NewLegacyShoppingGraphAdapter(s.graphURL)
+		// Create Shopping Graph client (new architecture)
+		sgClient := competitive.NewShoppingGraphClient(s.graphURL)
 
-		// Map strategy string to type
-		var strategy competitive.PricingStrategy
-		switch s.pricingStrategy {
-		case "match":
-			strategy = competitive.StrategyMatchPrice
-		case "beat":
-			strategy = competitive.StrategyBeatPrice
-		case "auto":
-			strategy = competitive.StrategyAutoDiscount
-		default:
-			strategy = competitive.StrategyBeatPrice
+		// Agent 1: Price Intelligence
+		priceIntel := agents.NewPriceIntelligenceAgent(sgClient, id)
+		log.Printf("[%s] Agent 1 (Price Intelligence) initialized", name)
+
+		// Agent 2: Market Analysis (with history)
+		historyStore := history.NewInMemoryHistoryStore()
+		marketAnalyst := agents.NewMarketAnalysisAgent(historyStore)
+		log.Printf("[%s] Agent 2 (Market Analysis) initialized", name)
+
+		// Agent 3: Strategy Recommender
+		businessConfig := models.BusinessConfig{
+			Objective:      "volume",      // Arena default: maximize sales
+			StockThreshold: 20,            // Low stock threshold
+			BrandPosition:  "mid",         // Mid-market positioning
+			MinMargin:      s.minMargin,   // From server config
+			CostPercent:    60,            // 60% cost = 40% base margin
 		}
+		strategyRec := agents.NewStrategyRecommenderAgent(businessConfig)
+		log.Printf("[%s] Agent 3 (Strategy Recommender) initialized - objective: %s", name, businessConfig.Objective)
 
-		// Create pricing agent config
-		config := competitive.Config{
-			Strategy:         strategy,
+		// Agent 4: Margin Validator
+		marginConfig := models.MarginConfig{
 			MinMarginPercent: s.minMargin,
-			BeatByPercent:    s.beatByPercent,
-			BeatByMinAmount:  50,
-			CostPricePercent: 60,
-			TimeoutMs:        500,
-			EnableCache:      true,
-			CacheTTLSeconds:  10,
+			CostPercent:      60,
+			HardFloor:        true, // Never sell below cost
 		}
+		marginVal := agents.NewMarginValidatorAgent(marginConfig)
+		log.Printf("[%s] Agent 4 (Margin Validator) initialized - min margin: %d%%", name, s.minMargin)
 
-		// Create competitive pricing agent
-		pricingAgent := competitive.NewCompetitivePricingAgent(
-			nil,      // No base discount lookup for arena merchants
-			sgClient, // Shopping Graph client adapter
-			id,       // Merchant ID (to exclude self from comparisons)
-			config,
+		// Create Orchestrator
+		orchestrator := competitive.NewOrchestrator(
+			priceIntel,
+			marketAnalyst,
+			strategyRec,
+			marginVal,
+		)
+
+		// Create Discount Adapter
+		discountAdapter := competitive.NewDiscountAdapter(
+			nil,            // No base discount lookup for arena merchants
+			orchestrator,   // Multi-agent orchestrator
+			businessConfig, // Business context
 		)
 
 		// Inject into merchant
-		m.pricingAgent = pricingAgent
+		m.pricingAgent = discountAdapter
 
-		log.Printf("Competitive pricing agent configured for %s", name)
+		log.Printf("✅ MULTI-AGENT competitive pricing configured for %s (4 agents active)", name)
 	}
 
 	m.onActivity = func(eventType, summary string) {
