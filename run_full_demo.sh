@@ -24,8 +24,12 @@ pkill -f "cmd/obs-hub" 2>/dev/null || true
 pkill -f "cmd/client" 2>/dev/null || true
 sleep 1
 
-# Créer le dossier logs
-mkdir -p logs
+# Créer le dossier logs et bin
+mkdir -p logs bin
+
+echo -e "${YELLOW}🔨 Compilation des binaires...${NC}"
+go build -o bin/arena ./demo/cmd/arena
+echo ""
 
 echo -e "${YELLOW}🚀 Lancement de tous les services...${NC}"
 echo ""
@@ -58,7 +62,7 @@ echo -e "${GREEN}✓ Obs Hub démarré (PID: $OBS_PID)${NC}"
 
 # 3. Arena
 echo -e "${YELLOW}[3/4]${NC} Lancement Arena (port 8888)..."
-go run ./demo/cmd/arena --port 8888 --graph-url http://localhost:9000 --obs-url http://localhost:9002 --cost-price 5000 --competitive-pricing --min-margin 10 > logs/arena.log 2>&1 &
+./bin/arena --port 8888 --graph-url http://localhost:9000 --obs-url http://localhost:9002 --cost-price 5000 --competitive-pricing --min-margin 10 > logs/arena.log 2>&1 &
 ARENA_PID=$!
 sleep 3
 

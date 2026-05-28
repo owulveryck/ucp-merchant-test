@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -83,14 +84,20 @@ func (c *ShoppingGraphClient) GetLowestPrice(productID string) (price int, merch
 // GetCompetitorPrices returns all competitor prices for a product.
 // Implements the new models.CompetitorPriceSource interface.
 func (c *ShoppingGraphClient) GetCompetitorPrices(productID string) ([]models.CompetitorPrice, error) {
+	log.Printf("[DEBUG ShoppingGraph] Searching for product: %s", productID)
 	results, err := c.search(productID, 50)
 	if err != nil {
+		log.Printf("[DEBUG ShoppingGraph] Search FAILED: %v", err)
 		return nil, fmt.Errorf("shopping graph search failed: %w", err)
 	}
 
+	log.Printf("[DEBUG ShoppingGraph] Got %d results from search", len(results))
+
 	prices := make([]models.CompetitorPrice, 0, len(results))
 	now := time.Now()
-	for _, result := range results {
+	for i, result := range results {
+		log.Printf("[DEBUG ShoppingGraph] Result %d: MerchantID=%s, MerchantName=%s, Price=%d, InStock=%v",
+			i, result.MerchantID, result.MerchantName, result.Price, result.InStock)
 		prices = append(prices, models.CompetitorPrice{
 			MerchantID:   result.MerchantID,
 			MerchantName: result.MerchantName,
@@ -100,6 +107,7 @@ func (c *ShoppingGraphClient) GetCompetitorPrices(productID string) ([]models.Co
 		})
 	}
 
+	log.Printf("[DEBUG ShoppingGraph] Returning %d competitor prices", len(prices))
 	return prices, nil
 }
 

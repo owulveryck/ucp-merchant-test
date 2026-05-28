@@ -3,6 +3,7 @@ package agents
 
 import (
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/models"
@@ -30,17 +31,28 @@ func (a *PriceIntelligenceAgent) Analyze(productID string, ourPrice int) (models
 		return models.PriceIntelligence{}, fmt.Errorf("failed to get competitor prices: %w", err)
 	}
 
+	log.Printf("[DEBUG PriceIntel] Got %d competitors from API for product %s", len(competitors), productID)
+	log.Printf("[DEBUG PriceIntel] Our merchantID: %s", a.merchantID)
+	for i, comp := range competitors {
+		log.Printf("[DEBUG PriceIntel] Competitor %d: ID=%s, Name=%s, Price=%d, InStock=%v",
+			i, comp.MerchantID, comp.MerchantName, comp.Price, comp.InStock)
+	}
+
 	// Filter out ourselves and out-of-stock
 	var validCompetitors []models.CompetitorPrice
 	for _, comp := range competitors {
 		if comp.MerchantID == a.merchantID {
+			log.Printf("[DEBUG PriceIntel] FILTERED OUT (ourselves): %s", comp.MerchantID)
 			continue // Skip ourselves
 		}
 		if !comp.InStock {
+			log.Printf("[DEBUG PriceIntel] FILTERED OUT (out of stock): %s", comp.MerchantID)
 			continue // Skip out of stock
 		}
 		validCompetitors = append(validCompetitors, comp)
 	}
+
+	log.Printf("[DEBUG PriceIntel] After filtering: %d valid competitors", len(validCompetitors))
 
 	// If no competitors, return basic intelligence
 	if len(validCompetitors) == 0 {
