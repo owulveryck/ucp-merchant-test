@@ -96,16 +96,24 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 			log.Printf("[DiscountAdapter] Callback NOT called (callback nil=%v, decisions nil=%v)", a.onAgentDecisions == nil, decisions == nil)
 		}
 
-		if result.Approved && !result.Rejected {
+		// CRITICAL: Apply discount if Approved, even if it was adjusted with warnings
+		// Agent 4 may adjust the price to meet margin requirements, which is OK
+		if result.Approved {
 			// Apply discount for this item's quantity
 			itemDiscount := result.FinalDiscount * item.Quantity
 			totalDiscount += itemDiscount
 
-			log.Printf("[DiscountAdapter] Product %s: discount $%.2f x %d = $%.2f",
+			log.Printf("[DiscountAdapter] Product %s: discount $%.2f x %d = $%.2f (approved=%v, rejected=%v)",
 				productID,
 				float64(result.FinalDiscount)/100,
 				item.Quantity,
-				float64(itemDiscount)/100)
+				float64(itemDiscount)/100,
+				result.Approved,
+				result.Rejected)
+		} else {
+			log.Printf("[DiscountAdapter] Product %s: discount REJECTED - %s",
+				productID,
+				result.RejectionReason)
 		}
 	}
 
