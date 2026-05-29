@@ -58,27 +58,36 @@ func (a *MarginValidatorAgent) Validate(
 
 	// Check minimum margin
 	if margin < a.config.MinMarginPercent {
-		// Adjust to meet minimum margin
-		// margin% = (price - cost) / price * 100
-		// price = cost / (1 - margin%/100)
-		minAcceptablePrice := costPrice * 100 / (100 - a.config.MinMarginPercent)
+		// WINNING STRATEGY: Accept lower margin to guarantee victory
+		// Only adjust UP if we're still below cost (hard floor)
+		if finalPrice < costPrice && a.config.HardFloor {
+			// Below cost = selling at loss → REJECT completely
+			return models.ValidationResult{
+				ProductID:       rec.ProductID,
+				Approved:        false,
+				FinalPrice:      ourPrice,
+				FinalDiscount:   0,
+				Margin:          100,
+				MarginDollars:   ourPrice - costPrice,
+				Warnings:        []string{fmt.Sprintf("REJECTED: Price $%.2f below cost $%.2f", float64(finalPrice)/100, float64(costPrice)/100)},
+				Rejected:        true,
+				RejectionReason: fmt.Sprintf("Cannot win without selling at loss (target $%.2f < cost $%.2f)", float64(finalPrice)/100, float64(costPrice)/100),
+			}, nil
+		}
 
-		adjustedDiscount := ourPrice - minAcceptablePrice
-		adjustedMargin := a.config.MinMarginPercent
-		adjustedMarginDollars := minAcceptablePrice - costPrice
-
+		// Above cost but below target margin → ACCEPT to WIN
 		warnings = append(warnings,
-			fmt.Sprintf("Adjusted: margin was %d%%, increased to minimum %d%%", margin, a.config.MinMarginPercent))
+			fmt.Sprintf("⚠️ Marge réduite: %d%% (cible: %d%%) pour GAGNER", margin, a.config.MinMarginPercent))
 		warnings = append(warnings,
-			fmt.Sprintf("Price adjusted from $%.2f to $%.2f", float64(finalPrice)/100, float64(minAcceptablePrice)/100))
+			fmt.Sprintf("Prix $%.2f accepté pour battre concurrence", float64(finalPrice)/100))
 
 		return models.ValidationResult{
 			ProductID:     rec.ProductID,
 			Approved:      true,
-			FinalPrice:    minAcceptablePrice,
-			FinalDiscount: adjustedDiscount,
-			Margin:        adjustedMargin,
-			MarginDollars: adjustedMarginDollars,
+			FinalPrice:    finalPrice, // KEEP recommended price to WIN
+			FinalDiscount: rec.DiscountAmount,
+			Margin:        margin, // Lower than target, but still positive
+			MarginDollars: marginDollars,
 			Warnings:      warnings,
 			Rejected:      false,
 		}, nil
