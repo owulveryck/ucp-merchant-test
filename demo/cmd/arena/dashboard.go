@@ -1022,28 +1022,55 @@ async function calculateBestPrice(){
 }
 
 // --- Apply Calculated Price ---
-function applyCalculatedPrice(){
+async function applyCalculatedPrice(){
   if(!calculatedPrice){
     alert('Calculez d\'abord le meilleur prix !');
     return;
   }
 
-  // IMPORTANT: Force manual mode to prevent auto-recalculation
-  setAlgo('manual');
+  const statusEl=document.getElementById('calc-status');
+  statusEl.textContent='⏳ Application du prix...';
+  statusEl.style.color='#3B82F6';
 
-  // Apply the calculated price
-  config.selling_price=calculatedPrice;
-  document.getElementById('price-slider').value=calculatedPrice;
-  document.getElementById('price-display').textContent='$'+(calculatedPrice/100).toFixed(2);
+  try{
+    // Apply immediately to UI
+    config.selling_price=calculatedPrice;
+    config.pricing_algo='manual';
+    currentAlgo='manual';
 
-  // Save to server
-  schedSave();
+    document.getElementById('price-slider').value=calculatedPrice;
+    document.getElementById('price-display').textContent='$'+(calculatedPrice/100).toFixed(2);
+    document.querySelectorAll('.algo-btn').forEach(b=>{b.classList.toggle('active',b.dataset.algo==='manual')});
 
-  // Hide agents section after applying
-  document.getElementById('agents-working').style.display='none';
-  document.getElementById('calc-status').textContent='✅ Prix appliqué et verrouillé !';
-  document.getElementById('calc-status').style.color='#16A34A';
-  setTimeout(()=>{document.getElementById('calc-status').textContent=''},3000);
+    // Save to server immediately (no delay)
+    const r=await fetch(API+'/config',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        selling_price:calculatedPrice,
+        pricing_algo:'manual'
+      })
+    });
+
+    if(!r.ok){
+      throw new Error('Erreur serveur');
+    }
+
+    // Reload config to confirm
+    await loadConfig();
+
+    // Hide agents section after applying
+    document.getElementById('agents-working').style.display='none';
+    statusEl.textContent='✅ Prix appliqué et verrouillé !';
+    statusEl.style.color='#16A34A';
+    setTimeout(()=>{statusEl.textContent=''},3000);
+
+  }catch(e){
+    console.error('applyCalculatedPrice error:',e);
+    statusEl.textContent='❌ Erreur: '+e.message;
+    statusEl.style.color='#DC2626';
+    setTimeout(()=>{statusEl.textContent=''},3000);
+  }
 }
 
 // --- Leave arena ---
