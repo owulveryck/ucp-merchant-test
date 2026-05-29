@@ -73,7 +73,7 @@ func (a *StrategyRecommenderAgent) Recommend(
 	return a.balancedStrategy(intel, insight, context, reasons)
 }
 
-// aggressiveStrategy beats competitor by 10%.
+// aggressiveStrategy beats competitor by significant margin to WIN.
 func (a *StrategyRecommenderAgent) aggressiveStrategy(
 	intel models.PriceIntelligence,
 	insight models.MarketInsight,
@@ -81,23 +81,34 @@ func (a *StrategyRecommenderAgent) aggressiveStrategy(
 	reasons []string,
 ) (models.PricingRecommendation, error) {
 
-	// Beat lowest by 10%
-	targetPrice := intel.LowestPrice * 90 / 100
+	// Beat lowest competitor by $1 minimum (100 cents)
+	// This ensures we're ALWAYS cheaper than competition
+	beatAmount := 100 // $1 in cents
+	targetPrice := intel.LowestPrice - beatAmount
+
+	// Make sure we beat by at least $1, even if that's > 10%
+	minBeatPercent := intel.LowestPrice * 90 / 100 // 10% cheaper
+	if targetPrice > minBeatPercent {
+		targetPrice = minBeatPercent
+	}
+
 	discount := intel.OurPrice - targetPrice
 
-	// Calculate expected margin
+	// Calculate expected margin (will be validated by Agent 4)
 	costPrice := intel.OurPrice * context.CostPercent / 100
 	expectedMargin := 0
 	if targetPrice > 0 {
 		expectedMargin = (targetPrice - costPrice) * 100 / targetPrice
 	}
 
+	reasons = append(reasons, fmt.Sprintf("Beat lowest competitor by $%.2f to guarantee win", float64(beatAmount)/100))
+
 	return models.PricingRecommendation{
 		ProductID:      intel.ProductID,
 		Strategy:       "aggressive",
 		TargetPrice:    targetPrice,
 		DiscountAmount: discount,
-		Confidence:     85,
+		Confidence:     95, // Higher confidence - we WILL win
 		Reasoning:      reasons,
 		ExpectedMargin: expectedMargin,
 	}, nil

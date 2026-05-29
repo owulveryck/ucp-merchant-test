@@ -86,10 +86,12 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 		marginConfig := models.MarginConfig{
 			MinMarginPercent: s.minMargin,
 			CostPercent:      60,
-			HardFloor:        true, // Never sell below cost
+			ActualCost:       s.costPrice, // CRITICAL: Use real cost, not estimated
+			HardFloor:        true,        // Never sell below cost
 		}
 		marginVal := agents.NewMarginValidatorAgent(marginConfig)
-		log.Printf("[%s] Agent 4 (Margin Validator) initialized - min margin: %d%%", name, s.minMargin)
+		log.Printf("[%s] Agent 4 (Margin Validator) initialized - min margin: %d%%, actual cost: $%.2f",
+			name, s.minMargin, float64(s.costPrice)/100)
 
 		// Create Orchestrator
 		orchestrator := competitive.NewOrchestrator(

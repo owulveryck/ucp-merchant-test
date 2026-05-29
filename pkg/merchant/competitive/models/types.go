@@ -81,8 +81,9 @@ type BusinessConfig struct {
 
 // MarginConfig contains margin validation constraints.
 type MarginConfig struct {
-	MinMarginPercent int // minimum margin % (e.g., 10)
-	CostPercent      int // cost as % of price (e.g., 60)
+	MinMarginPercent int  // minimum margin % (e.g., 10)
+	CostPercent      int  // cost as % of price (e.g., 60) - DEPRECATED, use ActualCost instead
+	ActualCost       int  // actual cost in cents (takes precedence over CostPercent)
 	HardFloor        bool // never sell below cost
 }
 

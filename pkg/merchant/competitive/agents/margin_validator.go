@@ -24,8 +24,11 @@ func (a *MarginValidatorAgent) Validate(
 	ourPrice int,
 ) (models.ValidationResult, error) {
 
-	// Calculate cost and final price
-	costPrice := ourPrice * a.config.CostPercent / 100
+	// Calculate cost: use ActualCost if set, otherwise estimate from percentage
+	costPrice := a.config.ActualCost
+	if costPrice == 0 {
+		costPrice = ourPrice * a.config.CostPercent / 100
+	}
 	finalPrice := rec.TargetPrice
 
 	warnings := []string{}
