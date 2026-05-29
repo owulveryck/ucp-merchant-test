@@ -1027,13 +1027,21 @@ function applyCalculatedPrice(){
     alert('Calculez d\'abord le meilleur prix !');
     return;
   }
+
+  // IMPORTANT: Force manual mode to prevent auto-recalculation
+  setAlgo('manual');
+
+  // Apply the calculated price
   config.selling_price=calculatedPrice;
   document.getElementById('price-slider').value=calculatedPrice;
   document.getElementById('price-display').textContent='$'+(calculatedPrice/100).toFixed(2);
+
+  // Save to server
   schedSave();
+
   // Hide agents section after applying
   document.getElementById('agents-working').style.display='none';
-  document.getElementById('calc-status').textContent='✅ Prix appliqué !';
+  document.getElementById('calc-status').textContent='✅ Prix appliqué et verrouillé !';
   document.getElementById('calc-status').style.color='#16A34A';
   setTimeout(()=>{document.getElementById('calc-status').textContent=''},3000);
 }
