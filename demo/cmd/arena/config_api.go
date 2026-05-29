@@ -219,19 +219,25 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 				agent3Msg = "Vous avez déjà le meilleur prix !"
 				mainMessage = "Vous avez déjà le meilleur prix !"
 			} else {
-				agent3Msg = fmt.Sprintf("Il faut baisser à $%.2f pour gagner", float64(intel.LowestPrice-100)/100)
+				// Show the price that Agent 4 rejected or couldn't validate
+				targetPrice := intel.LowestPrice - 100 // Beat by $1
+				if val.FinalPrice > 0 && val.Rejected {
+					// Agent 4 calculated a price but rejected it
+					targetPrice = val.FinalPrice
+				}
+				agent3Msg = fmt.Sprintf("Il faut baisser à $%.2f pour gagner", float64(targetPrice)/100)
 				mainMessage = "Baissez votre prix pour gagner !"
 			}
 
 			// Agent 4: Why no discount?
 			if val.Rejected {
-				// Validation rejected the discount
+				// Validation rejected the discount - explain why
 				agent4Msg = fmt.Sprintf("❌ %s", val.RejectionReason)
 			} else if intel.OurRank == 1 {
 				// Already cheapest
 				agent4Msg = "✅ Vous êtes déjà le meilleur"
 			} else {
-				// Unknown reason
+				// Unknown reason (shouldn't happen with new logic)
 				agent4Msg = "⚠️ Impossible de calculer le prix optimal"
 			}
 		}
@@ -294,6 +300,8 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 		agent2Msg = fmt.Sprintf("Vous êtes %s. %s", positionMsg, insight.Reasoning)
 
 		// Agent 3: Strategy Recommender
+		// IMPORTANT: Use FINAL price from Agent 4, not Agent 3's target
+		// Agent 4 may have adjusted it for margin constraints
 		strategyName := "compétitive"
 		if rec.Strategy == "aggressive" {
 			strategyName = "agressive"
@@ -302,8 +310,11 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 		if len(rec.Reasoning) > 0 {
 			reasoningText = rec.Reasoning[0]
 		}
-		agent3Msg = fmt.Sprintf("Stratégie %s<br>Prix cible: <strong>$%.2f</strong><br>%s",
-			strategyName, float64(rec.TargetPrice)/100, reasoningText)
+
+		// Show the FINAL validated price, not the initial recommendation
+		finalValidatedPrice := val.FinalPrice
+		agent3Msg = fmt.Sprintf("Stratégie %s<br>Prix recommandé: <strong>$%.2f</strong><br>%s",
+			strategyName, float64(finalValidatedPrice)/100, reasoningText)
 
 		// Agent 4: Margin Validator
 		if val.Approved && !val.Rejected {
