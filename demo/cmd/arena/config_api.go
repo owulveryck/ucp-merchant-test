@@ -60,9 +60,12 @@ func handlePutConfig(w http.ResponseWriter, r *http.Request, cfg *MerchantConfig
 		PricingAlgo     *string          `json:"pricing_algo"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[handlePutConfig] ERROR decoding request: %v", err)
 		http.Error(w, `{"detail":"invalid request"}`, http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("[handlePutConfig] Received: selling_price=%v, pricing_algo=%v", req.SellingPrice, req.PricingAlgo)
 
 	cfg.mu.Lock()
 	if req.SellingPrice != nil {

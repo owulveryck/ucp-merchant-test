@@ -1043,17 +1043,29 @@ async function applyCalculatedPrice(){
     document.querySelectorAll('.algo-btn').forEach(b=>{b.classList.toggle('active',b.dataset.algo==='manual')});
 
     // Save to server immediately (no delay)
+    const payload={
+      selling_price:calculatedPrice,
+      pricing_algo:'manual',
+      stock:config.stock,
+      max_cpc_bid:config.max_cpc_bid,
+      discount_codes:config.discount_codes||[],
+      shipping_options:config.shipping_options||[]
+    };
+
+    console.log('[applyCalculatedPrice] Sending to server:',payload);
+
     const r=await fetch(API+'/config',{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        selling_price:calculatedPrice,
-        pricing_algo:'manual'
-      })
+      body:JSON.stringify(payload)
     });
 
+    console.log('[applyCalculatedPrice] Response status:',r.status);
+
     if(!r.ok){
-      throw new Error('Erreur serveur');
+      const errText=await r.text();
+      console.error('[applyCalculatedPrice] Error response:',errText);
+      throw new Error('Erreur serveur: '+r.status);
     }
 
     // Reload config to confirm
