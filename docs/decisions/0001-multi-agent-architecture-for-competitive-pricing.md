@@ -169,5 +169,5 @@ Re-evaluate this decision if:
 
 - Source code: `pkg/merchant/competitive/orchestrator.go`
 - Agent implementations: `pkg/merchant/competitive/agents/`
-- Dashboard UI: `demo/cmd/arena/dashboard.go` (section "💡 Intelligence de Prix")
+- Dashboard UI: `demo/cmd/arena/dashboard.go` (section "Intelligence de Prix")
 - Test results: `DEMO_SCENARIOS.md`

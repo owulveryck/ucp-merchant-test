@@ -51,7 +51,7 @@ Chosen option: "**Hybrid approach - Accept reduced margin but warn user**", beca
 
 * **Good**, because MonMagasin now wins 95% of competitive scenarios vs. 30% previously
 * **Good**, because merchants are protected from selling at loss (hard floor at cost price)
-* **Good**, because transparent warnings explain the margin reduction (e.g., "⚠️ Margin 6% (target 10%) to WIN")
+* **Good**, because transparent warnings explain the margin reduction (e.g., " Margin 6% (target 10%) to WIN")
 * **Good**, because merchants retain final control via "Apply Price" button (can reject recommendation)
 * **Good**, because increases total revenue through volume (100 sales × 6% > 30 sales × 28%)
 * **Bad**, because individual sale profitability decreases (6% vs. 10% target)
@@ -76,7 +76,7 @@ if finalPrice < costPrice && a.config.HardFloor {
 if margin < a.config.MinMarginPercent {
     // ACCEPT with warning: Lower margin to WIN
     warnings = append(warnings, 
-        "⚠️ Marge réduite: X% (cible: 10%) pour GAGNER")
+        " Marge réduite: X% (cible: 10%) pour GAGNER")
     return ValidationResult{Approved: true, ...}
 }
 ```
@@ -90,7 +90,7 @@ Always reject prices below 10% margin target.
 **Example**:
 - Competitor: $54
 - Recommended: $53 (margin 5.7%)
-- Agent 4: "❌ REJECTED, adjusting to $55 for 10% margin"
+- Agent 4: " REJECTED, adjusting to $55 for 10% margin"
 - Result: $55 > $54 → **YOU LOSE**
 
 * **Good**, because protects individual sale profitability
@@ -107,7 +107,7 @@ Accept any price as long as it's above cost, regardless of margin.
 **Example**:
 - Cost: $50
 - Recommended: $51 (margin 2%)
-- Agent 4: "✅ APPROVED"
+- Agent 4: " APPROVED"
 
 * **Good**, because maximizes winning probability
 * **Good**, because simple rule (price ≥ cost)
@@ -122,9 +122,8 @@ Accept prices ≥ cost even when margin < target, but explicitly warn the user.
 **Example**:
 - Competitor: $54
 - Recommended: $53 (margin 5.7%)
-- Agent 4: "⚠️ Marge réduite: 6% (cible: 10%) pour GAGNER"
-- Result: $53 < $54 → **YOU WIN** 🏆
-
+- Agent 4: " Marge réduite: 6% (cible: 10%) pour GAGNER"
+- Result: $53 < $54 → **YOU WIN** 
 * **Good**, because achieves 95% win rate vs. 30% previously
 * **Good**, because protects against selling at loss (cost floor maintained)
 * **Good**, because transparent (user sees margin trade-off explicitly)
@@ -177,7 +176,7 @@ This feedback revealed that the tool's value proposition ("competitive pricing")
 
 Post-fix validation:
 ```
-MonMagasin: $42.52 ✅ WINNER
+MonMagasin: $42.52  WINNER
 MarchandA: $61.22
 MarchandB: $62.93
 
@@ -190,17 +189,17 @@ Agent 4 displays different messages based on the decision:
 
 **When winning on price with good margin**:
 ```
-✅ Validé ! Vous gagnerez 12% de marge
+ Validé ! Vous gagnerez 12% de marge
 ```
 
 **When winning requires margin sacrifice** (new behavior):
 ```
-⚠️ Marge réduite: 6% (cible: 10%) pour GAGNER
+ Marge réduite: 6% (cible: 10%) pour GAGNER
 ```
 
 **When winning requires selling below cost** (always rejected):
 ```
-❌ Cannot win without selling at loss (target $35 < cost $50)
+ Cannot win without selling at loss (target $35 < cost $50)
 ```
 
 ### Business Philosophy

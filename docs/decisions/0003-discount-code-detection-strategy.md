@@ -241,7 +241,7 @@ Target price = $54 - $1 = $53 (to beat effective price)
 ```
 Applied WELCOME10 to MarchandA → Final price $54.XX
 Compared: MonMagasin $53.XX vs MarchandA $54.XX
-Chose MonMagasin ✅
+Chose MonMagasin OK
 ```
 
 ### Accuracy Analysis
@@ -250,10 +250,10 @@ Chose MonMagasin ✅
 
 | Code | Displayed | Estimated | Actual (buyer agent) | Error |
 |------|-----------|-----------|---------------------|-------|
-| WELCOME10 | $60.00 | $54.00 | $54.00 | 0% ✅ |
-| SAVE20 | $70.00 | $56.00 | $56.00 | 0% ✅ |
-| FIXED500 | $65.00 | $60.00 | $60.00 | 0% ✅ |
-| SUMMERSALE | $60.00 | $54.00 (10% default) | $51.00 (15% actual) | +5.9% ⚠️ |
+| WELCOME10 | $60.00 | $54.00 | $54.00 | 0% OK |
+| SAVE20 | $70.00 | $56.00 | $56.00 | 0% OK |
+| FIXED500 | $65.00 | $60.00 | $60.00 | 0% OK |
+| SUMMERSALE | $60.00 | $54.00 (10% default) | $51.00 (15% actual) | +5.9% WARN |
 
 **Conclusion**: ~95% accuracy for common patterns, occasional over-estimation for non-standard codes (which is safer than under-estimation).
 
@@ -261,12 +261,12 @@ Chose MonMagasin ✅
 
 **Over-estimation** (estimate $54, actual $51):
 - Agent recommends $53 to beat $54
-- Still competitive vs. actual $51 ✅
+- Still competitive vs. actual $51 OK
 - Slightly higher price than necessary, but still wins
 
 **Under-estimation** (estimate $54, actual $58):
 - Agent recommends $53 to beat $54
-- Actually beats $58 ✅
+- Actually beats $58 OK
 - Even more competitive than expected
 
 **Conclusion**: Both error directions are acceptable. Over-estimation is safer.
