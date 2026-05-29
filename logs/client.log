@@ -1,4 +1,4 @@
 Shopping Assistant (type 'quit' to exit)
 =========================================
 
-> 2026/05/29 13:28:21 main.go:134: Stdin closed, continuing in daemon mode
+> 2026/05/29 13:33:37 main.go:134: Stdin closed, continuing in daemon mode

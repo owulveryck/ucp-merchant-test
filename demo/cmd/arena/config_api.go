@@ -196,20 +196,50 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 		agent2Msg := "Position inconnue"
 		agent3Msg := "Prix actuel optimal"
 		agent4Msg := "✅ Prix maintenu"
+		mainMessage := "Vous avez déjà le meilleur prix !"
 
 		if decisions != nil {
 			intel := decisions.Intel
-			agent1Msg = fmt.Sprintf("Rang %d/%d - Prix le plus bas: $%.2f",
-				intel.OurRank, intel.TotalCount, float64(intel.LowestPrice)/100)
-			agent2Msg = fmt.Sprintf("Position: %s", decisions.Insight.Position)
-			agent3Msg = "Vous avez déjà le meilleur prix !"
-			agent4Msg = "✅ Aucun changement nécessaire"
+			val := decisions.Validation
+
+			// Agent 1: Show market position
+			competitorCount := intel.TotalCount - 1
+			agent1Msg = fmt.Sprintf("Trouvé %d concurrent(s). Le moins cher: $%.2f (rang %d/%d)",
+				competitorCount, float64(intel.LowestPrice)/100, intel.OurRank, intel.TotalCount)
+
+			// Agent 2: Market position
+			if intel.OurRank == 1 {
+				agent2Msg = "✅ Vous êtes le moins cher !"
+			} else {
+				agent2Msg = fmt.Sprintf("⚠️ Vous êtes en position %d/%d", intel.OurRank, intel.TotalCount)
+			}
+
+			// Agent 3: Strategy
+			if intel.OurRank == 1 {
+				agent3Msg = "Vous avez déjà le meilleur prix !"
+				mainMessage = "Vous avez déjà le meilleur prix !"
+			} else {
+				agent3Msg = fmt.Sprintf("Il faut baisser à $%.2f pour gagner", float64(intel.LowestPrice-100)/100)
+				mainMessage = "Baissez votre prix pour gagner !"
+			}
+
+			// Agent 4: Why no discount?
+			if val.Rejected {
+				// Validation rejected the discount
+				agent4Msg = fmt.Sprintf("❌ %s", val.RejectionReason)
+			} else if intel.OurRank == 1 {
+				// Already cheapest
+				agent4Msg = "✅ Vous êtes déjà le meilleur"
+			} else {
+				// Unknown reason
+				agent4Msg = "⚠️ Impossible de calculer le prix optimal"
+			}
 		}
 
 		json.NewEncoder(w).Encode(map[string]any{
 			"success":         true,
 			"no_discount":     true,
-			"message":         "Vous avez déjà le meilleur prix !",
+			"message":         mainMessage,
 			"current_price":   ourPrice,
 			"final_price":     ourPrice,
 			"discount_amount": 0,
@@ -264,16 +294,30 @@ func handleTestAutoCompete(w http.ResponseWriter, r *http.Request, m *arenaMerch
 		agent2Msg = fmt.Sprintf("Vous êtes %s. %s", positionMsg, insight.Reasoning)
 
 		// Agent 3: Strategy Recommender
-		agent3Msg = fmt.Sprintf("Stratégie: %s<br>Prix cible: <strong>$%.2f</strong><br>%s",
-			rec.Strategy, float64(rec.TargetPrice)/100, rec.Reasoning)
+		strategyName := "compétitive"
+		if rec.Strategy == "aggressive" {
+			strategyName = "agressive"
+		}
+		reasoningText := ""
+		if len(rec.Reasoning) > 0 {
+			reasoningText = rec.Reasoning[0]
+		}
+		agent3Msg = fmt.Sprintf("Stratégie %s<br>Prix cible: <strong>$%.2f</strong><br>%s",
+			strategyName, float64(rec.TargetPrice)/100, reasoningText)
 
 		// Agent 4: Margin Validator
 		if val.Approved && !val.Rejected {
-			agent4Msg = fmt.Sprintf("✅ Approuvé avec %d%% de marge", val.Margin)
+			if len(val.Warnings) > 0 {
+				// Adjusted but approved
+				agent4Msg = fmt.Sprintf("⚠️ Prix ajusté à $%.2f pour respecter %d%% de marge minimum",
+					float64(val.FinalPrice)/100, val.Margin)
+			} else {
+				// Approved as-is
+				agent4Msg = fmt.Sprintf("✅ Validé ! Vous gagnerez %d%% de marge",
+					val.Margin)
+			}
 		} else if val.Rejected {
 			agent4Msg = fmt.Sprintf("❌ Rejeté: %s", val.RejectionReason)
-		} else if len(val.Warnings) > 0 {
-			agent4Msg = fmt.Sprintf("⚠️ Ajusté: %s (marge: %d%%)", val.Warnings[0], val.Margin)
 		}
 	}
 

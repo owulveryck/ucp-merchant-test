@@ -1,85 +1,246 @@
-2026/05/29 13:28:16 main.go:43: Arena starting on http://localhost:8888
-2026/05/29 13:28:16 main.go:44: Landing:   http://localhost:8888/
-2026/05/29 13:28:31 tenant.go:59: Enabling MULTI-AGENT competitive pricing for tenant MonMagasin (minMargin=10%)
-2026/05/29 13:28:31 tenant.go:67: [MonMagasin] Agent 1 (Price Intelligence) initialized
-2026/05/29 13:28:31 tenant.go:72: [MonMagasin] Agent 2 (Market Analysis) initialized
-2026/05/29 13:28:31 tenant.go:83: [MonMagasin] Agent 3 (Strategy Recommender) initialized - objective: volume
-2026/05/29 13:28:31 tenant.go:92: [MonMagasin] Agent 4 (Margin Validator) initialized - min margin: 10%
-2026/05/29 13:28:31 tenant.go:160: ✅ MULTI-AGENT competitive pricing configured for MonMagasin (4 agents active)
-2026/05/29 13:28:31 tenant.go:317: registered tenant MonMagasin (177dab17) with shopping graph
-2026/05/29 13:28:32 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
-2026/05/29 13:28:32 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
-2026/05/29 13:28:41 tenant.go:59: Enabling MULTI-AGENT competitive pricing for tenant MarchandA (minMargin=10%)
-2026/05/29 13:28:41 tenant.go:67: [MarchandA] Agent 1 (Price Intelligence) initialized
-2026/05/29 13:28:41 tenant.go:72: [MarchandA] Agent 2 (Market Analysis) initialized
-2026/05/29 13:28:41 tenant.go:83: [MarchandA] Agent 3 (Strategy Recommender) initialized - objective: volume
-2026/05/29 13:28:41 tenant.go:92: [MarchandA] Agent 4 (Margin Validator) initialized - min margin: 10%
-2026/05/29 13:28:41 tenant.go:160: ✅ MULTI-AGENT competitive pricing configured for MarchandA (4 agents active)
-2026/05/29 13:28:41 tenant.go:317: registered tenant MarchandA (f6238e5c) with shopping graph
-2026/05/29 13:28:42 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
-2026/05/29 13:28:42 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
-2026/05/29 13:28:49 tenant.go:59: Enabling MULTI-AGENT competitive pricing for tenant MarchandB (minMargin=10%)
-2026/05/29 13:28:49 tenant.go:67: [MarchandB] Agent 1 (Price Intelligence) initialized
-2026/05/29 13:28:49 tenant.go:72: [MarchandB] Agent 2 (Market Analysis) initialized
-2026/05/29 13:28:49 tenant.go:83: [MarchandB] Agent 3 (Strategy Recommender) initialized - objective: volume
-2026/05/29 13:28:49 tenant.go:92: [MarchandB] Agent 4 (Margin Validator) initialized - min margin: 10%
-2026/05/29 13:28:49 tenant.go:160: ✅ MULTI-AGENT competitive pricing configured for MarchandB (4 agents active)
-2026/05/29 13:28:49 tenant.go:317: registered tenant MarchandB (b5b1184d) with shopping graph
-2026/05/29 13:28:52 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
-2026/05/29 13:28:52 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
-2026/05/29 13:28:53 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51c2c830, pricing_algo=0x4c3e51d4a4b0
-2026/05/29 13:28:54 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51cfe6f0, pricing_algo=0x4c3e51e86f00
-2026/05/29 13:28:54 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51a02e80, pricing_algo=0x4c3e51beaaf0
-2026/05/29 13:28:55 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51a03060, pricing_algo=0x4c3e51beafd0
-2026/05/29 13:28:58 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51a90690, pricing_algo=0x4c3e51e2c810
-2026/05/29 13:28:59 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51d1a4d0, pricing_algo=0x4c3e51a2a640
-2026/05/29 13:29:00 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51a90fc0, pricing_algo=0x4c3e51e2d460
-2026/05/29 13:29:03 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51cfe2b0, pricing_algo=0x4c3e51e86740
-2026/05/29 13:29:04 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51f884f0, pricing_algo=0x4c3e51cd27e0
-2026/05/29 13:29:05 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51c2c9e0, pricing_algo=0x4c3e51d4ac10
-2026/05/29 13:29:06 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51b13230, pricing_algo=0x4c3e51a2a190
-2026/05/29 13:29:06 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51f88b00, pricing_algo=0x4c3e51cd3590
-2026/05/29 13:29:07 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51b139c0, pricing_algo=0x4c3e51a2af80
-2026/05/29 13:29:08 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51f88fe0, pricing_algo=0x4c3e51c30360
-2026/05/29 13:29:09 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 7000
-2026/05/29 13:29:09 discount_adapter.go:70: [DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing
-2026/05/29 13:29:09 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
-2026/05/29 13:29:09 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
-2026/05/29 13:29:09 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 3 results from search
-2026/05/29 13:29:09 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=b5b1184d, MerchantName=MarchandB, Price=5000, InStock=true, DiscountHints=[]
-2026/05/29 13:29:09 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5000 (discount hints applied)
-2026/05/29 13:29:09 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=f6238e5c, MerchantName=MarchandA, Price=6000, InStock=true, DiscountHints=[]
-2026/05/29 13:29:09 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 6000 (discount hints applied)
-2026/05/29 13:29:09 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=177dab17, MerchantName=MonMagasin, Price=7000, InStock=true, DiscountHints=[]
-2026/05/29 13:29:09 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7000 (discount hints applied)
-2026/05/29 13:29:09 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 3 competitor prices
-2026/05/29 13:29:09 price_intelligence.go:34: [DEBUG PriceIntel] Got 3 competitors from API for product casque_audio
-2026/05/29 13:29:09 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 177dab17
-2026/05/29 13:29:09 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=b5b1184d, Name=MarchandB, Price=5000, InStock=true
-2026/05/29 13:29:09 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=f6238e5c, Name=MarchandA, Price=6000, InStock=true
-2026/05/29 13:29:09 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=177dab17, Name=MonMagasin, Price=7000, InStock=true
-2026/05/29 13:29:09 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 177dab17
-2026/05/29 13:29:09 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 2 valid competitors
-2026/05/29 13:29:09 price_intelligence.go:82: [DEBUG PriceIntel] Competitor MarchandB: displayed=5000, effective=5000, hints=[]
-2026/05/29 13:29:09 price_intelligence.go:82: [DEBUG PriceIntel] Competitor MarchandA: displayed=6000, effective=6000, hints=[]
-2026/05/29 13:29:09 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: MarchandB with effective price 5000 (was 5000 with hints [])
-2026/05/29 13:29:09 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: b5b1184d with price $50.00
-2026/05/29 13:29:09 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/3, lowest: $50.00 (b5b1184d)
-2026/05/29 13:29:09 orchestrator.go:189: [Orchestrator] Market Analysis: premium position, stable trend, opportunity: premium_position
-2026/05/29 13:29:09 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $45.00, discount: $25.00, confidence: 85%
-2026/05/29 13:29:09 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive]
-2026/05/29 13:29:09 orchestrator.go:235: [Orchestrator] ⚠️  Pricing adjusted: [Adjusted: margin was 6%, increased to minimum 10% Price adjusted from $45.00 to $46.66]
-2026/05/29 13:29:09 orchestrator.go:236: [Orchestrator] ✅ Final: $46.66 (discount: $23.34, margin: 10%)
-2026/05/29 13:29:09 discount_adapter.go:90: [DiscountAdapter] DEBUG: callback=true, decisions=true
-2026/05/29 13:29:09 discount_adapter.go:92: [DiscountAdapter] Calling agent decisions callback...
-2026/05/29 13:29:09 tenant.go:111: [Tenant MonMagasin] Agent decisions callback triggered!
-2026/05/29 13:29:09 tenant.go:113: [Tenant MonMagasin] Building event map...
-2026/05/29 13:29:09 tenant.go:145: [Tenant MonMagasin] Marshaling to JSON...
-2026/05/29 13:29:09 tenant.go:152: [Tenant MonMagasin] Sending agent_decisions SSE event: {"agent1":{"avg_price":6000,"lowest_by":"b5b1184d","lowest_price":5000,"rank":3,"total":3},"agent2":{"opportunity":"premium_position","position":"premium","reasoning":"Market position: premium (rank 3 of 3). Price trend: stable (0.0% over 168h0m0s). Market allows premium positioning with current spread.","trend":"stable"},"agent3":{"confidence":85,"discount":2500,"reasoning":["Volume objective - must be competitive"],"strategy":"aggressive","target":4500},"agent4":{"approved":true,"final":4666,"margin":10,"rejected":false,"warnings":["Adjusted: margin was 6%, increased to minimum 10%","Price adjusted from $45.00 to $46.66"]},"type":"agent_decisions"}
-2026/05/29 13:29:09 tenant.go:154: [Tenant MonMagasin] SSE event sent
-2026/05/29 13:29:09 discount_adapter.go:94: [DiscountAdapter] Callback completed
-2026/05/29 13:29:09 discount_adapter.go:104: [DiscountAdapter] Product casque_audio: discount $23.34 x 1 = $23.34
-2026/05/29 13:29:09 discount_adapter.go:117: [DiscountAdapter] Total competitive discount: $23.34
-2026/05/29 13:29:09 config_api.go:238: [TestAutoCompete] Success: final price 4666, discount 2334, margin -7%
-2026/05/29 13:29:11 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51cff030, pricing_algo=0x4c3e51bea700
-2026/05/29 13:29:12 config_api.go:68: [handlePutConfig] Received: selling_price=0x4c3e51d1aec0, pricing_algo=0x4c3e51e2da40
+2026/05/29 13:33:34 main.go:43: Arena starting on http://localhost:8888
+2026/05/29 13:33:34 main.go:44: Landing:   http://localhost:8888/
+2026/05/29 13:33:48 tenant.go:59: Enabling MULTI-AGENT competitive pricing for tenant monmagasin (minMargin=10%)
+2026/05/29 13:33:48 tenant.go:67: [monmagasin] Agent 1 (Price Intelligence) initialized
+2026/05/29 13:33:48 tenant.go:72: [monmagasin] Agent 2 (Market Analysis) initialized
+2026/05/29 13:33:48 tenant.go:83: [monmagasin] Agent 3 (Strategy Recommender) initialized - objective: volume
+2026/05/29 13:33:48 tenant.go:93: [monmagasin] Agent 4 (Margin Validator) initialized - min margin: 10%, actual cost: $50.00
+2026/05/29 13:33:48 tenant.go:162: ✅ MULTI-AGENT competitive pricing configured for monmagasin (4 agents active)
+2026/05/29 13:33:48 tenant.go:319: registered tenant monmagasin (160984c4) with shopping graph
+2026/05/29 13:33:50 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/29 13:33:50 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/05/29 13:33:51 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7ca0b670, pricing_algo=0x7b9d7ca17330
+2026/05/29 13:33:52 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7c814460, pricing_algo=0x7b9d7c8105d0
+2026/05/29 13:34:00 tenant.go:59: Enabling MULTI-AGENT competitive pricing for tenant marchanda (minMargin=10%)
+2026/05/29 13:34:00 tenant.go:67: [marchanda] Agent 1 (Price Intelligence) initialized
+2026/05/29 13:34:00 tenant.go:72: [marchanda] Agent 2 (Market Analysis) initialized
+2026/05/29 13:34:00 tenant.go:83: [marchanda] Agent 3 (Strategy Recommender) initialized - objective: volume
+2026/05/29 13:34:00 tenant.go:93: [marchanda] Agent 4 (Margin Validator) initialized - min margin: 10%, actual cost: $50.00
+2026/05/29 13:34:00 tenant.go:162: ✅ MULTI-AGENT competitive pricing configured for marchanda (4 agents active)
+2026/05/29 13:34:00 tenant.go:319: registered tenant marchanda (f0c956e0) with shopping graph
+2026/05/29 13:34:00 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/29 13:34:00 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/05/29 13:34:06 tenant.go:59: Enabling MULTI-AGENT competitive pricing for tenant marchandb (minMargin=10%)
+2026/05/29 13:34:06 tenant.go:67: [marchandb] Agent 1 (Price Intelligence) initialized
+2026/05/29 13:34:06 tenant.go:72: [marchandb] Agent 2 (Market Analysis) initialized
+2026/05/29 13:34:06 tenant.go:83: [marchandb] Agent 3 (Strategy Recommender) initialized - objective: volume
+2026/05/29 13:34:06 tenant.go:93: [marchandb] Agent 4 (Margin Validator) initialized - min margin: 10%, actual cost: $50.00
+2026/05/29 13:34:06 tenant.go:162: ✅ MULTI-AGENT competitive pricing configured for marchandb (4 agents active)
+2026/05/29 13:34:06 tenant.go:319: registered tenant marchandb (2a5fbadc) with shopping graph
+2026/05/29 13:34:10 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/05/29 13:34:10 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/05/29 13:34:14 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7c7942b0, pricing_algo=0x7b9d7cb46080
+2026/05/29 13:34:15 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 7700
+2026/05/29 13:34:15 discount_adapter.go:70: [DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing
+2026/05/29 13:34:15 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
+2026/05/29 13:34:15 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
+2026/05/29 13:34:15 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 3 results from search
+2026/05/29 13:34:15 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=2a5fbadc, MerchantName=marchandb, Price=5517, InStock=true, DiscountHints=[]
+2026/05/29 13:34:15 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5517 (discount hints applied)
+2026/05/29 13:34:15 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=f0c956e0, MerchantName=marchanda, Price=7344, InStock=true, DiscountHints=[]
+2026/05/29 13:34:15 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7344 (discount hints applied)
+2026/05/29 13:34:15 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=160984c4, MerchantName=monmagasin, Price=7700, InStock=true, DiscountHints=[]
+2026/05/29 13:34:15 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7700 (discount hints applied)
+2026/05/29 13:34:15 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 3 competitor prices
+2026/05/29 13:34:15 price_intelligence.go:34: [DEBUG PriceIntel] Got 3 competitors from API for product casque_audio
+2026/05/29 13:34:15 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 160984c4
+2026/05/29 13:34:15 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=2a5fbadc, Name=marchandb, Price=5517, InStock=true
+2026/05/29 13:34:15 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=f0c956e0, Name=marchanda, Price=7344, InStock=true
+2026/05/29 13:34:15 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=160984c4, Name=monmagasin, Price=7700, InStock=true
+2026/05/29 13:34:15 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 160984c4
+2026/05/29 13:34:15 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 2 valid competitors
+2026/05/29 13:34:15 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchandb: displayed=5517, effective=5517, hints=[]
+2026/05/29 13:34:15 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchanda: displayed=7344, effective=7344, hints=[]
+2026/05/29 13:34:15 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: marchandb with effective price 5517 (was 5517 with hints [])
+2026/05/29 13:34:15 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: 2a5fbadc with price $55.17
+2026/05/29 13:34:15 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/3, lowest: $55.17 (2a5fbadc)
+2026/05/29 13:34:15 orchestrator.go:189: [Orchestrator] Market Analysis: mid-market position, stable trend, opportunity: premium_position
+2026/05/29 13:34:15 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $49.65, discount: $27.35, confidence: 95%
+2026/05/29 13:34:15 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive Beat lowest competitor by $1.00 to guarantee win]
+2026/05/29 13:34:15 orchestrator.go:233: [Orchestrator] ❌ Pricing REJECTED: Target price $49.65 is below cost $50.00
+2026/05/29 13:34:15 discount_adapter.go:90: [DiscountAdapter] DEBUG: callback=true, decisions=true
+2026/05/29 13:34:15 discount_adapter.go:92: [DiscountAdapter] Calling agent decisions callback...
+2026/05/29 13:34:15 tenant.go:113: [Tenant monmagasin] Agent decisions callback triggered!
+2026/05/29 13:34:15 tenant.go:115: [Tenant monmagasin] Building event map...
+2026/05/29 13:34:15 tenant.go:147: [Tenant monmagasin] Marshaling to JSON...
+2026/05/29 13:34:15 tenant.go:154: [Tenant monmagasin] Sending agent_decisions SSE event: {"agent1":{"avg_price":6853,"lowest_by":"2a5fbadc","lowest_price":5517,"rank":3,"total":3},"agent2":{"opportunity":"premium_position","position":"mid-market","reasoning":"Market position: mid-market (rank 3 of 3). Price trend: stable (0.0% over 168h0m0s). Market allows premium positioning with current spread.","trend":"stable"},"agent3":{"confidence":95,"discount":2735,"reasoning":["Volume objective - must be competitive","Beat lowest competitor by $1.00 to guarantee win"],"strategy":"aggressive","target":4965},"agent4":{"approved":false,"final":7700,"margin":100,"rejected":true,"warnings":["REJECTED: Price below cost"]},"type":"agent_decisions"}
+2026/05/29 13:34:15 tenant.go:156: [Tenant monmagasin] SSE event sent
+2026/05/29 13:34:15 discount_adapter.go:94: [DiscountAdapter] Callback completed
+2026/05/29 13:34:15 discount_adapter.go:113: [DiscountAdapter] No competitive discount applied
+2026/05/29 13:34:15 config_api.go:192: [TestAutoCompete] No discount returned
+2026/05/29 13:34:27 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7c795da0, pricing_algo=0x7b9d7c6c5200
+2026/05/29 13:34:31 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 8200
+2026/05/29 13:34:31 discount_adapter.go:70: [DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing
+2026/05/29 13:34:31 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
+2026/05/29 13:34:31 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
+2026/05/29 13:34:31 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 3 results from search
+2026/05/29 13:34:31 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=2a5fbadc, MerchantName=marchandb, Price=5517, InStock=true, DiscountHints=[]
+2026/05/29 13:34:31 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5517 (discount hints applied)
+2026/05/29 13:34:31 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=f0c956e0, MerchantName=marchanda, Price=7344, InStock=true, DiscountHints=[]
+2026/05/29 13:34:31 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7344 (discount hints applied)
+2026/05/29 13:34:31 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=160984c4, MerchantName=monmagasin, Price=8200, InStock=true, DiscountHints=[]
+2026/05/29 13:34:31 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 8200 (discount hints applied)
+2026/05/29 13:34:31 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 3 competitor prices
+2026/05/29 13:34:31 price_intelligence.go:34: [DEBUG PriceIntel] Got 3 competitors from API for product casque_audio
+2026/05/29 13:34:31 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 160984c4
+2026/05/29 13:34:31 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=2a5fbadc, Name=marchandb, Price=5517, InStock=true
+2026/05/29 13:34:31 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=f0c956e0, Name=marchanda, Price=7344, InStock=true
+2026/05/29 13:34:31 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=160984c4, Name=monmagasin, Price=8200, InStock=true
+2026/05/29 13:34:31 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 160984c4
+2026/05/29 13:34:31 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 2 valid competitors
+2026/05/29 13:34:31 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchandb: displayed=5517, effective=5517, hints=[]
+2026/05/29 13:34:31 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchanda: displayed=7344, effective=7344, hints=[]
+2026/05/29 13:34:31 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: marchandb with effective price 5517 (was 5517 with hints [])
+2026/05/29 13:34:31 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: 2a5fbadc with price $55.17
+2026/05/29 13:34:31 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/3, lowest: $55.17 (2a5fbadc)
+2026/05/29 13:34:31 orchestrator.go:189: [Orchestrator] Market Analysis: premium position, up trend, opportunity: premium_position
+2026/05/29 13:34:31 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $49.65, discount: $32.35, confidence: 95%
+2026/05/29 13:34:31 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive Beat lowest competitor by $1.00 to guarantee win]
+2026/05/29 13:34:31 orchestrator.go:233: [Orchestrator] ❌ Pricing REJECTED: Target price $49.65 is below cost $50.00
+2026/05/29 13:34:31 discount_adapter.go:90: [DiscountAdapter] DEBUG: callback=true, decisions=true
+2026/05/29 13:34:31 discount_adapter.go:92: [DiscountAdapter] Calling agent decisions callback...
+2026/05/29 13:34:31 tenant.go:113: [Tenant monmagasin] Agent decisions callback triggered!
+2026/05/29 13:34:31 tenant.go:115: [Tenant monmagasin] Building event map...
+2026/05/29 13:34:31 tenant.go:147: [Tenant monmagasin] Marshaling to JSON...
+2026/05/29 13:34:31 tenant.go:154: [Tenant monmagasin] Sending agent_decisions SSE event: {"agent1":{"avg_price":7020,"lowest_by":"2a5fbadc","lowest_price":5517,"rank":3,"total":3},"agent2":{"opportunity":"premium_position","position":"premium","reasoning":"Market position: premium (rank 3 of 3). Price trend: up (6.5% over 168h0m0s). Market allows premium positioning with current spread.","trend":"up"},"agent3":{"confidence":95,"discount":3235,"reasoning":["Volume objective - must be competitive","Beat lowest competitor by $1.00 to guarantee win"],"strategy":"aggressive","target":4965},"agent4":{"approved":false,"final":8200,"margin":100,"rejected":true,"warnings":["REJECTED: Price below cost"]},"type":"agent_decisions"}
+2026/05/29 13:34:31 tenant.go:156: [Tenant monmagasin] SSE event sent
+2026/05/29 13:34:31 discount_adapter.go:94: [DiscountAdapter] Callback completed
+2026/05/29 13:34:31 discount_adapter.go:113: [DiscountAdapter] No competitive discount applied
+2026/05/29 13:34:31 config_api.go:192: [TestAutoCompete] No discount returned
+2026/05/29 13:34:33 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 8200
+2026/05/29 13:34:33 discount_adapter.go:70: [DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing
+2026/05/29 13:34:33 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
+2026/05/29 13:34:33 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
+2026/05/29 13:34:33 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 3 results from search
+2026/05/29 13:34:33 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=2a5fbadc, MerchantName=marchandb, Price=5517, InStock=true, DiscountHints=[]
+2026/05/29 13:34:33 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5517 (discount hints applied)
+2026/05/29 13:34:33 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=f0c956e0, MerchantName=marchanda, Price=7344, InStock=true, DiscountHints=[]
+2026/05/29 13:34:33 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7344 (discount hints applied)
+2026/05/29 13:34:33 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=160984c4, MerchantName=monmagasin, Price=8200, InStock=true, DiscountHints=[]
+2026/05/29 13:34:33 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 8200 (discount hints applied)
+2026/05/29 13:34:33 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 3 competitor prices
+2026/05/29 13:34:33 price_intelligence.go:34: [DEBUG PriceIntel] Got 3 competitors from API for product casque_audio
+2026/05/29 13:34:33 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 160984c4
+2026/05/29 13:34:33 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=2a5fbadc, Name=marchandb, Price=5517, InStock=true
+2026/05/29 13:34:33 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=f0c956e0, Name=marchanda, Price=7344, InStock=true
+2026/05/29 13:34:33 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=160984c4, Name=monmagasin, Price=8200, InStock=true
+2026/05/29 13:34:33 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 160984c4
+2026/05/29 13:34:33 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 2 valid competitors
+2026/05/29 13:34:33 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchandb: displayed=5517, effective=5517, hints=[]
+2026/05/29 13:34:33 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchanda: displayed=7344, effective=7344, hints=[]
+2026/05/29 13:34:33 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: marchandb with effective price 5517 (was 5517 with hints [])
+2026/05/29 13:34:33 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: 2a5fbadc with price $55.17
+2026/05/29 13:34:33 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/3, lowest: $55.17 (2a5fbadc)
+2026/05/29 13:34:33 orchestrator.go:189: [Orchestrator] Market Analysis: premium position, up trend, opportunity: premium_position
+2026/05/29 13:34:33 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $49.65, discount: $32.35, confidence: 95%
+2026/05/29 13:34:33 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive Beat lowest competitor by $1.00 to guarantee win]
+2026/05/29 13:34:33 orchestrator.go:233: [Orchestrator] ❌ Pricing REJECTED: Target price $49.65 is below cost $50.00
+2026/05/29 13:34:33 discount_adapter.go:90: [DiscountAdapter] DEBUG: callback=true, decisions=true
+2026/05/29 13:34:33 discount_adapter.go:92: [DiscountAdapter] Calling agent decisions callback...
+2026/05/29 13:34:33 tenant.go:113: [Tenant monmagasin] Agent decisions callback triggered!
+2026/05/29 13:34:33 tenant.go:115: [Tenant monmagasin] Building event map...
+2026/05/29 13:34:33 tenant.go:147: [Tenant monmagasin] Marshaling to JSON...
+2026/05/29 13:34:33 tenant.go:154: [Tenant monmagasin] Sending agent_decisions SSE event: {"agent1":{"avg_price":7020,"lowest_by":"2a5fbadc","lowest_price":5517,"rank":3,"total":3},"agent2":{"opportunity":"premium_position","position":"premium","reasoning":"Market position: premium (rank 3 of 3). Price trend: up (6.5% over 168h0m0s). Market allows premium positioning with current spread.","trend":"up"},"agent3":{"confidence":95,"discount":3235,"reasoning":["Volume objective - must be competitive","Beat lowest competitor by $1.00 to guarantee win"],"strategy":"aggressive","target":4965},"agent4":{"approved":false,"final":8200,"margin":100,"rejected":true,"warnings":["REJECTED: Price below cost"]},"type":"agent_decisions"}
+2026/05/29 13:34:33 tenant.go:156: [Tenant monmagasin] SSE event sent
+2026/05/29 13:34:33 discount_adapter.go:94: [DiscountAdapter] Callback completed
+2026/05/29 13:34:33 discount_adapter.go:113: [DiscountAdapter] No competitive discount applied
+2026/05/29 13:34:33 config_api.go:192: [TestAutoCompete] No discount returned
+2026/05/29 13:34:34 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7c69cc40, pricing_algo=0x7b9d7cb24850
+2026/05/29 13:34:38 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb04770, pricing_algo=0x7b9d7ca16f70
+2026/05/29 13:34:39 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb049e0, pricing_algo=0x7b9d7ca174a0
+2026/05/29 13:34:39 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb827b0, pricing_algo=0x7b9d7ca82ff0
+2026/05/29 13:34:40 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7c69dcf0, pricing_algo=0x7b9d7cd08c10
+2026/05/29 13:34:44 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb05658, pricing_algo=0x7b9d7c920ff0
+2026/05/29 13:34:44 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb83308, pricing_algo=0x7b9d7cb47570
+2026/05/29 13:34:45 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7ca0a5d8, pricing_algo=0x7b9d7c6c5400
+2026/05/29 13:34:46 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb83c68, pricing_algo=0x7b9d7c810920
+2026/05/29 13:34:46 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb82128, pricing_algo=0x7b9d7c6c4090
+2026/05/29 13:34:47 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb825f8, pricing_algo=0x7b9d7c6c4ef0
+2026/05/29 13:34:51 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb048a0, pricing_algo=0x7b9d7c945700
+2026/05/29 13:34:51 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb04ab0, pricing_algo=0x7b9d7c945b70
+2026/05/29 13:34:51 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb82b80, pricing_algo=0x7b9d7c6c5b70
+2026/05/29 13:34:52 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7c915660, pricing_algo=0x7b9d7ca16160
+2026/05/29 13:34:52 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb04160, pricing_algo=0x7b9d7cc022e0
+2026/05/29 13:34:56 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 7000
+2026/05/29 13:34:56 discount_adapter.go:70: [DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing
+2026/05/29 13:34:56 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
+2026/05/29 13:34:56 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
+2026/05/29 13:34:56 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 3 results from search
+2026/05/29 13:34:56 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=2a5fbadc, MerchantName=marchandb, Price=5000, InStock=true, DiscountHints=[]
+2026/05/29 13:34:56 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5000 (discount hints applied)
+2026/05/29 13:34:56 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=f0c956e0, MerchantName=marchanda, Price=6000, InStock=true, DiscountHints=[]
+2026/05/29 13:34:56 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 6000 (discount hints applied)
+2026/05/29 13:34:56 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=160984c4, MerchantName=monmagasin, Price=7000, InStock=true, DiscountHints=[]
+2026/05/29 13:34:56 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7000 (discount hints applied)
+2026/05/29 13:34:56 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 3 competitor prices
+2026/05/29 13:34:56 price_intelligence.go:34: [DEBUG PriceIntel] Got 3 competitors from API for product casque_audio
+2026/05/29 13:34:56 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 160984c4
+2026/05/29 13:34:56 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=2a5fbadc, Name=marchandb, Price=5000, InStock=true
+2026/05/29 13:34:56 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=f0c956e0, Name=marchanda, Price=6000, InStock=true
+2026/05/29 13:34:56 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=160984c4, Name=monmagasin, Price=7000, InStock=true
+2026/05/29 13:34:56 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 160984c4
+2026/05/29 13:34:56 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 2 valid competitors
+2026/05/29 13:34:56 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchandb: displayed=5000, effective=5000, hints=[]
+2026/05/29 13:34:56 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchanda: displayed=6000, effective=6000, hints=[]
+2026/05/29 13:34:56 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: marchandb with effective price 5000 (was 5000 with hints [])
+2026/05/29 13:34:56 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: 2a5fbadc with price $50.00
+2026/05/29 13:34:56 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/3, lowest: $50.00 (2a5fbadc)
+2026/05/29 13:34:56 orchestrator.go:189: [Orchestrator] Market Analysis: premium position, down trend, opportunity: premium_position
+2026/05/29 13:34:56 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $45.00, discount: $25.00, confidence: 95%
+2026/05/29 13:34:56 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive Beat lowest competitor by $1.00 to guarantee win]
+2026/05/29 13:34:56 orchestrator.go:233: [Orchestrator] ❌ Pricing REJECTED: Target price $45.00 is below cost $50.00
+2026/05/29 13:34:56 discount_adapter.go:90: [DiscountAdapter] DEBUG: callback=true, decisions=true
+2026/05/29 13:34:56 discount_adapter.go:92: [DiscountAdapter] Calling agent decisions callback...
+2026/05/29 13:34:56 tenant.go:113: [Tenant monmagasin] Agent decisions callback triggered!
+2026/05/29 13:34:56 tenant.go:115: [Tenant monmagasin] Building event map...
+2026/05/29 13:34:56 tenant.go:147: [Tenant monmagasin] Marshaling to JSON...
+2026/05/29 13:34:56 tenant.go:154: [Tenant monmagasin] Sending agent_decisions SSE event: {"agent1":{"avg_price":6000,"lowest_by":"2a5fbadc","lowest_price":5000,"rank":3,"total":3},"agent2":{"opportunity":"premium_position","position":"premium","reasoning":"Market position: premium (rank 3 of 3). Price trend: down (-9.1% over 168h0m0s). Market allows premium positioning with current spread.","trend":"down"},"agent3":{"confidence":95,"discount":2500,"reasoning":["Volume objective - must be competitive","Beat lowest competitor by $1.00 to guarantee win"],"strategy":"aggressive","target":4500},"agent4":{"approved":false,"final":7000,"margin":100,"rejected":true,"warnings":["REJECTED: Price below cost"]},"type":"agent_decisions"}
+2026/05/29 13:34:56 tenant.go:156: [Tenant monmagasin] SSE event sent
+2026/05/29 13:34:56 discount_adapter.go:94: [DiscountAdapter] Callback completed
+2026/05/29 13:34:56 discount_adapter.go:113: [DiscountAdapter] No competitive discount applied
+2026/05/29 13:34:56 config_api.go:192: [TestAutoCompete] No discount returned
+2026/05/29 13:35:09 config_api.go:68: [handlePutConfig] Received: selling_price=0x7b9d7cb04dc0, pricing_algo=0x7b9d7cc03990
+2026/05/29 13:35:18 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 7000
+2026/05/29 13:35:18 discount_adapter.go:70: [DiscountAdapter] AUTO_COMPETE detected, using multi-agent pricing
+2026/05/29 13:35:18 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
+2026/05/29 13:35:18 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
+2026/05/29 13:35:18 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 3 results from search
+2026/05/29 13:35:18 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=2a5fbadc, MerchantName=marchandb, Price=5000, InStock=true, DiscountHints=[]
+2026/05/29 13:35:18 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5000 (discount hints applied)
+2026/05/29 13:35:18 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=f0c956e0, MerchantName=marchanda, Price=6000, InStock=true, DiscountHints=[]
+2026/05/29 13:35:18 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 6000 (discount hints applied)
+2026/05/29 13:35:18 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=160984c4, MerchantName=monmagasin, Price=7000, InStock=true, DiscountHints=[]
+2026/05/29 13:35:18 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7000 (discount hints applied)
+2026/05/29 13:35:18 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 3 competitor prices
+2026/05/29 13:35:18 price_intelligence.go:34: [DEBUG PriceIntel] Got 3 competitors from API for product casque_audio
+2026/05/29 13:35:18 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 160984c4
+2026/05/29 13:35:18 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=2a5fbadc, Name=marchandb, Price=5000, InStock=true
+2026/05/29 13:35:18 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=f0c956e0, Name=marchanda, Price=6000, InStock=true
+2026/05/29 13:35:18 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=160984c4, Name=monmagasin, Price=7000, InStock=true
+2026/05/29 13:35:18 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 160984c4
+2026/05/29 13:35:18 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 2 valid competitors
+2026/05/29 13:35:18 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchandb: displayed=5000, effective=5000, hints=[]
+2026/05/29 13:35:18 price_intelligence.go:82: [DEBUG PriceIntel] Competitor marchanda: displayed=6000, effective=6000, hints=[]
+2026/05/29 13:35:18 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: marchandb with effective price 5000 (was 5000 with hints [])
+2026/05/29 13:35:18 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: 2a5fbadc with price $50.00
+2026/05/29 13:35:18 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/3, lowest: $50.00 (2a5fbadc)
+2026/05/29 13:35:18 orchestrator.go:189: [Orchestrator] Market Analysis: premium position, down trend, opportunity: premium_position
+2026/05/29 13:35:18 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $45.00, discount: $25.00, confidence: 95%
+2026/05/29 13:35:18 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive Beat lowest competitor by $1.00 to guarantee win]
+2026/05/29 13:35:18 orchestrator.go:233: [Orchestrator] ❌ Pricing REJECTED: Target price $45.00 is below cost $50.00
+2026/05/29 13:35:18 discount_adapter.go:90: [DiscountAdapter] DEBUG: callback=true, decisions=true
+2026/05/29 13:35:18 discount_adapter.go:92: [DiscountAdapter] Calling agent decisions callback...
+2026/05/29 13:35:18 tenant.go:113: [Tenant monmagasin] Agent decisions callback triggered!
+2026/05/29 13:35:18 tenant.go:115: [Tenant monmagasin] Building event map...
+2026/05/29 13:35:18 tenant.go:147: [Tenant monmagasin] Marshaling to JSON...
+2026/05/29 13:35:18 tenant.go:154: [Tenant monmagasin] Sending agent_decisions SSE event: {"agent1":{"avg_price":6000,"lowest_by":"2a5fbadc","lowest_price":5000,"rank":3,"total":3},"agent2":{"opportunity":"premium_position","position":"premium","reasoning":"Market position: premium (rank 3 of 3). Price trend: down (-9.1% over 168h0m0s). Market allows premium positioning with current spread.","trend":"down"},"agent3":{"confidence":95,"discount":2500,"reasoning":["Volume objective - must be competitive","Beat lowest competitor by $1.00 to guarantee win"],"strategy":"aggressive","target":4500},"agent4":{"approved":false,"final":7000,"margin":100,"rejected":true,"warnings":["REJECTED: Price below cost"]},"type":"agent_decisions"}
+2026/05/29 13:35:18 tenant.go:156: [Tenant monmagasin] SSE event sent
+2026/05/29 13:35:18 discount_adapter.go:94: [DiscountAdapter] Callback completed
+2026/05/29 13:35:18 discount_adapter.go:113: [DiscountAdapter] No competitive discount applied
+2026/05/29 13:35:18 config_api.go:192: [TestAutoCompete] No discount returned
+2026/05/29 13:36:20 server.go:108: removed tenant monmagasin (160984c4) from arena
+2026/05/29 13:36:20 server.go:124: deregistered tenant 160984c4 from shopping graph
+2026/05/29 13:36:21 server.go:108: removed tenant marchanda (f0c956e0) from arena
+2026/05/29 13:36:21 server.go:124: deregistered tenant f0c956e0 from shopping graph
+2026/05/29 13:36:22 server.go:108: removed tenant marchandb (2a5fbadc) from arena
+2026/05/29 13:36:22 server.go:124: deregistered tenant 2a5fbadc from shopping graph
