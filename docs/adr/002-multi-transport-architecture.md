@@ -15,7 +15,7 @@ Le projet UCP merchant test doit être accessible par **différents types de cli
 
 ### Exigences fonctionnelles
 
-- **Interopérabilité Web** : Support des clients HTTP classiques (web, mobile, tests)
+- **Intégration Web** : Support des clients HTTP classiques (web, mobile, tests)
 - **Intégration LLM** : Exposer les capabilities comme tools pour Claude Desktop
 - **Communication Agent-to-Agent** : Discovery automatique, auth sécurisée, session management
 
