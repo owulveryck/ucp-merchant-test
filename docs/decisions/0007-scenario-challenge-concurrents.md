@@ -1,7 +1,7 @@
 ---
 parent: Decisions
-nav_order: 8
-title: ADR-008 Scénario Challenge
+nav_order: 7
+title: ADR-007 Scénario Challenge
 
 status: accepted
 date: 2026-06-04

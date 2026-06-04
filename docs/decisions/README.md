@@ -13,18 +13,19 @@ Ce répertoire contient les Architecture Decision Records (ADRs) pour le systèm
 | [0003](0003-strategie-detection-codes-promo.md) | Stratégie de Détection des Codes Promo | Accepté | 2026-05-29 |
 | [0004](0004-architecture-3-agents-orchestree.md) | Architecture 3-Agents Orchestrée (Juin 2026) | Accepté | 2026-06-04 |
 | [0005](0005-agent-acheteur-integre.md) | Agent Acheteur Intégré dans Interface Web | Accepté | 2026-06-04 |
-| [0006](0006-multi-agent-shopping-architecture.md) | Multi-Agent Shopping Architecture | Accepté | 2026-05-29 |
-| [0007](0007-multi-transport-architecture.md) | Architecture Multi-Transport (REST/MCP/A2A) | Accepté | 2026-01-11 |
-| [0008](0008-scenario-challenge-concurrents.md) | Scénario Challenge avec Concurrents Pré-Créés | Accepté | 2026-06-04 |
+| [0006](0006-messages-detailles-decision-achat.md) | Messages Détaillés de Décision d'Achat | Accepté | 2026-06-04 |
+| [0007](0007-scenario-challenge-concurrents.md) | Scénario Challenge avec Concurrents Pré-Créés | Accepté | 2026-06-04 |
+| [0008](0008-multi-agent-shopping-architecture.md) | Multi-Agent Shopping Architecture | Accepté | 2026-05-29 |
+| [0009](0009-multi-transport-architecture.md) | Architecture Multi-Transport (REST/MCP/A2A) | Accepté | 2026-01-11 |
 
 ### 🇬🇧 English Versions (Reference)
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [0009](0009-multi-agent-architecture-for-competitive-pricing.md) | Multi-Agent Architecture for Competitive Pricing | Accepted | 2026-05-29 |
-| [0010](0010-winning-strategy-over-perfect-margin.md) | Winning Strategy Over Perfect Margin | Accepted | 2026-05-29 |
-| [0011](0011-competitive-pricing-agent.md) | Competitive Pricing Agent | Accepted | 2026-05-29 |
-| [0012](0012-discount-code-detection-strategy.md) | Discount Code Detection Strategy | Accepted | 2026-05-29 |
+| [0010](0010-multi-agent-architecture-for-competitive-pricing.md) | Multi-Agent Architecture for Competitive Pricing | Accepted | 2026-05-29 |
+| [0011](0011-winning-strategy-over-perfect-margin.md) | Winning Strategy Over Perfect Margin | Accepted | 2026-05-29 |
+| [0012](0012-competitive-pricing-agent.md) | Competitive Pricing Agent | Accepted | 2026-05-29 |
+| [0013](0013-discount-code-detection-strategy.md) | Discount Code Detection Strategy | Accepted | 2026-05-29 |
 
 ## Organisation
 
@@ -33,16 +34,17 @@ Ce répertoire contient les Architecture Decision Records (ADRs) pour le systèm
 - Stratégie de pricing compétitif
 - Détection codes promo
 
-**ADRs 0004-0008** : Évolution 3-agents + UX (Juin 2026)
+**ADRs 0004-0007** : Évolution 3-agents + UX (Juin 2026)
 - Architecture 3-agents enveloppant le système 4-agents
 - Agent acheteur intégré avec feedback temps réel
+- Messages détaillés pour transparence
 - Scénario de démo challenge
 
-**ADRs 0006-0007** : Infrastructures
+**ADRs 0008-0009** : Infrastructures
 - Architecture shopping multi-agents
 - Support multi-transport (REST/MCP/A2A)
 
-**ADRs 0009-0012** : Versions anglaises de référence
+**ADRs 0010-0013** : Versions anglaises de référence
 
 ## Décisions Clés
 
@@ -69,7 +71,17 @@ Ce répertoire contient les Architecture Decision Records (ADRs) pour le systèm
 
 ---
 
-### 🏆 ADR-0008 : Scénario Challenge (Juin 2026)
+### 📊 ADR-0006 : Messages Détaillés (Juin 2026)
+
+**Problème** : Décision de l'agent acheteur opaque, difficile à valider
+
+**Décision** : Afficher comparaison complète des prix + justification chiffrée
+
+**Impact** : Transparence totale, validation immédiate, démo convaincante
+
+---
+
+### 🏆 ADR-0007 : Scénario Challenge (Juin 2026)
 
 **Problème** : Démo manuelle nécessite 3-5 minutes de setup
 
@@ -99,5 +111,4 @@ Tous les ADRs suivent le template [MADR](https://adr.github.io/madr/) :
 ## Documentation Associée
 
 - [QUICK_START.md](../../QUICK_START.md) : Démarrage rapide
-- [ADR_A_CREER.md](../../ADR_A_CREER.md) : Planning ADRs futures
 - [README_ADR.md](README_ADR.md) : Guide détaillé ADRs (legacy)
