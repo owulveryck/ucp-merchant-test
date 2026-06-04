@@ -95,3 +95,11 @@
 2026/06/04 12:57:16 config_api.go:68: [handlePutConfig] Received: selling_price=0x4a339b1ee8f0, pricing_algo=0x4a339b1cc760
 2026/06/04 14:13:36 server.go:108: removed tenant Moi (385c9dc1) from arena
 2026/06/04 14:13:36 server.go:124: deregistered tenant 385c9dc1 from shopping graph
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
