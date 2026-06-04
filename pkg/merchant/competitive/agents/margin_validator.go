@@ -35,16 +35,44 @@ func (a *MarginValidatorAgent) Validate(
 
 	// Hard floor: never sell below cost
 	if a.config.HardFloor && finalPrice < costPrice {
+		// WINNING STRATEGY: Instead of complete rejection, offer the BEST price we can
+		// Set price to cost + minimum margin to stay competitive while protecting margin
+		bestPossiblePrice := costPrice * (100 + a.config.MinMarginPercent) / 100
+		bestDiscount := ourPrice - bestPossiblePrice
+
+		// If even the best possible price is still higher than our current price, keep current
+		if bestPossiblePrice >= ourPrice {
+			return models.ValidationResult{
+				ProductID:       rec.ProductID,
+				Approved:        false,
+				FinalPrice:      ourPrice,
+				FinalDiscount:   0,
+				Margin:          (ourPrice - costPrice) * 100 / ourPrice,
+				MarginDollars:   ourPrice - costPrice,
+				Warnings:        []string{"Cannot compete: market price below our cost"},
+				Rejected:        true,
+				RejectionReason: fmt.Sprintf("Target price $%.2f is below cost $%.2f, and current price already optimal", float64(finalPrice)/100, float64(costPrice)/100),
+			}, nil
+		}
+
+		// Apply the best possible competitive price
+		margin := (bestPossiblePrice - costPrice) * 100 / bestPossiblePrice
 		return models.ValidationResult{
-			ProductID:       rec.ProductID,
-			Approved:        false,
-			FinalPrice:      ourPrice,
-			FinalDiscount:   0,
-			Margin:          100,
-			MarginDollars:   ourPrice - costPrice,
-			Warnings:        []string{"REJECTED: Price below cost"},
-			Rejected:        true,
-			RejectionReason: fmt.Sprintf("Target price $%.2f is below cost $%.2f", float64(finalPrice)/100, float64(costPrice)/100),
+			ProductID:     rec.ProductID,
+			Approved:      true, // APPROVE the adjusted price
+			FinalPrice:    bestPossiblePrice,
+			FinalDiscount: bestDiscount,
+			Margin:        margin,
+			MarginDollars: bestPossiblePrice - costPrice,
+			Warnings: []string{
+				fmt.Sprintf("⚠️ Prix cible $%.2f < coût $%.2f : ajusté à $%.2f (coût + %d%% marge)",
+					float64(finalPrice)/100,
+					float64(costPrice)/100,
+					float64(bestPossiblePrice)/100,
+					a.config.MinMarginPercent),
+				"Prix compétitif impossible sans perte - prix minimum appliqué",
+			},
+			Rejected: false,
 		}, nil
 	}
 

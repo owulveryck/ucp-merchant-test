@@ -250,32 +250,37 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
     </button>
     <div id="calc-status" style="text-align:center;font-size:.85rem;color:#666;margin-bottom:.6rem;min-height:1.2rem"></div>
 
-    <!-- Les 4 Agents (caché au départ) -->
+    <!-- Les 3 Agents + Raisonnement Détaillé (caché au départ) -->
     <div id="agents-working" style="display:none">
-      <div style="font-size:.9rem;font-weight:700;color:#1A1A2E;margin-bottom:.4rem">🤖 Analyse en cours...</div>
+      <div style="font-size:.9rem;font-weight:700;color:#1A1A2E;margin-bottom:.4rem">🤖 Système Multi-Agents</div>
 
-      <!-- Agent 1 -->
-      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.3rem;border-left:3px solid #3B82F6">
-        <div style="font-size:.8rem;font-weight:700;color:#3B82F6">🔍 Espion</div>
-        <div id="agent1-simple" style="font-size:.75rem;color:#666;margin-top:.2rem"></div>
+      <!-- Agent 2: Customer Growth -->
+      <div style="background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.4rem;border-left:3px solid #8B5CF6">
+        <div style="font-size:.85rem;font-weight:700;color:#8B5CF6;margin-bottom:.3rem">👤 AGENT 2: CUSTOMER GROWTH</div>
+        <div id="agent2-decision" style="font-size:.75rem;font-weight:600;color:#1A1A2E;margin-bottom:.2rem"></div>
+        <div id="agent2-reasoning" style="font-size:.7rem;color:#666;line-height:1.3"></div>
       </div>
 
-      <!-- Agent 2 -->
-      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.3rem;border-left:3px solid #8B5CF6">
-        <div style="font-size:.8rem;font-weight:700;color:#8B5CF6">📊 Analyste</div>
-        <div id="agent2-simple" style="font-size:.75rem;color:#666;margin-top:.2rem"></div>
+      <!-- Agent 3: Competitiveness -->
+      <div style="background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.4rem;border-left:3px solid #F97316">
+        <div style="font-size:.85rem;font-weight:700;color:#F97316;margin-bottom:.3rem">📊 AGENT 3: COMPÉTITIVITÉ</div>
+        <div id="agent3-decision" style="font-size:.75rem;font-weight:600;color:#1A1A2E;margin-bottom:.2rem"></div>
+        <div id="agent3-reasoning" style="font-size:.7rem;color:#666;line-height:1.3"></div>
       </div>
 
-      <!-- Agent 3 -->
-      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.3rem;border-left:3px solid #F97316">
-        <div style="font-size:.8rem;font-weight:700;color:#F97316">💡 Stratège</div>
-        <div id="agent3-simple" style="font-size:.75rem;color:#666;margin-top:.2rem"></div>
+      <!-- Agent 1: Vendor Decision -->
+      <div style="background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.6rem;border-left:3px solid #3B82F6">
+        <div style="font-size:.85rem;font-weight:700;color:#3B82F6;margin-bottom:.3rem">🎯 AGENT 1: VENDEUR (Décision)</div>
+        <div id="agent1-decision" style="font-size:.75rem;font-weight:600;color:#1A1A2E;margin-bottom:.2rem"></div>
+        <div id="agent1-reasoning" style="font-size:.7rem;color:#666;line-height:1.3"></div>
       </div>
 
-      <!-- Agent 4 -->
-      <div style="background:#FFF;border-radius:6px;padding:.4rem;margin-bottom:.6rem;border-left:3px solid #16A34A">
-        <div style="font-size:.8rem;font-weight:700;color:#16A34A">✓ Contrôleur</div>
-        <div id="agent4-simple" style="font-size:.75rem;color:#666;margin-top:.2rem"></div>
+      <!-- Legacy IDs for backwards compatibility (hidden) -->
+      <div style="display:none">
+        <div id="agent1-simple"></div>
+        <div id="agent2-simple"></div>
+        <div id="agent3-simple"></div>
+        <div id="agent4-simple"></div>
       </div>
 
       <!-- Prix Final -->
@@ -755,7 +760,46 @@ function showSaleCelebration(saleTotal,orderID,summary){
 function handleSSEMessage(e){
   try{
     const d=JSON.parse(e.data);
-    if(d.type==='agent_decisions'){
+    if(d.type==='vendor_decision'){
+      // New 3-agent system
+      const agentsSection=document.getElementById('agents-working');
+      agentsSection.style.display='block';
+
+      const vendor=d.agent1||{};
+      const customerGrowth=d.agent2||{};
+      const competitiveness=d.agent3||{};
+
+      // Agent 2: Customer Growth
+      const retainText=customerGrowth.should_retain?'✅ OUI, garder ce client':'❌ NON, client standard';
+      const tierEmoji={'premium':'🌟','gold':'🥇','silver':'🥈','standard':'⚪'}[customerGrowth.tier]||'';
+      document.getElementById('agent2-decision').innerHTML=
+        retainText+' - '+tierEmoji+' <strong>'+customerGrowth.tier.toUpperCase()+'</strong>';
+      const reasoning2=(customerGrowth.reasoning||[]).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent2-reasoning').innerHTML=reasoning2||'Analyse client terminée';
+
+      // Agent 3: Competitiveness
+      const compText=competitiveness.is_competitive?'✅ Position compétitive':'⚠️ Amélioration nécessaire';
+      document.getElementById('agent3-decision').innerHTML=
+        compText+' - Position <strong>'+competitiveness.market_position+'/'+ competitiveness.total_competitors+'</strong>';
+      const reasoning3=(competitiveness.reasoning||[]).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent3-reasoning').innerHTML=reasoning3||'Analyse marché terminée';
+
+      // Agent 1: Vendor Decision
+      document.getElementById('agent1-decision').innerHTML=
+        'Stratégie: <strong>'+vendor.strategy+'</strong> - Marge: <strong>'+vendor.margin+'%</strong>';
+      const reasoning1=(vendor.reasoning||[]).filter(r=>r).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent1-reasoning').innerHTML=reasoning1||'Décision finale calculée';
+
+      // Prix final
+      calculatedPrice=vendor.final_price;
+      document.getElementById('final-price').textContent='$'+(vendor.final_price/100).toFixed(2);
+      document.getElementById('final-margin').textContent='Réduction: '+vendor.discount_pct+'% - Marge: '+vendor.margin+'%';
+
+      // Hide status
+      document.getElementById('calc-status').textContent='';
+
+    } else if(d.type==='agent_decisions'){
+      // Old 4-agent system (legacy)
       // Display agents in simplified way
       const agentsSection=document.getElementById('agents-working');
       agentsSection.style.display='block';

@@ -1,2 +1,12 @@
-2026/05/29 15:36:48 main.go:36: Observability Hub starting on http://localhost:9002
-2026/05/29 15:36:48 main.go:37: Dashboard: http://localhost:9002/
+2026/06/04 12:56:38 main.go:36: Observability Hub starting on http://localhost:9002
+2026/06/04 12:56:38 main.go:37: Dashboard: http://localhost:9002/
+[DEBUG] Received command: Achète un casque
+[DEBUG] executeBuyingFlow started for: Achète un casque
+[DEBUG] Adding first event
+[DEBUG] Searching Shopping Graph at http://localhost:9000
+[DEBUG] Parsing search results
+[DEBUG] Found 5 results
+[DEBUG] Found 5 merchants, cheapest: &{385c9dc1 Moi 5637}
+[DEBUG] Building comparison message
+[DEBUG] Sending comparison event
+[DEBUG] Comparison event sent

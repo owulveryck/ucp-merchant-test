@@ -10,10 +10,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/owulveryck/ucp-merchant-test/pkg/auth"
-	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive"
-	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/agents"
-	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/history"
-	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/models"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/a2a"
 	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/transport/discovery"
 )
@@ -56,6 +52,11 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 
 	// Set up competitive pricing with multi-agent architecture
 	if s.competitivePricing && s.graphURL != "" {
+		// Use NEW 3-agent system instead of old 4-agent system
+		s.setup3AgentPricing(m, name, id, notifier)
+
+		// OLD 4-agent system (commented out, kept for reference)
+		/*
 		log.Printf("Enabling MULTI-AGENT competitive pricing for tenant %s (minMargin=%d%%)",
 			name, s.minMargin)
 
@@ -160,6 +161,7 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 		m.pricingAgent = discountAdapter
 
 		log.Printf("✅ MULTI-AGENT competitive pricing configured for %s (4 agents active)", name)
+		*/
 	}
 
 	m.onActivity = func(eventType, summary string) {

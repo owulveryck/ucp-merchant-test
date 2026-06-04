@@ -77,11 +77,21 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 		productID := item.Item.ID
 		ourPrice := item.Item.Price
 
+		log.Printf("[DiscountAdapter] Product %s: ourPrice=$%.2f from line item",
+			productID, float64(ourPrice)/100)
+
 		// Use configured context
 		context := a.config
 
 		// Orchestrator calculates the discount (with trace for dashboard)
 		result, decisions := a.orchestrator.CalculateDiscountWithTrace(productID, ourPrice, context)
+
+		log.Printf("[DiscountAdapter] Product %s: Orchestrator result - Approved=%v, FinalPrice=$%.2f, FinalDiscount=$%.2f, Margin=%d%%",
+			productID,
+			result.Approved,
+			float64(result.FinalPrice)/100,
+			float64(result.FinalDiscount)/100,
+			result.Margin)
 
 		// Store decisions for later retrieval
 		a.lastDecisions = decisions
@@ -100,26 +110,57 @@ func (a *DiscountAdapter) ApplyCompetitiveDiscounts(
 		// Agent 4 may adjust the price to meet margin requirements, which is OK
 		if result.Approved {
 			// Apply discount for this item's quantity
+			// IMPORTANT: FinalDiscount can be 0 or negative, but we still need to apply the pricing decision
 			itemDiscount := result.FinalDiscount * item.Quantity
 			totalDiscount += itemDiscount
 
-			log.Printf("[DiscountAdapter] Product %s: discount $%.2f x %d = $%.2f (approved=%v, rejected=%v)",
+			log.Printf("[DiscountAdapter] Product %s: discount $%.2f x %d = $%.2f (approved=%v, FinalPrice=$%.2f)",
 				productID,
 				float64(result.FinalDiscount)/100,
 				item.Quantity,
 				float64(itemDiscount)/100,
 				result.Approved,
-				result.Rejected)
+				float64(result.FinalPrice)/100)
 		} else {
-			log.Printf("[DiscountAdapter] Product %s: discount REJECTED - %s",
+			log.Printf("[DiscountAdapter] Product %s: discount REJECTED - %s (FinalPrice would be $%.2f)",
 				productID,
-				result.RejectionReason)
+				result.RejectionReason,
+				float64(result.FinalPrice)/100)
+
+			// WINNING STRATEGY: Even if rejected due to margin constraints,
+			// apply the best possible price (Agent 4's adjusted FinalPrice)
+			// Agent 4 sets FinalPrice to ourPrice when rejected, but we can still try to be competitive
+			// by applying whatever discount is safe
+			if result.FinalPrice != ourPrice && result.FinalPrice > 0 {
+				itemDiscount := (ourPrice - result.FinalPrice) * item.Quantity
+				if itemDiscount > 0 {
+					totalDiscount += itemDiscount
+					log.Printf("[DiscountAdapter] Product %s: applying safe adjusted price $%.2f (discount $%.2f)",
+						productID,
+						float64(result.FinalPrice)/100,
+						float64(itemDiscount)/100)
+				}
+			}
 		}
 	}
 
-	if totalDiscount == 0 {
-		log.Printf("[DiscountAdapter] No competitive discount applied")
-		return nil
+	// FIXED: Even if totalDiscount is 0 or negative, we should return a result
+	// because the agents made a decision (e.g., keep current price, or price is already optimal)
+	// Only return nil if NO items were approved
+	if totalDiscount <= 0 {
+		log.Printf("[DiscountAdapter] No price reduction needed (discount=$%.2f) - agents decided current/adjusted price is optimal",
+			float64(totalDiscount)/100)
+		// Return empty discount to signal "pricing decision made, but no discount needed"
+		return &ucpmodel.Discounts{
+			Codes: codes,
+			Applied: []ucpmodel.AppliedDiscount{
+				{
+					Code:   "AUTO_COMPETE",
+					Title:  "Competitive Pricing (No Change)",
+					Amount: 0,
+				},
+			},
+		}
 	}
 
 	log.Printf("[DiscountAdapter] Total competitive discount: $%.2f", float64(totalDiscount)/100)
