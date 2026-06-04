@@ -1,87 +1,103 @@
 # Architecture Decision Records (ADRs)
 
-This directory contains Architecture Decision Records (ADRs) for the UCP Merchant Test - Competitive Pricing Intelligence system.
+Ce répertoire contient les Architecture Decision Records (ADRs) pour le système UCP Merchant Test - Competitive Pricing Intelligence.
 
-## What are ADRs?
+## Index des ADRs
 
-Architecture Decision Records document important architectural decisions made during the development of this project. Each ADR captures:
-- The context and problem being solved
-- The options considered
-- The decision made and why
-- The consequences of that decision
+### 🇫🇷 Décisions en Français (Principales)
 
-## ADR Index
+| ADR | Titre | Statut | Date |
+|-----|-------|--------|------|
+| [0001](0001-architecture-multi-agents-pour-prix-competitif.md) | Architecture Multi-Agents pour Pricing Compétitif | Accepté | 2026-05-29 |
+| [0002](0002-strategie-victoire-avant-marge-parfaite.md) | Stratégie Victoire Avant Marge Parfaite | Accepté | 2026-05-29 |
+| [0003](0003-strategie-detection-codes-promo.md) | Stratégie de Détection des Codes Promo | Accepté | 2026-05-29 |
+| [0004](0004-architecture-3-agents-orchestree.md) | Architecture 3-Agents Orchestrée (Juin 2026) | Accepté | 2026-06-04 |
+| [0005](0005-agent-acheteur-integre.md) | Agent Acheteur Intégré dans Interface Web | Accepté | 2026-06-04 |
+| [0006](0006-multi-agent-shopping-architecture.md) | Multi-Agent Shopping Architecture | Accepté | 2026-05-29 |
+| [0007](0007-multi-transport-architecture.md) | Architecture Multi-Transport (REST/MCP/A2A) | Accepté | 2026-01-11 |
+| [0008](0008-scenario-challenge-concurrents.md) | Scénario Challenge avec Concurrents Pré-Créés | Accepté | 2026-06-04 |
+
+### 🇬🇧 English Versions (Reference)
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [ADR-0001](0001-multi-agent-architecture-for-competitive-pricing.md) | Multi-Agent Architecture for Competitive Pricing | Accepted | 2026-05-29 |
-| [ADR-0002](0002-winning-strategy-over-perfect-margin.md) | Winning Strategy Over Perfect Margin | Accepted | 2026-05-29 |
-| [ADR-0003](0003-discount-code-detection-strategy.md) | Discount Code Detection Strategy | Accepted | 2026-05-29 |
+| [0009](0009-multi-agent-architecture-for-competitive-pricing.md) | Multi-Agent Architecture for Competitive Pricing | Accepted | 2026-05-29 |
+| [0010](0010-winning-strategy-over-perfect-margin.md) | Winning Strategy Over Perfect Margin | Accepted | 2026-05-29 |
+| [0011](0011-competitive-pricing-agent.md) | Competitive Pricing Agent | Accepted | 2026-05-29 |
+| [0012](0012-discount-code-detection-strategy.md) | Discount Code Detection Strategy | Accepted | 2026-05-29 |
 
-## ADR Quick Reference
+## Organisation
 
-### ADR-0001: Multi-Agent Architecture
+**ADRs 0001-0003** : Système 4-agents initial (Mai 2026)
+- Architecture multi-agents de base
+- Stratégie de pricing compétitif
+- Détection codes promo
 
-**Problem**: How to build transparent, modular competitive pricing system?
+**ADRs 0004-0008** : Évolution 3-agents + UX (Juin 2026)
+- Architecture 3-agents enveloppant le système 4-agents
+- Agent acheteur intégré avec feedback temps réel
+- Scénario de démo challenge
 
-**Decision**: Use 4 specialized agents (Price Intelligence, Market Analysis, Strategy Recommender, Margin Validator) instead of monolithic algorithm
+**ADRs 0006-0007** : Infrastructures
+- Architecture shopping multi-agents
+- Support multi-transport (REST/MCP/A2A)
 
-**Key Benefit**: Transparency + Modularity + Extensibility
+**ADRs 0009-0012** : Versions anglaises de référence
 
-**Trade-off**: More code complexity vs. single-function simplicity
+## Décisions Clés
 
----
+### 🎯 ADR-0004 : Architecture 3-Agents (Juin 2026)
 
-### ADR-0002: Winning Strategy Over Perfect Margin
+**Problème** : Système 4-agents fonctionne mais manque d'orchestration et d'analyse client
 
-**Problem**: Should we reject prices below 10% margin target to protect profitability?
+**Décision** : Architecture hybride où 3 nouveaux agents enveloppent le système 4-agents existant
+- Agent 1 (Vendeur) : Orchestrateur
+- Agent 2 (Customer Growth) : Analyse client, fidélité
+- Agent 3 (Compétitivité) : Enveloppe les 4 agents existants
 
-**Decision**: Accept prices ≥ cost even if margin < target, to maximize winning probability
-
-**Key Benefit**: 95% win rate (vs 30% with strict margin) + 90% profit increase through volume
-
-**Trade-off**: Lower per-sale margin (6% vs 10% target)
-
-**Philosophy**: Volume > Margin in competitive marketplaces
-
----
-
-### ADR-0003: Discount Code Detection
-
-**Problem**: How to detect competitor discount codes (WELCOME10, SAVE20) to calculate true competitive price?
-
-**Decision**: Heuristic parsing of code names (WELCOME10 → 10% off)
-
-**Key Benefit**: ~95% accuracy, fast (<10ms), no external dependencies
-
-**Trade-off**: Cannot handle complex conditional discount logic
-
-**Critical Insight**: Smart buyer agents test codes automatically, so displayed price ≠ competitive price
+**Impact** : Passage de 0% à 100% de ventes (prix $70 → $51.30)
 
 ---
 
-## ADR Status Definitions
+### 🛒 ADR-0005 : Agent Acheteur Intégré (Juin 2026)
 
-- **Proposed**: Decision proposed but not yet reviewed
-- **Accepted**: Decision approved and implemented
-- **Deprecated**: Decision no longer current but kept for historical context
-- **Superseded**: Decision replaced by newer ADR (reference included)
-- **Rejected**: Decision considered but not chosen (alternatives documented)
+**Problème** : Agent Gemini externe nécessite setup complexe (GCP, API keys)
 
-## How to Create a New ADR
+**Décision** : Agent intégré côté serveur (Go) avec SSE temps réel
 
-1. Copy the template from this repository or use the ADR template standard
-2. Number sequentially (next available number)
-3. Fill in all sections with context, options, and decision
-4. Submit for review before implementation
-5. Update this README index after approval
+**Bénéfice** : Zero setup, feedback visuel instantané, facile à démontrer
 
-## Template
+---
 
-See the [ADR template](https://github.com/joelparkerhenderson/architecture-decision-record/blob/main/templates/decision-record-template-by-michael-nygard/index.md) for the standard format used in this project.
+### 🏆 ADR-0008 : Scénario Challenge (Juin 2026)
 
-## Related Documentation
+**Problème** : Démo manuelle nécessite 3-5 minutes de setup
 
-- [DEMO_SCENARIOS.md](../../DEMO_SCENARIOS.md) - Practical scenarios demonstrating ADR outcomes
-- [CHANGELOG.md](../../CHANGELOG.md) - Version history including ADR implementations
-- [README.md](../../README.md) - Project overview and setup
+**Décision** : Script `arena_challenge.sh` crée automatiquement 4 concurrents
+
+**Impact** : Setup 30 secondes, scénario "perdant → gagnant" dramatique
+
+---
+
+## Statuts ADR
+
+- **Accepté** : Décision approuvée et implémentée
+- **Proposé** : En cours de révision
+- **Déprécié** : Plus actuel mais conservé pour historique
+- **Remplacé** : Supplanté par un ADR plus récent
+- **Rejeté** : Considéré mais non retenu
+
+## Format
+
+Tous les ADRs suivent le template [MADR](https://adr.github.io/madr/) :
+- Contexte et Problème
+- Facteurs de Décision
+- Options Considérées
+- Décision avec Conséquences
+- Avantages/Inconvénients des Options
+
+## Documentation Associée
+
+- [QUICK_START.md](../../QUICK_START.md) : Démarrage rapide
+- [ADR_A_CREER.md](../../ADR_A_CREER.md) : Planning ADRs futures
+- [README_ADR.md](README_ADR.md) : Guide détaillé ADRs (legacy)
