@@ -76,16 +76,6 @@ Les how-to guides sont des **recettes** pour résoudre des problèmes concrets. 
 - **Tutorial** : "Comprendre le pricing multi-agents" → vous fait découvrir le système
 - **How-to** : "Configurer une stratégie de pricing" → vous montre comment changer un paramètre
 
-## Guides à Venir
-
-- [ ] Déployer en Production avec Docker
-- [ ] Configurer des Webhooks Custom
-- [ ] Intégrer un Nouveau Transport (gRPC)
-- [ ] Créer un Agent Custom
-- [ ] Optimiser les Performances
-- [ ] Setup Monitoring avec Prometheus
-- [ ] Configurer Multi-Currency
-
 ## Besoin d'un Guide qui N'Existe Pas ?
 
 Ouvrez une issue sur GitHub avec :

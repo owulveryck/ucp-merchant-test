@@ -103,17 +103,6 @@ Chaque page de référence suit cette structure :
 | Narratif | Recette | Encyclopédie | Analyse |
 | "Voici comment créer un checkout" | "Pour créer un checkout, faites X" | "POST /checkout-sessions - params: items[]" | "Pourquoi checkout avant order" |
 
-## Pages à Créer
-
-- [ ] Configuration Options
-- [ ] Agent Architecture (diagrammes détaillés)
-- [ ] Data Models (UCP structures complètes)
-- [ ] Error Codes (sentinel errors + HTTP codes)
-- [ ] CLI Commands (toutes les commandes disponibles)
-- [ ] Environment Variables
-- [ ] File Formats (CSV vs JSON catalogs)
-- [ ] Webhook Events (format et séquence)
-
 ## Contribuer à la Référence
 
 La référence doit être :

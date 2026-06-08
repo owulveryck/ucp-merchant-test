@@ -90,16 +90,6 @@ Les **Explanations** sont des **analyses** plus larges qui contextualisent plusi
 - **ADR-0002** : "Nous acceptons marge < 10% pour gagner" (décision)
 - **Explanation: Competitive Trade-offs** : "Voici pourquoi ce dilemme existe et comment on pourrait faire autrement" (analyse)
 
-## Articles à Venir
-
-- [ ] UCP Protocol Integration
-- [ ] System Design Philosophy
-- [ ] Event-Driven Architecture Benefits
-- [ ] Shopping Graph Similarity Algorithm
-- [ ] OAuth Flow for Identity Linking
-- [ ] Idempotency in Distributed Systems
-- [ ] When to Use Which Agent
-
 ## Contribuer aux Explanations
 
 Les articles d'explication doivent :
