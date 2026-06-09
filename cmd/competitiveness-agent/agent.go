@@ -19,7 +19,7 @@ type CompletivenessA2AAgent struct {
 
 // NewCompletivenessA2AAgent creates a new A2A-enabled Competitiveness agent.
 func NewCompletivenessA2AAgent() *CompletivenessA2AAgent {
-	// For standalone mode, create the full 4-agent system with minimal config
+	// For standalone mode, create the full 4-agent system with mock data sources
 
 	// Create business config
 	businessConfig := compModels.BusinessConfig{
@@ -32,14 +32,18 @@ func NewCompletivenessA2AAgent() *CompletivenessA2AAgent {
 		ActualCost:       5000, // Default $50
 	}
 
-	// Create the 4 agents
+	// Create mock data sources for standalone mode
+	mockPriceSource := NewMockCompetitorPriceSource()
+	mockHistoryStore := NewMockHistoryStore()
+
+	// Create the 4 agents with mock data
 	priceIntel := compAgents.NewPriceIntelligenceAgent(
-		nil,                     // CompetitorPriceSource (nil = mock/no competitors)
+		mockPriceSource,         // CompetitorPriceSource with mock data
 		"standalone_merchant",   // merchantID
 	)
 
 	marketAnalyst := compAgents.NewMarketAnalysisAgent(
-		nil, // HistoryStore (nil = no history)
+		mockHistoryStore, // HistoryStore with mock data
 	)
 
 	strategyRec := compAgents.NewStrategyRecommenderAgent(businessConfig)
