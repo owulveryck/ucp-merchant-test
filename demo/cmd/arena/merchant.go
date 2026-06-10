@@ -107,6 +107,11 @@ type arenaMerchant struct {
 	graphURL   string
 	merchantID string
 
+	// Competitive pricing agent (optional)
+	pricingAgent interface {
+		ApplyDiscountsWithContext(codes []string, lineItems []model.LineItem) *model.Discounts
+	}
+
 	// Cost & profit tracking
 	costPrice         int // prix d'achat en cents
 	totalBoostSpend   int // depenses publicitaires cumulees en cents
@@ -821,6 +826,21 @@ func (m *arenaMerchant) applyDiscounts(req *model.DiscountsRequest, co *model.Ch
 		return nil
 	}
 
+	// Check if AUTO_COMPETE is requested and we have a pricing agent
+	hasAutoCompete := false
+	for _, code := range req.Codes {
+		if code == "AUTO_COMPETE" {
+			hasAutoCompete = true
+			break
+		}
+	}
+
+	// If competitive pricing is requested and available, delegate to pricing agent
+	if hasAutoCompete && m.pricingAgent != nil {
+		return m.pricingAgent.ApplyDiscountsWithContext(req.Codes, co.LineItems)
+	}
+
+	// Otherwise, use standard static discount logic
 	m.config.mu.RLock()
 	codes := make([]DiscountCode, len(m.config.DiscountCodes))
 	copy(codes, m.config.DiscountCodes)

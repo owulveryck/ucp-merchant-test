@@ -18,6 +18,9 @@ import (
 )
 
 func main() {
+	// Enable file:line in logs for clickable links (Command+Click)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	port := flag.Int("port", 9000, "port to listen on")
 	configFile := flag.String("config", "config/shopping_graph.yaml", "config file path")
 	obsURL := flag.String("obs-url", "", "observability hub URL")

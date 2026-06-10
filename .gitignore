@@ -12,3 +12,5 @@
 
 # Terraform infrastructure (local only)
 demo/infra/
+logs/*.log
+.pids

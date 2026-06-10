@@ -49,6 +49,121 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	m := newArenaMerchant("casque_audio", s.productName, s.costPrice, baseURL, notifier)
 	m.graphURL = s.graphURL
 	m.merchantID = id
+
+	// Set up competitive pricing with multi-agent architecture
+	if s.competitivePricing && s.graphURL != "" {
+		// Use NEW 3-agent system instead of old 4-agent system
+		s.setup3AgentPricing(m, name, id, notifier)
+
+		// OLD 4-agent system (commented out, kept for reference)
+		/*
+		log.Printf("Enabling MULTI-AGENT competitive pricing for tenant %s (minMargin=%d%%)",
+			name, s.minMargin)
+
+		// Create Shopping Graph client (new architecture)
+		sgClient := competitive.NewShoppingGraphClient(s.graphURL)
+
+		// Agent 1: Price Intelligence
+		priceIntel := agents.NewPriceIntelligenceAgent(sgClient, id)
+		log.Printf("[%s] Agent 1 (Price Intelligence) initialized", name)
+
+		// Agent 2: Market Analysis (with history)
+		historyStore := history.NewInMemoryHistoryStore()
+		marketAnalyst := agents.NewMarketAnalysisAgent(historyStore)
+		log.Printf("[%s] Agent 2 (Market Analysis) initialized", name)
+
+		// Agent 3: Strategy Recommender
+		businessConfig := models.BusinessConfig{
+			Objective:      "volume",      // Arena default: maximize sales
+			StockThreshold: 20,            // Low stock threshold
+			BrandPosition:  "mid",         // Mid-market positioning
+			MinMargin:      s.minMargin,   // From server config
+			CostPercent:    60,            // 60% cost = 40% base margin
+		}
+		strategyRec := agents.NewStrategyRecommenderAgent(businessConfig)
+		log.Printf("[%s] Agent 3 (Strategy Recommender) initialized - objective: %s", name, businessConfig.Objective)
+
+		// Agent 4: Margin Validator
+		marginConfig := models.MarginConfig{
+			MinMarginPercent: s.minMargin,
+			CostPercent:      60,
+			ActualCost:       s.costPrice, // CRITICAL: Use real cost, not estimated
+			HardFloor:        true,        // Never sell below cost
+		}
+		marginVal := agents.NewMarginValidatorAgent(marginConfig)
+		log.Printf("[%s] Agent 4 (Margin Validator) initialized - min margin: %d%%, actual cost: $%.2f",
+			name, s.minMargin, float64(s.costPrice)/100)
+
+		// Create Orchestrator
+		orchestrator := competitive.NewOrchestrator(
+			priceIntel,
+			marketAnalyst,
+			strategyRec,
+			marginVal,
+		)
+
+		// Create Discount Adapter
+		discountAdapter := competitive.NewDiscountAdapter(
+			nil,            // No base discount lookup for arena merchants
+			orchestrator,   // Multi-agent orchestrator
+			businessConfig, // Business context
+		)
+
+		// Set callback to send agent decisions to dashboard via SSE
+		discountAdapter.SetAgentDecisionsCallback(func(decisions *competitive.AgentDecisions) {
+			log.Printf("[Tenant %s] Agent decisions callback triggered!", name)
+
+			log.Printf("[Tenant %s] Building event map...", name)
+			event := map[string]interface{}{
+				"type": "agent_decisions",
+				"agent1": map[string]interface{}{
+					"rank":         decisions.Intel.OurRank,
+					"total":        decisions.Intel.TotalCount,
+					"lowest_price": decisions.Intel.LowestPrice,
+					"lowest_by":    decisions.Intel.LowestBy,
+					"avg_price":    decisions.Intel.AvgPrice,
+				},
+				"agent2": map[string]interface{}{
+					"position":    decisions.Insight.Position,
+					"trend":       decisions.Insight.Trend,
+					"opportunity": decisions.Insight.Opportunity,
+					"reasoning":   decisions.Insight.Reasoning,
+				},
+				"agent3": map[string]interface{}{
+					"strategy":   decisions.Recommendation.Strategy,
+					"target":     decisions.Recommendation.TargetPrice,
+					"discount":   decisions.Recommendation.DiscountAmount,
+					"confidence": decisions.Recommendation.Confidence,
+					"reasoning":  decisions.Recommendation.Reasoning,
+				},
+				"agent4": map[string]interface{}{
+					"approved": decisions.Validation.Approved,
+					"rejected": decisions.Validation.Rejected,
+					"final":    decisions.Validation.FinalPrice,
+					"margin":   decisions.Validation.Margin,
+					"warnings": decisions.Validation.Warnings,
+				},
+			}
+
+			log.Printf("[Tenant %s] Marshaling to JSON...", name)
+			data, err := json.Marshal(event)
+			if err != nil {
+				log.Printf("[Tenant %s] ERROR marshaling JSON: %v", name, err)
+				return
+			}
+
+			log.Printf("[Tenant %s] Sending agent_decisions SSE event: %s", name, string(data))
+			notifier.SendRaw(data)
+			log.Printf("[Tenant %s] SSE event sent", name)
+		})
+
+		// Inject into merchant
+		m.pricingAgent = discountAdapter
+
+		log.Printf("✅ MULTI-AGENT competitive pricing configured for %s (4 agents active)", name)
+		*/
+	}
+
 	m.onActivity = func(eventType, summary string) {
 		s.forwardToObsHub(name, eventType, summary, nil)
 		// Only forward actionable events to presenter (skip catalog polling noise)
@@ -109,6 +224,17 @@ func (s *ArenaServer) RegisterTenant(name string) *Tenant {
 	})
 	mux.HandleFunc("PUT /api/config", func(w http.ResponseWriter, r *http.Request) {
 		handlePutConfig(w, r, m.config, s.costPrice, s, id, m)
+	})
+
+	// Test AUTO_COMPETE API
+	mux.HandleFunc("POST /api/test-auto-compete", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w)
+		handleTestAutoCompete(w, r, m, id)
+	})
+
+	// Competitive Intelligence API
+	mux.HandleFunc("GET /api/competitive-intel", func(w http.ResponseWriter, r *http.Request) {
+		handleCompetitiveIntel(w, r, m, s.graphURL, id, s.costPrice)
 	})
 
 	// SSE notifications
