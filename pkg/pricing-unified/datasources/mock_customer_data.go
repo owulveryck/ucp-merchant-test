@@ -32,6 +32,31 @@ func NewMockCustomerDataSource() *MockCustomerDataSource {
 				PurchaseCount:    1,
 				LastPurchaseDays: 90,
 			},
+			// Additional demo customers
+			"elsi": {
+				CustomerID:       "elsi",
+				TotalSpent:       85000,  // $850 - Gold tier
+				PurchaseCount:    8,
+				LastPurchaseDays: 10,
+			},
+			"alice": {
+				CustomerID:       "alice",
+				TotalSpent:       120000, // $1200 - Premium tier
+				PurchaseCount:    15,
+				LastPurchaseDays: 7,
+			},
+			"bob": {
+				CustomerID:       "bob",
+				TotalSpent:       5000,   // $50 - Standard tier
+				PurchaseCount:    1,
+				LastPurchaseDays: 120,
+			},
+			"john": {
+				CustomerID:       "john",
+				TotalSpent:       35000,  // $350 - Silver tier
+				PurchaseCount:    4,
+				LastPurchaseDays: 20,
+			},
 		},
 	}
 }
