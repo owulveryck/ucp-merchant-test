@@ -13,15 +13,25 @@ import (
 )
 
 func main() {
+	// Enable file:line in logs for clickable links (Command+Click)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	port := flag.Int("port", 8888, "port to listen on")
 	costPrice := flag.Int("cost-price", 5000, "cost price in cents (minimum selling price)")
 	productName := flag.String("product-name", "Casque Audio", "product name")
 	graphURL := flag.String("graph-url", "http://localhost:9000", "shopping graph URL")
 	obsURL := flag.String("obs-url", "", "observability hub URL")
 	baseURL := flag.String("base-url", "", "external base URL (e.g. https://demo.example.com); if empty, uses http://localhost:PORT")
+
+	// Competitive pricing flags
+	competitivePricing := flag.Bool("competitive-pricing", false, "enable competitive pricing agent")
+	pricingStrategy := flag.String("pricing-strategy", "beat", "pricing strategy: match, beat, or auto")
+	minMargin := flag.Int("min-margin", 10, "minimum profit margin percentage")
+	beatByPercent := flag.Int("beat-by-percent", 5, "percentage to beat competitor prices")
+
 	flag.Parse()
 
-	arena := NewArenaServer(*costPrice, *productName, *graphURL, *obsURL, *port, *baseURL)
+	arena := NewArenaServer(*costPrice, *productName, *graphURL, *obsURL, *port, *baseURL, *competitivePricing, *pricingStrategy, *minMargin, *beatByPercent)
 
 	addr := fmt.Sprintf(":%d", *port)
 	srv := &http.Server{

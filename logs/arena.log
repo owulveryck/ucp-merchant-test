@@ -1,0 +1,105 @@
+2026/06/04 12:56:40 main.go:43: Arena starting on http://localhost:8888
+2026/06/04 12:56:40 main.go:44: Landing:   http://localhost:8888/
+2026/06/04 12:56:43 tenant_3agents.go:19: Enabling 3-AGENT UNIFIED pricing for tenant MegaStore (minMargin=10%)
+2026/06/04 12:56:43 tenant_3agents.go:26: [MegaStore] Agent 2 (Customer Growth) initialized
+2026/06/04 12:56:43 tenant_3agents.go:60: [MegaStore] Agent 3 (Competitiveness) initialized - wraps 4-agent system
+2026/06/04 12:56:43 tenant_3agents.go:64: [MegaStore] Agent 1 (Vendor Orchestrator) initialized
+2026/06/04 12:56:43 tenant_3agents.go:115: ✅ 3-AGENT UNIFIED pricing configured for MegaStore (Vendor → Customer Growth + Competitiveness)
+2026/06/04 12:56:43 tenant.go:321: registered tenant MegaStore (574fd50f) with shopping graph
+2026/06/04 12:56:44 tenant_3agents.go:19: Enabling 3-AGENT UNIFIED pricing for tenant PrixCassés (minMargin=10%)
+2026/06/04 12:56:44 tenant_3agents.go:26: [PrixCassés] Agent 2 (Customer Growth) initialized
+2026/06/04 12:56:44 tenant_3agents.go:60: [PrixCassés] Agent 3 (Competitiveness) initialized - wraps 4-agent system
+2026/06/04 12:56:44 tenant_3agents.go:64: [PrixCassés] Agent 1 (Vendor Orchestrator) initialized
+2026/06/04 12:56:44 tenant_3agents.go:115: ✅ 3-AGENT UNIFIED pricing configured for PrixCassés (Vendor → Customer Growth + Competitiveness)
+2026/06/04 12:56:44 tenant.go:321: registered tenant PrixCassés (e440b5d9) with shopping graph
+2026/06/04 12:56:45 tenant_3agents.go:19: Enabling 3-AGENT UNIFIED pricing for tenant SuperDeals (minMargin=10%)
+2026/06/04 12:56:45 tenant_3agents.go:26: [SuperDeals] Agent 2 (Customer Growth) initialized
+2026/06/04 12:56:45 tenant_3agents.go:60: [SuperDeals] Agent 3 (Competitiveness) initialized - wraps 4-agent system
+2026/06/04 12:56:45 tenant_3agents.go:64: [SuperDeals] Agent 1 (Vendor Orchestrator) initialized
+2026/06/04 12:56:45 tenant_3agents.go:115: ✅ 3-AGENT UNIFIED pricing configured for SuperDeals (Vendor → Customer Growth + Competitiveness)
+2026/06/04 12:56:45 tenant.go:321: registered tenant SuperDeals (303a0800) with shopping graph
+2026/06/04 12:56:46 tenant_3agents.go:19: Enabling 3-AGENT UNIFIED pricing for tenant TopPrix (minMargin=10%)
+2026/06/04 12:56:46 tenant_3agents.go:26: [TopPrix] Agent 2 (Customer Growth) initialized
+2026/06/04 12:56:46 tenant_3agents.go:60: [TopPrix] Agent 3 (Competitiveness) initialized - wraps 4-agent system
+2026/06/04 12:56:46 tenant_3agents.go:64: [TopPrix] Agent 1 (Vendor Orchestrator) initialized
+2026/06/04 12:56:46 tenant_3agents.go:115: ✅ 3-AGENT UNIFIED pricing configured for TopPrix (Vendor → Customer Growth + Competitiveness)
+2026/06/04 12:56:46 tenant.go:321: registered tenant TopPrix (00a09e23) with shopping graph
+2026/06/04 12:56:46 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 12:56:46 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 12:56:46 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 12:56:46 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 12:56:46 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 12:56:46 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 12:56:46 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 12:56:46 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 12:56:58 tenant_3agents.go:19: Enabling 3-AGENT UNIFIED pricing for tenant Moi (minMargin=10%)
+2026/06/04 12:56:58 tenant_3agents.go:26: [Moi] Agent 2 (Customer Growth) initialized
+2026/06/04 12:56:58 tenant_3agents.go:60: [Moi] Agent 3 (Competitiveness) initialized - wraps 4-agent system
+2026/06/04 12:56:58 tenant_3agents.go:64: [Moi] Agent 1 (Vendor Orchestrator) initialized
+2026/06/04 12:56:58 tenant_3agents.go:115: ✅ 3-AGENT UNIFIED pricing configured for Moi (Vendor → Customer Growth + Competitiveness)
+2026/06/04 12:56:58 tenant.go:321: registered tenant Moi (385c9dc1) with shopping graph
+2026/06/04 12:57:06 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 12:57:06 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 12:57:12 config_api.go:182: [TestAutoCompete] Calling pricing agent with price 6407
+2026/06/04 12:57:12 arena_adapter.go:59: [ArenaAdapter] AUTO_COMPETE detected, using 3-agent pricing system
+2026/06/04 12:57:12 orchestrator.go:47: [Agent Vendeur] Demande de prix pour casque_audio par client default_customer - Prix de base: $64.07
+2026/06/04 12:57:12 orchestrator.go:56: [Agent Vendeur] → Consultation Agent 2 (Customer Growth)
+2026/06/04 12:57:12 customer_growth.go:41: [Agent Customer Growth] Analyzing customer: default_customer
+2026/06/04 12:57:12 customer_growth.go:104: [Agent Customer Growth] Decision: ShouldRetain=true, Tier=gold, Discount=10%
+2026/06/04 12:57:12 orchestrator.go:69: [Agent Vendeur] → Consultation Agent 3 (Compétitivité)
+2026/06/04 12:57:12 competitiveness.go:48: [Agent Compétitivité] Analyzing competitiveness for product: casque_audio at $64.07
+2026/06/04 12:57:12 orchestrator.go:149: [Orchestrator] Starting competitive pricing analysis for product casque_audio
+2026/06/04 12:57:12 shoppinggraph.go:87: [DEBUG ShoppingGraph] Searching for product: casque_audio
+2026/06/04 12:57:12 shoppinggraph.go:94: [DEBUG ShoppingGraph] Got 5 results from search
+2026/06/04 12:57:12 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 0: MerchantID=00a09e23, MerchantName=TopPrix, Price=5926, InStock=true, DiscountHints=[]
+2026/06/04 12:57:12 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5926 (discount hints applied)
+2026/06/04 12:57:12 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 1: MerchantID=303a0800, MerchantName=SuperDeals, Price=5753, InStock=true, DiscountHints=[]
+2026/06/04 12:57:12 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 5753 (discount hints applied)
+2026/06/04 12:57:12 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 2: MerchantID=385c9dc1, MerchantName=Moi, Price=6407, InStock=true, DiscountHints=[]
+2026/06/04 12:57:12 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 6407 (discount hints applied)
+2026/06/04 12:57:12 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 3: MerchantID=574fd50f, MerchantName=MegaStore, Price=6633, InStock=true, DiscountHints=[]
+2026/06/04 12:57:12 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 6633 (discount hints applied)
+2026/06/04 12:57:12 shoppinggraph.go:99: [DEBUG ShoppingGraph] Result 4: MerchantID=e440b5d9, MerchantName=PrixCassés, Price=7378, InStock=true, DiscountHints=[]
+2026/06/04 12:57:12 shoppinggraph.go:105: [DEBUG ShoppingGraph] Effective price: 7378 (discount hints applied)
+2026/06/04 12:57:12 shoppinggraph.go:118: [DEBUG ShoppingGraph] Returning 5 competitor prices
+2026/06/04 12:57:12 price_intelligence.go:34: [DEBUG PriceIntel] Got 5 competitors from API for product casque_audio
+2026/06/04 12:57:12 price_intelligence.go:35: [DEBUG PriceIntel] Our merchantID: 385c9dc1
+2026/06/04 12:57:12 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 0: ID=00a09e23, Name=TopPrix, Price=5926, InStock=true
+2026/06/04 12:57:12 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 1: ID=303a0800, Name=SuperDeals, Price=5753, InStock=true
+2026/06/04 12:57:12 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 2: ID=385c9dc1, Name=Moi, Price=6407, InStock=true
+2026/06/04 12:57:12 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 3: ID=574fd50f, Name=MegaStore, Price=6633, InStock=true
+2026/06/04 12:57:12 price_intelligence.go:37: [DEBUG PriceIntel] Competitor 4: ID=e440b5d9, Name=PrixCassés, Price=7378, InStock=true
+2026/06/04 12:57:12 price_intelligence.go:45: [DEBUG PriceIntel] FILTERED OUT (ourselves): 385c9dc1
+2026/06/04 12:57:12 price_intelligence.go:55: [DEBUG PriceIntel] After filtering: 4 valid competitors
+2026/06/04 12:57:12 price_intelligence.go:82: [DEBUG PriceIntel] Competitor TopPrix: displayed=5926, effective=5926, hints=[]
+2026/06/04 12:57:12 price_intelligence.go:82: [DEBUG PriceIntel] Competitor SuperDeals: displayed=5753, effective=5753, hints=[]
+2026/06/04 12:57:12 price_intelligence.go:82: [DEBUG PriceIntel] Competitor MegaStore: displayed=6633, effective=6633, hints=[]
+2026/06/04 12:57:12 price_intelligence.go:82: [DEBUG PriceIntel] Competitor PrixCassés: displayed=7378, effective=7378, hints=[]
+2026/06/04 12:57:12 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: TopPrix with effective price 5926 (was 5926 with hints [])
+2026/06/04 12:57:12 price_intelligence.go:114: [DEBUG PriceIntel] NEW LOWEST: SuperDeals with effective price 5753 (was 5753 with hints [])
+2026/06/04 12:57:12 price_intelligence.go:119: [DEBUG PriceIntel] FINAL LOWEST: 303a0800 with price $57.53
+2026/06/04 12:57:12 orchestrator.go:169: [Orchestrator] Price Intelligence: rank 3/5, lowest: $57.53 (303a0800)
+2026/06/04 12:57:12 orchestrator.go:189: [Orchestrator] Market Analysis: follower position, stable trend, opportunity: match_market
+2026/06/04 12:57:12 orchestrator.go:210: [Orchestrator] Strategy: aggressive, target: $51.77, discount: $12.30, confidence: 95%
+2026/06/04 12:57:12 orchestrator.go:212: [Orchestrator] Reasoning: [Volume objective - must be competitive Beat lowest competitor by $1.00 to guarantee win]
+2026/06/04 12:57:12 orchestrator.go:235: [Orchestrator] ⚠️  Pricing adjusted: [⚠️ Marge réduite: 3% (cible: 10%) pour GAGNER Prix $51.77 accepté pour battre concurrence]
+2026/06/04 12:57:12 orchestrator.go:236: [Orchestrator] ✅ Final: $51.77 (discount: $12.30, margin: 3%)
+2026/06/04 12:57:12 competitiveness.go:107: [Agent Compétitivité] Decision: IsCompetitive=false, Position=3/5, Price=$51.77
+2026/06/04 12:57:12 orchestrator.go:82: [Agent Vendeur] → Synthèse des décisions
+2026/06/04 12:57:12 orchestrator.go:139: [Agent Vendeur] ✓ Prix final décidé: $56.37 (marge 9%)
+2026/06/04 12:57:12 tenant_3agents.go:71: [Tenant Moi] 3-Agent decisions callback triggered!
+2026/06/04 12:57:12 tenant_3agents.go:108: [Tenant Moi] Sending vendor_decision SSE event
+2026/06/04 12:57:12 arena_adapter.go:101: [ArenaAdapter] 3-agent system decision: FinalPrice=$56.37, Discount=$7.70, Strategy=vip_retention
+2026/06/04 12:57:12 arena_adapter.go:115: [ArenaAdapter] Strategy: vip_retention, Reasoning: [Agent 2 (Customer Growth): OUI, garder ce client - gold Agent 3 (Compétitivité): Position 3/5 - Prix recommandé: $51.77 Bonus fidélité appliqué: -10% (client gold) ⚠ Ajustement: prix ne peut être sous le coût  === DÉCISION VENDEUR === Prix final: $56.37 (-12%) Marge: 9% Stratégie: vip_retention]
+2026/06/04 12:57:12 config_api.go:274: [TestAutoCompete] Success: final price 5637, discount 770, margin 11%
+2026/06/04 12:57:16 config_api.go:68: [handlePutConfig] Received: selling_price=0x4a339b1ee8f0, pricing_algo=0x4a339b1cc760
+2026/06/04 14:13:36 server.go:108: removed tenant Moi (385c9dc1) from arena
+2026/06/04 14:13:36 server.go:124: deregistered tenant 385c9dc1 from shopping graph
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)
+2026/06/04 15:02:22 oauth.go:176: OAuth: user 'john.doe@example.com' authorized, code issued
+2026/06/04 15:02:22 oauth.go:264: OAuth: tokens issued for user 'john.doe@example.com' (country: US)

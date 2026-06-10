@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agents A2A Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .agent-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .agent-card h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .agent-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background: #22c55e; }
+        .status-offline { background: #ef4444; }
+        .department { color: #666; font-size: 14px; margin-bottom: 8px; }
+        .role { color: #888; font-size: 13px; line-height: 1.4; }
+
+        .test-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .response-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 4px;
+            border-left: 4px solid #3b82f6;
+            display: none;
+        }
+        .response-box.show { display: block; }
+        .response-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .response-message {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            line-height: 1.6;
+            color: #444;
+        }
+        .response-data {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Agents A2A Dashboard</h1>
+
+        <div class="agents-grid">
+            <div class="agent-card" id="customer-growth-card">
+                <h2>
+                    <span class="agent-status status-offline" id="cg-status"></span>
+                    Customer Growth Agent
+                </h2>
+                <div class="department">Département: Fidélisation</div>
+                <div class="role">Analyser la valeur client et recommander des stratégies de rétention</div>
+                <div style="margin-top: 10px; font-size: 12px; color: #999;">Port: 9001</div>
+            </div>
+
+            <div class="agent-card" id="competitiveness-card">
+                <h2>
+                    <span class="agent-status status-offline" id="comp-status"></span>
+                    Competitiveness Agent
+                </h2>
+                <div class="department">Département: Stratégie Prix</div>
+                <div class="role">Analyser la compétitivité du prix et recommander une stratégie</div>
+                <div style="margin-top: 10px; font-size: 12px; color: #999;">Port: 9002</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Interroger un Agent</h2>
+
+            <div class="form-group">
+                <label for="agent-select">Agent</label>
+                <select id="agent-select" onchange="updateMethodsAndParams()">
+                    <option value="customer-growth">Customer Growth Agent</option>
+                    <option value="competitiveness">Competitiveness Agent</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="method-select">Méthode</label>
+                <select id="method-select" onchange="updateParams()">
+                    <option value="analyze_customer">analyze_customer</option>
+                    <option value="get_customer_tier">get_customer_tier</option>
+                    <option value="recommend_discount">recommend_discount</option>
+                </select>
+            </div>
+
+            <div id="params-container">
+                <div class="form-group">
+                    <label for="customer-id">Customer ID</label>
+                    <input type="text" id="customer-id" placeholder="elsi" value="elsi">
+                </div>
+            </div>
+
+            <button onclick="callAgent()" id="call-btn">Analyser</button>
+
+            <div class="response-box" id="response-box">
+                <div class="response-header">📬 Réponse de l'Agent</div>
+                <div class="response-message" id="response-message"></div>
+                <div class="response-header" style="margin-top: 15px;">📊 Données Structurées (JSON)</div>
+                <div class="response-data" id="response-data"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const methods = {
+            'customer-growth': {
+                'analyze_customer': ['customer_id'],
+                'get_customer_tier': ['customer_id'],
+                'recommend_discount': ['customer_id']
+            },
+            'competitiveness': {
+                'analyze_competitiveness': ['product_id', 'price'],
+                'check_price_position': ['product_id', 'price'],
+                'recommend_strategy': ['product_id', 'price']
+            }
+        };
+
+        function updateMethodsAndParams() {
+            const agent = document.getElementById('agent-select').value;
+            const methodSelect = document.getElementById('method-select');
+            methodSelect.innerHTML = '';
+
+            for (const method in methods[agent]) {
+                const option = document.createElement('option');
+                option.value = method;
+                option.textContent = method;
+                methodSelect.appendChild(option);
+            }
+
+            updateParams();
+        }
+
+        function updateParams() {
+            const agent = document.getElementById('agent-select').value;
+            const method = document.getElementById('method-select').value;
+            const params = methods[agent][method];
+
+            const container = document.getElementById('params-container');
+            container.innerHTML = '';
+
+            params.forEach(param => {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+
+                const label = document.createElement('label');
+                label.textContent = param.replace('_', ' ').toUpperCase();
+
+                const input = document.createElement('input');
+                input.type = param === 'price' ? 'number' : 'text';
+                input.id = param;
+                input.placeholder = param === 'customer_id' ? 'elsi' : (param === 'product_id' ? 'laptop' : '100000');
+                input.value = param === 'customer_id' ? 'elsi' : (param === 'product_id' ? 'laptop' : '100000');
+
+                div.appendChild(label);
+                div.appendChild(input);
+                container.appendChild(div);
+            });
+        }
+
+        async function callAgent() {
+            const agent = document.getElementById('agent-select').value;
+            const method = document.getElementById('method-select').value;
+            const params = {};
+
+            methods[agent][method].forEach(param => {
+                const input = document.getElementById(param);
+                params[param] = param === 'price' ? parseFloat(input.value) : input.value;
+            });
+
+            const btn = document.getElementById('call-btn');
+            btn.disabled = true;
+            btn.textContent = 'Analyse en cours...';
+
+            const responseBox = document.getElementById('response-box');
+            responseBox.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/call-agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent, method, params })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                document.getElementById('response-message').textContent = data.result.message;
+                document.getElementById('response-data').textContent = JSON.stringify(data.result.decision, null, 2);
+                responseBox.classList.add('show');
+
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyser';
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/agents/status');
+                const status = await response.json();
+
+                document.getElementById('cg-status').className = 'agent-status ' +
+                    (status.customer_growth.status === 'healthy' ? 'status-online' : 'status-offline');
+
+                document.getElementById('comp-status').className = 'agent-status ' +
+                    (status.competitiveness.status === 'healthy' ? 'status-online' : 'status-offline');
+            } catch (error) {
+                console.error('Failed to check agent status:', error);
+            }
+        }
+
+        // Check status on load and every 5 seconds
+        checkStatus();
+        setInterval(checkStatus, 5000);
+
+        // Initialize params
+        updateParams();
+    </script>
+</body>
+</html>

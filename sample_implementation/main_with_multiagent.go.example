@@ -1,0 +1,97 @@
+// Example: How to integrate multi-agent competitive pricing
+// Copy this code into main.go to enable multi-agent pricing
+
+package main
+
+import (
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/agents"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/history"
+	"github.com/owulveryck/ucp-merchant-test/pkg/merchant/competitive/models"
+)
+
+// Add this global variable at the top with other globals
+var competitiveAdapter *competitive.DiscountAdapter
+
+// Replace the newMux() function with this version:
+func newMuxWithMultiAgent() *http.ServeMux {
+	// 1. Create Shopping Graph client
+	sgClient := competitive.NewShoppingGraphClient("http://localhost:9000")
+
+	// 2. Create the 4 agents
+
+	// Agent 1: Price Intelligence
+	priceIntel := agents.NewPriceIntelligenceAgent(sgClient, merchantName)
+
+	// Agent 2: Market Analysis (with history)
+	historyStore := history.NewInMemoryHistoryStore()
+	marketAnalyst := agents.NewMarketAnalysisAgent(historyStore)
+
+	// Agent 3: Strategy Recommender
+	businessConfig := models.BusinessConfig{
+		Objective:      "volume",  // Options: "volume", "margin", "balanced"
+		StockThreshold: 20,        // Low stock threshold
+		BrandPosition:  "mid",     // Options: "budget", "mid", "premium"
+		MinMargin:      10,        // Minimum margin %
+		CostPercent:    60,        // Cost as % of price (60% = 40% margin)
+	}
+	strategyRec := agents.NewStrategyRecommenderAgent(businessConfig)
+
+	// Agent 4: Margin Validator
+	marginConfig := models.MarginConfig{
+		MinMarginPercent: 10,   // 10% minimum margin
+		CostPercent:      60,   // Cost is 60% of price
+		HardFloor:        true, // Never sell below cost
+	}
+	marginVal := agents.NewMarginValidatorAgent(marginConfig)
+
+	// 3. Create the Orchestrator
+	orchestrator := competitive.NewOrchestrator(
+		priceIntel,
+		marketAnalyst,
+		strategyRec,
+		marginVal,
+	)
+
+	// 4. Create the Discount Adapter
+	competitiveAdapter = competitive.NewDiscountAdapter(
+		shopData,        // Fallback for normal discount codes
+		orchestrator,    // For AUTO_COMPETE
+		businessConfig,  // Business context
+	)
+
+	// 5. Create merchant with competitive pricing
+	merchantInstance = newSimpleMerchant(
+		catalogInstance,
+		shopData,
+		competitiveAdapter,  // ← Uses multi-agent system for AUTO_COMPETE!
+		func() int { return listenPort },
+		func() string { return scheme() },
+	)
+
+	// Rest of the code stays the same...
+	restServer = rest.New(merchantInstance, oauthServer,
+		rest.WithIdempotency(idempotencyStoreInstance),
+		rest.WithSimulationSecret(simulationSecret),
+		rest.WithScheme(func() string { return scheme() }),
+		rest.WithListenPort(func() int { return listenPort }),
+	)
+
+	mcpServer = mcp.New(merchantInstance, oauthServer,
+		mcp.WithMerchantName(merchantName),
+		mcp.WithListenPort(func() int { return listenPort }),
+	)
+
+	a2aServer = a2a.New(merchantInstance, oauthServer,
+		a2a.WithMerchantName(merchantName),
+		a2a.WithListenPort(func() int { return listenPort }),
+		a2a.WithScheme(func() string { return scheme() }),
+	)
+
+	mux := http.NewServeMux()
+	// ... rest of routes
+	return mux
+}
+
+// Usage in main():
+// Replace the call to newMux() with newMuxWithMultiAgent()

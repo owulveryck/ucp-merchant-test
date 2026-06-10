@@ -233,6 +233,72 @@ body{font-family:'Outfit',system-ui,sans-serif;background:#FDF0EE;color:#1A1A2E;
     <div class="funnel-rate" id="f-rate2"></div>
   </div>
 
+  <!-- Intelligence de Prix (fusionné) -->
+  <div class="promo-section-title">💡 Intelligence de Prix</div>
+  <div style="background:#F0F9FF;border:2px solid#3B82F6;border-radius:8px;padding:.6rem;margin-bottom:.6rem">
+
+    <!-- Concurrents -->
+    <div style="margin-bottom:.6rem">
+      <div style="font-size:.9rem;font-weight:700;color:#1A1A2E;margin-bottom:.4rem">Vos concurrents:</div>
+      <div id="intel-loading" style="text-align:center;color:#999;font-size:.85rem">Chargement...</div>
+      <div id="intel-competitors" style="font-size:.85rem;color:#666"></div>
+    </div>
+
+    <!-- Bouton Calculer -->
+    <button onclick="calculateBestPrice()" id="calc-btn" style="width:100%%;padding:.8rem;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:1rem;margin-bottom:.5rem">
+      💡 Calculer le meilleur prix
+    </button>
+    <div id="calc-status" style="text-align:center;font-size:.85rem;color:#666;margin-bottom:.6rem;min-height:1.2rem"></div>
+
+    <!-- Les 3 Agents + Raisonnement Détaillé (caché au départ) -->
+    <div id="agents-working" style="display:none">
+      <div style="font-size:.9rem;font-weight:700;color:#1A1A2E;margin-bottom:.4rem">🤖 Système Multi-Agents</div>
+
+      <!-- Agent 2: Customer Growth -->
+      <div style="background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.4rem;border-left:3px solid #8B5CF6">
+        <div style="font-size:.85rem;font-weight:700;color:#8B5CF6;margin-bottom:.3rem">👤 AGENT 2: CUSTOMER GROWTH</div>
+        <div id="agent2-decision" style="font-size:.75rem;font-weight:600;color:#1A1A2E;margin-bottom:.2rem"></div>
+        <div id="agent2-reasoning" style="font-size:.7rem;color:#666;line-height:1.3"></div>
+      </div>
+
+      <!-- Agent 3: Competitiveness -->
+      <div style="background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.4rem;border-left:3px solid #F97316">
+        <div style="font-size:.85rem;font-weight:700;color:#F97316;margin-bottom:.3rem">📊 AGENT 3: COMPÉTITIVITÉ</div>
+        <div id="agent3-decision" style="font-size:.75rem;font-weight:600;color:#1A1A2E;margin-bottom:.2rem"></div>
+        <div id="agent3-reasoning" style="font-size:.7rem;color:#666;line-height:1.3"></div>
+      </div>
+
+      <!-- Agent 1: Vendor Decision -->
+      <div style="background:#FFF;border-radius:6px;padding:.5rem;margin-bottom:.6rem;border-left:3px solid #3B82F6">
+        <div style="font-size:.85rem;font-weight:700;color:#3B82F6;margin-bottom:.3rem">🎯 AGENT 1: VENDEUR (Décision)</div>
+        <div id="agent1-decision" style="font-size:.75rem;font-weight:600;color:#1A1A2E;margin-bottom:.2rem"></div>
+        <div id="agent1-reasoning" style="font-size:.7rem;color:#666;line-height:1.3"></div>
+      </div>
+
+      <!-- Legacy IDs for backwards compatibility (hidden) -->
+      <div style="display:none">
+        <div id="agent1-simple"></div>
+        <div id="agent2-simple"></div>
+        <div id="agent3-simple"></div>
+        <div id="agent4-simple"></div>
+      </div>
+
+      <!-- Prix Final -->
+      <div style="background:#DCFCE7;border:2px solid #16A34A;border-radius:6px;padding:.6rem;margin-bottom:.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:.9rem;font-weight:700;color:#15803D">Prix recommandé:</span>
+          <span id="final-price" style="font-size:1.4rem;font-weight:800;color:#15803D"></span>
+        </div>
+        <div style="font-size:.75rem;color:#16A34A;margin-top:.2rem" id="final-margin"></div>
+      </div>
+
+      <button onclick="applyCalculatedPrice()" style="width:100%%;padding:.6rem;background:#16A34A;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.95rem">
+        ✨ Appliquer ce prix
+      </button>
+    </div>
+
+  </div>
+
   <!-- Promos -->
   <div class="promo-section-title">Codes promo</div>
   <div id="discounts"></div>
@@ -278,6 +344,9 @@ const MAX_STOCK_REF=20;
 
 // Trend tracking
 let prevProfit=null;
+
+// Calculated price from agents
+let calculatedPrice=null;
 
 // Haptic patterns per event type
 function haptic(type){
@@ -691,7 +760,93 @@ function showSaleCelebration(saleTotal,orderID,summary){
 function handleSSEMessage(e){
   try{
     const d=JSON.parse(e.data);
-    if(d.type==='sale'){
+    if(d.type==='vendor_decision'){
+      // New 3-agent system
+      const agentsSection=document.getElementById('agents-working');
+      agentsSection.style.display='block';
+
+      const vendor=d.agent1||{};
+      const customerGrowth=d.agent2||{};
+      const competitiveness=d.agent3||{};
+
+      // Agent 2: Customer Growth
+      const retainText=customerGrowth.should_retain?'✅ OUI, garder ce client':'❌ NON, client standard';
+      const tierEmoji={'premium':'🌟','gold':'🥇','silver':'🥈','standard':'⚪'}[customerGrowth.tier]||'';
+      document.getElementById('agent2-decision').innerHTML=
+        retainText+' - '+tierEmoji+' <strong>'+customerGrowth.tier.toUpperCase()+'</strong>';
+      const reasoning2=(customerGrowth.reasoning||[]).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent2-reasoning').innerHTML=reasoning2||'Analyse client terminée';
+
+      // Agent 3: Competitiveness
+      const compText=competitiveness.is_competitive?'✅ Position compétitive':'⚠️ Amélioration nécessaire';
+      document.getElementById('agent3-decision').innerHTML=
+        compText+' - Position <strong>'+competitiveness.market_position+'/'+ competitiveness.total_competitors+'</strong>';
+      const reasoning3=(competitiveness.reasoning||[]).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent3-reasoning').innerHTML=reasoning3||'Analyse marché terminée';
+
+      // Agent 1: Vendor Decision
+      document.getElementById('agent1-decision').innerHTML=
+        'Stratégie: <strong>'+vendor.strategy+'</strong> - Marge: <strong>'+vendor.margin+'%</strong>';
+      const reasoning1=(vendor.reasoning||[]).filter(r=>r).map(r=>'• '+r).join('<br>');
+      document.getElementById('agent1-reasoning').innerHTML=reasoning1||'Décision finale calculée';
+
+      // Prix final
+      calculatedPrice=vendor.final_price;
+      document.getElementById('final-price').textContent='$'+(vendor.final_price/100).toFixed(2);
+      document.getElementById('final-margin').textContent='Réduction: '+vendor.discount_pct+'% - Marge: '+vendor.margin+'%';
+
+      // Hide status
+      document.getElementById('calc-status').textContent='';
+
+    } else if(d.type==='agent_decisions'){
+      // Old 4-agent system (legacy)
+      // Display agents in simplified way
+      const agentsSection=document.getElementById('agents-working');
+      agentsSection.style.display='block';
+
+      const a1=d.agent1||{};
+      const a2=d.agent2||{};
+      const a3=d.agent3||{};
+      const a4=d.agent4||{};
+
+      // Agent 1: Espion (simplifié)
+      const lowestName=a1.lowest_by||'concurrent';
+      document.getElementById('agent1-simple').innerHTML=
+        '"Le prix le plus bas est <strong>$'+(a1.lowest_price/100).toFixed(2)+'</strong> ('+lowestName+')"';
+
+      // Agent 2: Analyste (simplifié)
+      const positionText={
+        'leader':'Vous êtes leader !',
+        'follower':'Vous perdez des ventes',
+        'premium':'Position premium',
+        'budget':'Prix bas'
+      }[a2.position]||'Analyse du marché';
+      document.getElementById('agent2-simple').innerHTML='"'+positionText+'"';
+
+      // Agent 3: Stratège (simplifié)
+      const strategyText={
+        'aggressive':'Soyez agressif pour vendre vite',
+        'balanced':'Équilibre entre prix et marge',
+        'match':'Égalez le concurrent',
+        'premium':'Maintenez votre position',
+        'defensive':'Protégez votre marge'
+      }[a3.strategy]||'Analyse de stratégie';
+      document.getElementById('agent3-simple').innerHTML=
+        '"'+strategyText+'<br>Prix cible: <strong>$'+(a3.target/100).toFixed(2)+'</strong>"';
+
+      // Agent 4: Contrôleur (simplifié)
+      const okText=a4.approved?'✅ OK, vous gagnez '+a4.margin+'%':'⚠️  Marge trop faible';
+      document.getElementById('agent4-simple').innerHTML='"'+okText+'"';
+
+      // Prix final
+      calculatedPrice=a4.final;
+      document.getElementById('final-price').textContent='$'+(a4.final/100).toFixed(2);
+      document.getElementById('final-margin').textContent='Vous gagnerez '+a4.margin+'% de marge';
+
+      // Hide status, show result
+      document.getElementById('calc-status').textContent='';
+
+    } else if(d.type==='sale'){
       showSaleCelebration(d.total,d.order_id,d.summary);
       lastCelebratedSales=(config.sales_count||0)+1;
       loadConfig();
@@ -778,6 +933,201 @@ setInterval(()=>{
     }
   });
 },3000);
+
+// --- Competitive Intelligence ---
+async function loadCompetitiveIntel(){
+  try{
+    const r=await fetch(API+'/competitive-intel');
+    const intel=await r.json();
+    document.getElementById('intel-loading').style.display='none';
+
+    const compEl=document.getElementById('intel-competitors');
+
+    // Display competitors table (simplified)
+    if(intel.competitors&&intel.competitors.length>0){
+      let html='';
+      intel.competitors.slice(0,5).forEach(c=>{
+        const isUs=c.is_us;
+        const isLowest=c.price===intel.lowest_price;
+        const arrow=isLowest?' ← le moins cher':'';
+        const badge=isUs?' (vous)':'';
+        const color=isUs?'#E5004C':isLowest?'#16A34A':'#666';
+        const weight=isUs||isLowest?'700':'400';
+        html+='<div style="display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid #E5E7EB">';
+        html+='<span style="color:'+color+';font-weight:'+weight+'">• '+c.merchant_name+badge+'</span>';
+        html+='<span style="color:'+color+';font-weight:'+weight+'">'+c.price_display+arrow+'</span>';
+        html+='</div>';
+      });
+      compEl.innerHTML=html;
+    }else{
+      compEl.innerHTML='<div style="color:#999;font-size:.85rem;text-align:center;padding:.5rem">Créez plus de marchands pour voir la concurrence</div>';
+    }
+  }catch(e){
+    console.error('Competitive intel error:',e);
+    document.getElementById('intel-loading').textContent='Erreur';
+  }
+}
+
+// Load competitive intel on config load
+const origLoadConfig=loadConfig;
+loadConfig=async function(){
+  await origLoadConfig();
+  loadCompetitiveIntel();
+}
+
+// Refresh competitive intel every 10 seconds
+setInterval(loadCompetitiveIntel,10000);
+
+// --- Calculate Best Price (Multi-Agent) ---
+async function calculateBestPrice(){
+  const statusEl=document.getElementById('calc-status');
+  const btn=document.getElementById('calc-btn');
+  const agentsSection=document.getElementById('agents-working');
+
+  btn.disabled=true;
+  btn.style.opacity='0.6';
+  agentsSection.style.display='none';
+  statusEl.textContent='⏳ Analyse en cours...';
+  statusEl.style.color='#3B82F6';
+
+  try{
+    const resp=await fetch(API+'/test-auto-compete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'}
+    });
+
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.error||'Erreur de calcul');
+    }
+
+    const data=await resp.json();
+
+    if(!data.success){
+      throw new Error('Calcul impossible');
+    }
+
+    // Show results directly (no need to wait for SSE)
+    if(data.no_discount){
+      statusEl.textContent='✅ '+data.message;
+      statusEl.style.color='#16A34A';
+
+      // Still show agents section even if no discount
+      if(data.reasoning){
+        agentsSection.style.display='block';
+        document.getElementById('agent1-simple').innerHTML='"'+data.reasoning.agent1+'"';
+        document.getElementById('agent2-simple').innerHTML='"'+data.reasoning.agent2+'"';
+        document.getElementById('agent3-simple').innerHTML='"'+data.reasoning.agent3+'"';
+        document.getElementById('agent4-simple').innerHTML='"'+data.reasoning.agent4+'"';
+        document.getElementById('final-price').textContent='$'+(data.current_price/100).toFixed(2);
+        document.getElementById('final-margin').textContent='Prix optimal maintenu';
+      }
+
+      btn.disabled=false;
+      btn.style.opacity='1';
+      setTimeout(()=>{statusEl.textContent=''},5000);
+      return;
+    }
+
+    // Display agents section with simplified text
+    agentsSection.style.display='block';
+
+    // Show final price
+    calculatedPrice=data.final_price;
+    document.getElementById('final-price').textContent='$'+(data.final_price/100).toFixed(2);
+    document.getElementById('final-margin').textContent='Vous gagnerez '+data.margin_percent+'% de marge';
+
+    // Show agent reasoning from API response
+    if(data.reasoning){
+      document.getElementById('agent1-simple').innerHTML='"'+data.reasoning.agent1+'"';
+      document.getElementById('agent2-simple').innerHTML='"'+data.reasoning.agent2+'"';
+      document.getElementById('agent3-simple').innerHTML='"'+data.reasoning.agent3+'"';
+      document.getElementById('agent4-simple').innerHTML='"'+data.reasoning.agent4+'"';
+    }else{
+      // Fallback if reasoning not provided
+      document.getElementById('agent1-simple').innerHTML='"Analyse terminée"';
+      document.getElementById('agent2-simple').innerHTML='"Prix analysé"';
+      document.getElementById('agent3-simple').innerHTML='"Prix cible: <strong>$'+(data.final_price/100).toFixed(2)+'</strong>"';
+      document.getElementById('agent4-simple').innerHTML='"✅ OK, marge '+data.margin_percent+'%"';
+    }
+
+    statusEl.textContent='';
+    btn.disabled=false;
+    btn.style.opacity='1';
+
+  }catch(e){
+    console.error('calculateBestPrice error:',e);
+    statusEl.textContent='❌ '+e.message;
+    statusEl.style.color='#DC2626';
+    btn.disabled=false;
+    btn.style.opacity='1';
+    setTimeout(()=>{statusEl.textContent=''},3000);
+  }
+}
+
+// --- Apply Calculated Price ---
+async function applyCalculatedPrice(){
+  if(!calculatedPrice){
+    alert('Calculez d\'abord le meilleur prix !');
+    return;
+  }
+
+  const statusEl=document.getElementById('calc-status');
+  statusEl.textContent='⏳ Application du prix...';
+  statusEl.style.color='#3B82F6';
+
+  try{
+    // Apply immediately to UI
+    config.selling_price=calculatedPrice;
+    config.pricing_algo='manual';
+    currentAlgo='manual';
+
+    document.getElementById('price-slider').value=calculatedPrice;
+    document.getElementById('price-display').textContent='$'+(calculatedPrice/100).toFixed(2);
+    document.querySelectorAll('.algo-btn').forEach(b=>{b.classList.toggle('active',b.dataset.algo==='manual')});
+
+    // Save to server immediately (no delay)
+    const payload={
+      selling_price:calculatedPrice,
+      pricing_algo:'manual',
+      stock:config.stock,
+      max_cpc_bid:config.max_cpc_bid,
+      discount_codes:config.discount_codes||[],
+      shipping_options:config.shipping_options||[]
+    };
+
+    console.log('[applyCalculatedPrice] Sending to server:',payload);
+
+    const r=await fetch(API+'/config',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+
+    console.log('[applyCalculatedPrice] Response status:',r.status);
+
+    if(!r.ok){
+      const errText=await r.text();
+      console.error('[applyCalculatedPrice] Error response:',errText);
+      throw new Error('Erreur serveur: '+r.status);
+    }
+
+    // Reload config to confirm
+    await loadConfig();
+
+    // Hide agents section after applying
+    document.getElementById('agents-working').style.display='none';
+    statusEl.textContent='✅ Prix appliqué et verrouillé !';
+    statusEl.style.color='#16A34A';
+    setTimeout(()=>{statusEl.textContent=''},3000);
+
+  }catch(e){
+    console.error('applyCalculatedPrice error:',e);
+    statusEl.textContent='❌ Erreur: '+e.message;
+    statusEl.style.color='#DC2626';
+    setTimeout(()=>{statusEl.textContent=''},3000);
+  }
+}
 
 // --- Leave arena ---
 let hasLeft=false;

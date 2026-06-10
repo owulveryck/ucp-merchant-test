@@ -145,6 +145,20 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 .agent-panel.expanded .agent-note { font-size: 0.9rem; }
 @keyframes agent-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 
+/* --- Toast Notifications --- */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 400; display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+.toast { background: #FFFFFF; border: 2px solid #2D2D2D; border-radius: 12px; box-shadow: 6px 6px 0px #E5004C; padding: 1rem 1.25rem; animation: toast-slide 0.3s ease-out; display: flex; align-items: start; gap: 12px; }
+.toast.success { border-color: #16A34A; box-shadow: 6px 6px 0px #16A34A; }
+.toast-icon { font-size: 1.5rem; flex-shrink: 0; }
+.toast-content { flex: 1; }
+.toast-title { font-weight: 700; font-size: 0.9rem; color: #1A1A2E; margin-bottom: 0.25rem; }
+.toast-message { font-size: 0.85rem; color: #666; line-height: 1.4; white-space: pre-wrap; }
+.toast-close { background: none; border: none; font-size: 1.2rem; color: #999; cursor: pointer; padding: 0; margin-left: 8px; flex-shrink: 0; }
+.toast-close:hover { color: #E5004C; }
+@keyframes toast-slide { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toast-fade-out { to { opacity: 0; transform: translateX(100%); } }
+.toast.removing { animation: toast-fade-out 0.3s ease-out forwards; }
+
 /* --- Agent Modal Overlay --- */
 .agent-modal-overlay { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(26,26,46,0.6); align-items: center; justify-content: center; padding: 2rem; }
 .agent-modal-overlay.visible { display: flex; }
@@ -174,6 +188,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 </head>
 <body>
+<div class="toast-container" id="toast-container"></div>
 
 <div class="topbar">
   <h1>UCP <span>Arena</span></h1>
@@ -219,8 +234,8 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         </div>
         <hr class="agent-separator">
         <div class="agent-input-wrap">
-          <input type="text" id="command-input" placeholder="What should I buy?" autocomplete="off" disabled />
-          <button id="btn-send" disabled>Send</button>
+          <input type="text" id="command-input" placeholder="Ex: Achète un casque pas cher | Je veux un laptop rapide" autocomplete="off" />
+          <button id="btn-send">🛒 Acheter</button>
         </div>
         <div class="agent-merchant-count">
           <span>Merchants:</span>
@@ -231,8 +246,7 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
       </div>
     </div>
     <div class="agent-note">
-      The buying agent is an independent process (Gemini).
-      It is not part of the arena — it discovers and negotiates with merchants on its own via the Shopping Graph.
+      Agent acheteur indépendant (Gemini). Tapez "rapide/vite/express" pour livraison la plus rapide, sinon optimise le prix le moins cher.
     </div>
   </div>
 </div>
@@ -618,6 +632,18 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
         appendToPanel('thinking-entry', displayText, summary);
       }
       if (ev.type === 'agent_thinking' && summary) appendToPanel('thinking-entry', displayText, summary);
+      if (ev.type === 'agent_message' && ev.data && ev.data.message) {
+        appendToPanel('result-entry', '🤖 Agent', ev.data.message);
+      }
+      if (ev.type === 'merchant_selected' && ev.data) {
+        // Highlight the winning merchant
+        var merchantName = ev.data.merchant_name;
+        if (merchantName) {
+          highlightMerchant(merchantName);
+          setMerchantState(merchantName, 'state-sale', 10000);
+          appendToPanel('result-entry', '🏆 Gagnant', merchantName + ' sélectionné !');
+        }
+      }
       if (ev.type === 'tool_call' && summary) {
         var pd = ev.data ? Object.assign({_type:'req'}, ev.data) : null;
         appendToPanel('tool-call-entry', displayText, summary, pd);
@@ -854,6 +880,54 @@ body { font-family: 'Outfit', system-ui, sans-serif; background: #FDF0EE; color:
   modalOverlay.addEventListener('click', function(e) {
     if (e.target === modalOverlay) hideAgentModal();
   });
+
+  // --- Toast Notifications ---
+  var toastContainer = document.getElementById('toast-container');
+  function showToast(title, message, type, duration) {
+    type = type || 'info';
+    duration = duration || 8000;
+
+    var toast = document.createElement('div');
+    toast.className = 'toast' + (type === 'success' ? ' success' : '');
+
+    var icon = '🏆';
+    if (type === 'success') icon = '✅';
+    if (type === 'info') icon = 'ℹ️';
+    if (type === 'error') icon = '❌';
+
+    toast.innerHTML = '<div class="toast-icon">' + icon + '</div>' +
+      '<div class="toast-content">' +
+      '<div class="toast-title">' + title + '</div>' +
+      '<div class="toast-message">' + message + '</div>' +
+      '</div>' +
+      '<button class="toast-close" onclick="this.parentElement.remove()">&times;</button>';
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(function() {
+      toast.classList.add('removing');
+      setTimeout(function() { toast.remove(); }, 300);
+    }, duration);
+  }
+
+  // Listen for merchant_selected events to show toast
+  var originalHandleSSE = handleSSEMessage;
+  handleSSEMessage = function(msg) {
+    originalHandleSSE(msg);
+    try {
+      var ev = JSON.parse(msg.data);
+      if (ev.type === 'merchant_selected' && ev.data) {
+        var name = ev.data.merchant_name;
+        var price = ev.data.price;
+        showToast(
+          '🎯 Marchand sélectionné !',
+          name + ' remporte la vente avec le meilleur prix : $' + (price/100).toFixed(2),
+          'success',
+          10000
+        );
+      }
+    } catch(e) {}
+  };
 })();
 </script>
 </body>

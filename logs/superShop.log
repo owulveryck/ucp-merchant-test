@@ -1,0 +1,2 @@
+2026/05/28 11:35:55 main.go:197: Failed to load data from demo/data/merchant_a: products: open demo/data/merchant_a/products.csv: no such file or directory
+exit status 1

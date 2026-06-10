@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="fr">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Le Commerce a l'Ere des Agents : ACP, UCP et la Transformation des Canaux de Vente</title>
+
+		<meta name="description" content="Presentation sur la transformation du commerce par les agents IA">
+		<meta name="author" content="OCTO Technology">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/dist/reset.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/dist/reveal.css">
+		<link rel="stylesheet" href="https://raw.githack.com/gist/owulveryck/e3e772251677a8e622e67b3d62120b6c/raw/9b863cc5fc7b0750844b1e32d5ed3eb3c3bb05f2/octo2.css" id="theme">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/plugin/highlight/monokai.css">
+
+		<style>
+			/* Demo panel styles */
+			.demo-panel {
+				background: #1a1a2e;
+				border-radius: 8px;
+				padding: 16px;
+				text-align: left;
+			}
+			.demo-btn {
+				background: #00b8d4;
+				color: #fff;
+				border: none;
+				padding: 10px 20px;
+				cursor: pointer;
+				border-radius: 4px;
+				font-size: 14px;
+				margin: 4px;
+				font-family: inherit;
+				transition: background 0.2s;
+			}
+			.demo-btn:hover {
+				background: #0097a7;
+			}
+			.demo-btn:disabled {
+				background: #555;
+				cursor: not-allowed;
+			}
+			.demo-response {
+				max-height: 380px;
+				overflow-y: auto;
+				font-size: 11px;
+				color: #e0e0e0;
+				background: #0a0a1a;
+				padding: 12px;
+				border-radius: 4px;
+				white-space: pre-wrap;
+				text-align: left;
+				margin-top: 8px;
+				word-break: break-word;
+			}
+			.demo-method {
+				color: #00b8d4;
+				font-weight: bold;
+				font-family: monospace;
+			}
+			.demo-url {
+				color: #aaa;
+				font-family: monospace;
+				font-size: 12px;
+			}
+			.demo-loading {
+				color: #ffab40;
+				font-style: italic;
+			}
+			.demo-error {
+				color: #ff5252;
+			}
+			.demo-success {
+				color: #69f0ae;
+			}
+			/* JSON highlighting */
+			.json-key { color: #82aaff; }
+			.json-string { color: #c3e88d; }
+			.json-number { color: #f78c6c; }
+			.json-boolean { color: #ff5370; }
+			.json-null { color: #ff5370; }
+			.json-highlight { background: rgba(0, 184, 212, 0.25); padding: 1px 3px; border-radius: 2px; }
+			/* Diagram styles */
+			.diagram-box {
+				display: inline-block;
+				border: 2px solid #00b8d4;
+				border-radius: 8px;
+				padding: 12px 20px;
+				margin: 5px;
+				font-size: 0.7em;
+				background: rgba(0, 184, 212, 0.1);
+			}
+			.diagram-arrow {
+				display: inline-block;
+				font-size: 1.2em;
+				margin: 0 8px;
+				color: #00b8d4;
+			}
+			.flow-step {
+				display: inline-flex;
+				align-items: center;
+			}
+			/* Table styles */
+			.comparison-table {
+				width: 100%;
+				font-size: 0.55em;
+				border-collapse: collapse;
+			}
+			.comparison-table th {
+				background: rgba(0, 184, 212, 0.3);
+				padding: 8px 12px;
+				text-align: left;
+			}
+			.comparison-table td {
+				padding: 6px 12px;
+				border-bottom: 1px solid rgba(255,255,255,0.1);
+			}
+			/* Architecture diagram */
+			.arch-container {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 15px;
+				margin: 20px 0;
+			}
+			.arch-box {
+				border: 2px solid #00b8d4;
+				border-radius: 10px;
+				padding: 15px 20px;
+				text-align: center;
+				background: rgba(0, 184, 212, 0.08);
+				font-size: 0.65em;
+			}
+			.arch-arrow {
+				font-size: 1.5em;
+				color: #00b8d4;
+			}
+			/* Maturity indicator */
+			.maturity-high { color: #69f0ae; }
+			.maturity-mid { color: #ffab40; }
+			.maturity-low { color: #ff5252; }
+			/* Override some reveal defaults for readability */
+			.reveal .slides section .conseil {
+				background: #1a3a6b !important;
+				border-left: 4px solid #00b8d4;
+				padding: 15px 20px;
+				border-radius: 4px;
+			}
+			.mini-text {
+				font-size: 0.5em;
+				color: #999;
+			}
+			/* Dashboard iframe */
+			.dashboard-frame {
+				width: 100%;
+				height: 420px;
+				border: 2px solid #00b8d4;
+				border-radius: 8px;
+				background: #fff;
+			}
+			/* Timeline for agenda */
+			.timeline {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				justify-content: center;
+			}
+			.timeline-item {
+				background: rgba(0, 184, 212, 0.15);
+				border: 1px solid rgba(0, 184, 212, 0.4);
+				border-radius: 6px;
+				padding: 8px 14px;
+				font-size: 0.5em;
+				min-width: 140px;
+				text-align: center;
+			}
+			.timeline-item.active {
+				background: rgba(0, 184, 212, 0.35);
+				border-color: #00b8d4;
+			}
+			/* Level autonomy bars */
+			.level-bar {
+				display: flex;
+				align-items: center;
+				margin: 6px 0;
+				font-size: 0.55em;
+			}
+			.level-label {
+				width: 60px;
+				font-weight: bold;
+				color: #00b8d4;
+			}
+			.level-fill {
+				height: 24px;
+				border-radius: 4px;
+				display: flex;
+				align-items: center;
+				padding-left: 8px;
+				color: #fff;
+				font-size: 0.9em;
+			}
+			/* Layers diagram */
+			.layer-stack {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 4px;
+			}
+			.layer {
+				width: 80%;
+				padding: 10px;
+				border-radius: 6px;
+				text-align: center;
+				font-size: 0.6em;
+			}
+		</style>
+	</head>
+
+	<body>
+		<img class="header-tete" src="https://raw.githack.com/gist/owulveryck/e3e772251677a8e622e67b3d62120b6c/raw/9b863cc5fc7b0750844b1e32d5ed3eb3c3bb05f2/tete.png"/>
+		<div class="footer-text"></div>
+		<div class="better-way">OCTO TECHNOLOGY PART OF ACCENTURE &copy; 2025 - All rights reserved</div>
+
+		<div class="reveal">
+
+			<div class="slides">
+
+				<!-- ============================================ -->
+				<!-- ACTE 0 : OUVERTURE                           -->
+				<!-- ============================================ -->
+
+				<!-- Slide 1 : Titre -->
+				<section>
+					<h1 style="font-size: 1.6em;">Le Commerce a l'Ere des Agents</h1>
+					<p>ACP, UCP et la Transformation des Canaux de Vente</p>
+					<p class="mini-text">OCTO Technology &mdash; 2025</p>
+				</section>
+
+				<!-- Slide 2 : L'accroche -->
+				<section>
+					<h2>Le monde change</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<h3>2024</h3>
+							<p>Votre client <strong>tape sur Google</strong></p>
+							<p>Il compare 12 onglets</p>
+							<p>Il remplit un formulaire</p>
+							<p>Il abandonne son panier (70%)</p>
+						</div>
+						<div class="split-right">
+							<h3>2026</h3>
+							<p>Son <strong>agent negocie pour lui</strong></p>
+							<p>Il compare 200 marchands en 3s</p>
+							<p>Il connait les preferences du client</p>
+							<p>Il finalise l'achat automatiquement</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 3 : Agenda -->
+				<section>
+					<h2>Agenda</h2>
+					<div class="timeline">
+						<div class="timeline-item">0. Ouverture</div>
+						<div class="timeline-item">1. Fondations Techniques</div>
+						<div class="timeline-item">2. Du Texte a l'Action</div>
+						<div class="timeline-item">3. Panorama des Acteurs</div>
+						<div class="timeline-item active">4. Le Commerce Agentique</div>
+						<div class="timeline-item active">5. Demo Live UCP</div>
+						<div class="timeline-item">6. Post-Achat Agentique</div>
+						<div class="timeline-item">7. Scenarios Strategiques</div>
+						<div class="timeline-item">8. Maturite et Timing</div>
+						<div class="timeline-item">9. Closing</div>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 1 : FONDATIONS TECHNIQUES               -->
+				<!-- ============================================ -->
+
+				<!-- Slide 4 : Le Transformer -->
+				<section>
+					<h2>Le Transformer</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<h3>Le moteur a combustion de l'IA</h3>
+							<p>Publie en 2017 par Google</p>
+							<p>"Attention Is All You Need"</p>
+							<p>Un mecanisme qui apprend <strong>quoi regarder</strong> dans une sequence</p>
+						</div>
+						<div class="split-right">
+							<div class="arch-container" style="flex-direction: column;">
+								<div class="arch-box">Input (tokens)</div>
+								<div class="arch-arrow">&darr;</div>
+								<div class="arch-box" style="border-color: #ffab40;">Self-Attention</div>
+								<div class="arch-arrow">&darr;</div>
+								<div class="arch-box">Output (prediction)</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 5 : La Fenetre de Contexte -->
+				<section>
+					<h2>La Fenetre de Contexte</h2>
+					<div class="flex-container">
+						<div class="flex-item">
+							<h3>2022</h3>
+							<p><strong>4K tokens</strong></p>
+							<p>~3 pages</p>
+							<p>Une conversation courte</p>
+						</div>
+						<div class="flex-item">
+							<h3>2024</h3>
+							<p><strong>128K tokens</strong></p>
+							<p>~100 pages</p>
+							<p>Un catalogue produit</p>
+						</div>
+						<div class="flex-item highlight">
+							<h3>2025</h3>
+							<p><strong>1M+ tokens</strong></p>
+							<p>~750 pages</p>
+							<p>Tout votre site e-commerce</p>
+						</div>
+					</div>
+					<p style="font-size: 0.6em; margin-top: 15px;"><strong>Impact business :</strong> l'agent peut ingerer l'integralite de votre offre commerciale</p>
+				</section>
+
+				<!-- Slide 6 : Machines de coherence -->
+				<section>
+					<h2>Machines de coherence, pas de verite</h2>
+					<div class="conseil">
+						<p>Les LLM ne "savent" rien. Ils produisent la <strong>suite la plus probable</strong>.</p>
+						<p>Pour le commerce, cela signifie :</p>
+						<ul>
+							<li>Un agent peut <em>inventer</em> un prix ou une disponibilite</li>
+							<li>Il faut <strong>ancrer</strong> l'IA dans des donnees fiables</li>
+							<li>Les protocoles structures (UCP) sont la solution</li>
+						</ul>
+					</div>
+				</section>
+
+				<!-- Slide 7 : RAG -->
+				<section>
+					<h2>RAG : Ancrer l'IA dans le reel</h2>
+					<p style="font-size: 0.7em;">Retrieval-Augmented Generation</p>
+					<div class="arch-container">
+						<div class="arch-box">Catalogue<br>produits</div>
+						<div class="arch-arrow">&rarr;</div>
+						<div class="arch-box" style="border-color: #ffab40;">Base vectorielle</div>
+						<div class="arch-arrow">&rarr;</div>
+						<div class="arch-box">Agent IA</div>
+						<div class="arch-arrow">&rarr;</div>
+						<div class="arch-box" style="border-color: #69f0ae;">Reponse fondee</div>
+					</div>
+					<p style="font-size: 0.6em; margin-top: 15px;">Votre <strong>catalogue devient la base de connaissances</strong> de l'agent de votre client</p>
+				</section>
+
+				<!-- Slide 8 : MCP -->
+				<section>
+					<h2>MCP : Le connecteur universel</h2>
+					<div class="flex-item highlight" style="display: inline-block; margin-bottom: 15px;">
+						<p style="margin: 5px;">Model Context Protocol &mdash; L'analogie : c'est le <strong>USB-C de l'IA</strong></p>
+					</div>
+					<div class="arch-container">
+						<div class="arch-box">Agent IA</div>
+						<div class="arch-arrow">&harr;</div>
+						<div class="arch-box" style="border-color: #ffab40;">MCP Server</div>
+						<div class="arch-arrow">&harr;</div>
+						<div class="arch-container" style="flex-direction: column; gap: 4px;">
+							<div class="arch-box" style="font-size: 0.9em;">Catalogue</div>
+							<div class="arch-box" style="font-size: 0.9em;">Checkout</div>
+							<div class="arch-box" style="font-size: 0.9em;">Paiement</div>
+						</div>
+					</div>
+					<p style="font-size: 0.55em;">Standard ouvert par Anthropic &mdash; Adopte par OpenAI, Google, Microsoft</p>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 2 : DU TEXTE A L'ACTION                 -->
+				<!-- ============================================ -->
+
+				<!-- Slide 9 : L'evolution des interfaces -->
+				<section>
+					<h2>L'evolution des interfaces</h2>
+					<div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0;">
+						<div class="flow-step"><div class="diagram-box">CLI<br><span class="mini-text">1970</span></div><span class="diagram-arrow">&rarr;</span></div>
+						<div class="flow-step"><div class="diagram-box">GUI<br><span class="mini-text">1984</span></div><span class="diagram-arrow">&rarr;</span></div>
+						<div class="flow-step"><div class="diagram-box">Web<br><span class="mini-text">1995</span></div><span class="diagram-arrow">&rarr;</span></div>
+						<div class="flow-step"><div class="diagram-box">API<br><span class="mini-text">2010</span></div><span class="diagram-arrow">&rarr;</span></div>
+						<div class="flow-step"><div class="diagram-box" style="border-color: #69f0ae;">Agent<br><span class="mini-text">2025</span></div></div>
+					</div>
+					<p style="font-size: 0.6em; margin-top: 20px;">Chaque generation <strong>elimine une friction</strong> entre l'intention et l'action</p>
+				</section>
+
+				<!-- Slide 10 : Niveaux d'autonomie -->
+				<section>
+					<h2>Les niveaux d'autonomie</h2>
+					<div class="level-bar"><span class="level-label">L0</span><div class="level-fill" style="width: 15%; background: #555;">Chatbot FAQ</div></div>
+					<div class="level-bar"><span class="level-label">L1</span><div class="level-fill" style="width: 30%; background: #666;">Recherche assistee</div></div>
+					<div class="level-bar"><span class="level-label" style="color: #69f0ae;">L2</span><div class="level-fill" style="width: 55%; background: rgba(0, 184, 212, 0.6);">Execution supervisee &larr; <strong>Nous sommes ici</strong></div></div>
+					<div class="level-bar"><span class="level-label">L3</span><div class="level-fill" style="width: 75%; background: #555;">Delegation sous contraintes</div></div>
+					<div class="level-bar"><span class="level-label">L4</span><div class="level-fill" style="width: 95%; background: #444;">Autonomie totale</div></div>
+					<p style="font-size: 0.55em; margin-top: 10px;">Le checkout_hash UCP garantit que l'humain garde le controle au moment du paiement</p>
+				</section>
+
+				<!-- Slide 11 : Agent-to-Agent -->
+				<section>
+					<h2>Agent-to-Agent (A2A)</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<div class="arch-container" style="flex-direction: column;">
+								<div class="arch-box">Agent Acheteur</div>
+								<div class="arch-arrow">&darr;&uarr;</div>
+								<div class="arch-box" style="border-color: #ffab40;">Protocole (UCP)</div>
+								<div class="arch-arrow">&darr;&uarr;</div>
+								<div class="arch-box">Agent Marchand</div>
+							</div>
+						</div>
+						<div class="split-right">
+							<h3>Le dialogue machine</h3>
+							<ul style="font-size: 0.7em;">
+								<li>Decouverte automatique des capacites</li>
+								<li>Negociation structuree</li>
+								<li>Transaction sans interface humaine</li>
+								<li>Post-achat autonome</li>
+							</ul>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 12 : Le paradigme change -->
+				<section>
+					<h2>Le paradigme change</h2>
+					<div class="conseil">
+						<p style="font-size: 0.9em;">Hier : <em>"Comment attirer le client sur mon site ?"</em></p>
+						<p style="font-size: 0.9em;">Aujourd'hui : <strong>"Comment mon offre est-elle comprise par son agent ?"</strong></p>
+						<br>
+						<p style="font-size: 0.7em;">Le client ne visite plus votre site.<br>Son agent interroge votre <strong>endpoint</strong>.</p>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 3 : PANORAMA DES ACTEURS                -->
+				<!-- ============================================ -->
+
+				<!-- Slide 13 : La carte des forces -->
+				<section>
+					<h2>La carte des forces</h2>
+					<div class="flex-container">
+						<div class="flex-item">
+							<h3>Google</h3>
+							<p style="font-size: 0.7em;">Gemini + Shopping Graph<br>Co-auteur UCP</p>
+						</div>
+						<div class="flex-item">
+							<h3>OpenAI</h3>
+							<p style="font-size: 0.7em;">Operator + ACP<br>Approche "App Store"</p>
+						</div>
+						<div class="flex-item">
+							<h3>Anthropic</h3>
+							<p style="font-size: 0.7em;">Claude + MCP<br>Standard de connexion</p>
+						</div>
+						<div class="flex-item">
+							<h3>Amazon</h3>
+							<p style="font-size: 0.7em;">Buy for Me + Alexa+<br>Marketplace captive</p>
+						</div>
+						<div class="flex-item">
+							<h3>Apple</h3>
+							<p style="font-size: 0.7em;">Apple Intelligence<br>Siri + Apple Pay</p>
+						</div>
+						<div class="flex-item">
+							<h3>Meta</h3>
+							<p style="font-size: 0.7em;">Llama open source<br>WhatsApp Business</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 14 : Open vs Proprietaire -->
+				<section>
+					<h2>Open vs Proprietaire</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<h3>Ecosystemes fermes</h3>
+							<ul style="font-size: 0.7em;">
+								<li>Amazon Buy for Me</li>
+								<li>OpenAI Operator</li>
+								<li>Apple Intelligence</li>
+							</ul>
+							<p style="font-size: 0.6em; color: #ff5252;">Risque : dependance, commission, desintermediation</p>
+						</div>
+						<div class="split-right">
+							<h3>Standards ouverts</h3>
+							<ul style="font-size: 0.7em;">
+								<li>UCP (Google + coalition)</li>
+								<li>MCP (Anthropic)</li>
+								<li>Schema.org</li>
+							</ul>
+							<p style="font-size: 0.6em; color: #69f0ae;">Parallele historique : HTTP vs AOL</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 15 : L'ecosysteme emergent -->
+				<section>
+					<h2>L'ecosysteme emergent</h2>
+					<div class="layer-stack">
+						<div class="layer" style="background: rgba(105, 240, 174, 0.2); border: 1px solid #69f0ae;">Commerce Agentique &mdash; UCP, ACP, Marketplaces</div>
+						<div class="layer" style="background: rgba(0, 184, 212, 0.2); border: 1px solid #00b8d4;">Applications &mdash; Agents, Assistants, Copilots</div>
+						<div class="layer" style="background: rgba(255, 171, 64, 0.2); border: 1px solid #ffab40;">Protocoles &mdash; MCP, A2A, OAuth2</div>
+						<div class="layer" style="background: rgba(255, 83, 112, 0.15); border: 1px solid #ff5370;">Modeles &mdash; GPT, Gemini, Claude, Llama</div>
+					</div>
+				</section>
+
+				<!-- Slide 16 : Qui controle le client ? -->
+				<section>
+					<h2>Qui controle le client ?</h2>
+					<div class="conseil">
+						<p>La <strong>bataille des protocoles</strong> est une bataille pour le controle de la relation client.</p>
+						<ul style="font-size: 0.7em;">
+							<li><strong>Protocole ouvert (UCP)</strong> : le marchand garde la relation directe</li>
+							<li><strong>Plateforme fermee (ACP/Amazon)</strong> : un intermediaire s'installe</li>
+						</ul>
+						<p style="font-size: 0.7em; margin-top: 10px;">Le choix de protocole est un choix <strong>strategique</strong>, pas technique.</p>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 4 : LE COMMERCE AGENTIQUE               -->
+				<!-- ============================================ -->
+
+				<!-- Slide 17 : SEO vers AEO -->
+				<section>
+					<h2>Du SEO au AEO</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<h3>SEO (hier)</h3>
+							<p style="font-size: 0.7em;">Optimiser des <strong>pages HTML</strong> pour les moteurs de recherche</p>
+							<p style="font-size: 0.7em;">Le client <em>lit</em> et <em>clique</em></p>
+							<p style="font-size: 0.6em; color: #aaa;">meta tags, backlinks, contenu</p>
+						</div>
+						<div class="split-right">
+							<h3>AEO (demain)</h3>
+							<p style="font-size: 0.7em;">Optimiser des <strong>endpoints JSON</strong> pour les agents</p>
+							<p style="font-size: 0.7em;">L'agent <em>parse</em> et <em>execute</em></p>
+							<p style="font-size: 0.6em; color: #00b8d4;">Votre vitrine = votre endpoint UCP</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 18 : Trois protocoles, trois visions -->
+				<section>
+					<h2>Trois protocoles, trois visions</h2>
+					<div class="flex-container">
+						<div class="flex-item">
+							<h3>ACP</h3>
+							<p style="font-size: 0.65em;"><strong>OpenAI / Shopify</strong></p>
+							<p style="font-size: 0.6em;">Modele "App Store"</p>
+							<p style="font-size: 0.6em;">L'agent passe par une plateforme centrale</p>
+						</div>
+						<div class="flex-item highlight">
+							<h3>UCP</h3>
+							<p style="font-size: 0.65em;"><strong>Google + Coalition</strong></p>
+							<p style="font-size: 0.6em;">Modele "Web ouvert"</p>
+							<p style="font-size: 0.6em;">Decouverte decentralisee, relation directe</p>
+						</div>
+						<div class="flex-item">
+							<h3>Amazon</h3>
+							<p style="font-size: 0.65em;"><strong>Buy for Me</strong></p>
+							<p style="font-size: 0.6em;">Modele "Grand Magasin"</p>
+							<p style="font-size: 0.6em;">Tout reste dans l'ecosysteme Amazon</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 19 : Tableau comparatif -->
+				<section>
+					<h2>Comparatif detaille</h2>
+					<table class="comparison-table">
+						<thead>
+							<tr><th></th><th>ACP (OpenAI)</th><th>UCP (Google+)</th><th>Amazon</th></tr>
+						</thead>
+						<tbody>
+							<tr><td><strong>Gouvernance</strong></td><td>OpenAI</td><td>Coalition ouverte</td><td>Amazon</td></tr>
+							<tr><td><strong>Donnees client</strong></td><td>Via la plateforme</td><td>Direct marchand</td><td>Amazon controle</td></tr>
+							<tr><td><strong>Paiement</strong></td><td>Via Shopify/Stripe</td><td>Multi-handler (Google Pay, etc.)</td><td>Amazon Pay</td></tr>
+							<tr><td><strong>Risque marchand</strong></td><td>Desintermediation moyenne</td><td>Faible</td><td>Tres eleve</td></tr>
+							<tr><td><strong>Substituabilite</strong></td><td>Moyenne</td><td>Haute (standard ouvert)</td><td>Nulle</td></tr>
+							<tr><td><strong>Maturite</strong></td><td>Early</td><td>Early</td><td>Production</td></tr>
+						</tbody>
+					</table>
+				</section>
+
+				<!-- Slide 20 : UCP en detail -->
+				<section>
+					<h2>UCP en detail</h2>
+					<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 20px 0;">
+						<div class="diagram-box">Discovery<br><span class="mini-text">/.well-known/ucp</span></div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Catalog<br><span class="mini-text">/api/products</span></div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Cart/Checkout<br><span class="mini-text">/checkout-sessions</span></div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Order<br><span class="mini-text">/orders</span></div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Tracking<br><span class="mini-text">fulfillment events</span></div>
+					</div>
+					<p style="font-size: 0.6em;">Chaque etape = un endpoint REST ou un outil MCP. L'agent progresse de maniere <strong>autonome et structuree</strong>.</p>
+				</section>
+
+				<!-- Slide 21 : Le flux UCP -->
+				<section>
+					<h2>Le flux UCP pas a pas</h2>
+					<div style="font-size: 0.55em; text-align: left; max-width: 90%; margin: 0 auto;">
+						<p><span class="demo-method">1. GET</span> <code>/.well-known/ucp</code> &rarr; Decouverte des services, capabilities, payment handlers</p>
+						<p><span class="demo-method">2. GET</span> <code>/api/products</code> &rarr; Catalogue : produits, prix, disponibilite</p>
+						<p><span class="demo-method">3. POST</span> <code>/checkout-sessions</code> &rarr; Creation du panier (line_items)</p>
+						<p><span class="demo-method">4. PUT</span> <code>/checkout-sessions/{id}</code> &rarr; Ajout buyer, discounts, fulfillment</p>
+						<p><span class="demo-method">5. PUT</span> <code>/checkout-sessions/{id}</code> &rarr; Selection adresse + option livraison</p>
+						<p><span class="demo-method">6. POST</span> <code>/checkout-sessions/{id}/complete</code> &rarr; Paiement &rarr; Commande creee</p>
+						<p><span class="demo-method">7. GET</span> <code>/orders/{id}</code> &rarr; Suivi de la commande</p>
+					</div>
+				</section>
+
+				<!-- Slide 22 : Identite et Wallet -->
+				<section>
+					<h2>Identite et Wallet</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<h3>OAuth2 + Identity Linking</h3>
+							<ul style="font-size: 0.65em;">
+								<li>L'agent s'authentifie via OAuth2</li>
+								<li>L'email du buyer lie les adresses connues</li>
+								<li>Les instruments de paiement sont pre-charges</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<h3>Buyer Consent</h3>
+							<ul style="font-size: 0.65em;">
+								<li>Marketing : opt-in/opt-out</li>
+								<li>Analytics : opt-in/opt-out</li>
+								<li>Vente de donnees : opt-in/opt-out</li>
+							</ul>
+							<p style="font-size: 0.6em;">Le consentement voyage avec la commande</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 23 : Le checkout hash -->
+				<section>
+					<h2>Le checkout hash</h2>
+					<div class="flex-item highlight" style="display: inline-block; margin-bottom: 15px;">
+						<p style="margin: 5px;">Mecanisme anti-autonomie : <strong>l'humain garde le controle</strong></p>
+					</div>
+					<div style="font-size: 0.65em; text-align: left; max-width: 80%; margin: 0 auto;">
+						<p>1. Le serveur genere un <code>checkout_hash</code> a chaque mise a jour</p>
+						<p>2. Le hash encode : produits + prix + livraison + reductions</p>
+						<p>3. L'agent <strong>doit presenter ce hash a l'humain</strong> pour approbation</p>
+						<p>4. Le hash est requis pour finaliser la commande (via MCP)</p>
+					</div>
+					<p style="font-size: 0.55em; margin-top: 15px; color: #ffab40;">L'agent peut tout faire SAUF payer sans le consentement explicite du buyer</p>
+				</section>
+
+				<!-- Slide 24 : Transition demo -->
+				<section>
+					<h2>Passons a la pratique</h2>
+					<div class="conseil">
+						<p style="font-size: 1.1em;">Voyons un <strong>serveur UCP en action</strong></p>
+						<p style="font-size: 0.7em;">Un vrai serveur marchand Go, un vrai flux d'achat, de vrais appels API.</p>
+						<p style="font-size: 0.7em;">Chaque bouton de la demo execute un <code>fetch()</code> vers <code>localhost:8182</code></p>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 5 : DEMO LIVE                           -->
+				<!-- ============================================ -->
+
+				<!-- Slide 25 : Architecture demo -->
+				<section>
+					<h2>Architecture de la demo</h2>
+					<div class="arch-container">
+						<div class="arch-box">
+							<strong>Navigateur</strong><br>
+							<span style="font-size: 0.8em;">(cette presentation)</span><br>
+							<span style="font-size: 0.8em;">fetch() JavaScript</span>
+						</div>
+						<div class="arch-arrow">&harr;</div>
+						<div class="arch-box" style="border-color: #69f0ae;">
+							<strong>Serveur UCP</strong><br>
+							<span style="font-size: 0.8em;">localhost:8182</span><br>
+							<span style="font-size: 0.8em;">Go &mdash; Flower Shop</span>
+						</div>
+					</div>
+					<div style="margin-top: 20px;">
+						<button class="demo-btn" onclick="demoReset()">Reinitialiser le serveur</button>
+						<div id="reset-response" class="demo-response" style="max-height: 80px;"></div>
+					</div>
+				</section>
+
+				<!-- Slide 26 : DEMO Discovery -->
+				<section>
+					<h2>DEMO: UCP Discovery</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<p style="font-size: 0.65em;">Le point d'entree de tout agent UCP :</p>
+							<p><span class="demo-method">GET</span> <code>/.well-known/ucp</code></p>
+							<ul style="font-size: 0.6em;">
+								<li>Version du protocole</li>
+								<li>Services disponibles</li>
+								<li>Capabilities (checkout, order, discount...)</li>
+								<li>Payment handlers</li>
+							</ul>
+							<p style="font-size: 0.55em; color: #aaa;">Equivalent du <code>robots.txt</code> pour les agents IA</p>
+						</div>
+						<div class="split-right">
+							<div class="demo-panel">
+								<button class="demo-btn" onclick="demoDiscovery()">Lancer Discovery</button>
+								<div id="discovery-response" class="demo-response"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 27 : DEMO Catalogue -->
+				<section>
+					<h2>DEMO: Catalogue</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<p style="font-size: 0.65em;">L'agent explore le catalogue :</p>
+							<p><span class="demo-method">GET</span> <code>/api/products</code></p>
+							<ul style="font-size: 0.6em;">
+								<li>6 produits (fleurs)</li>
+								<li>Prix en centimes (USD)</li>
+								<li><strong>gardenias</strong> : rupture de stock (qty=0)</li>
+								<li>Donnees structurees, pas du HTML</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<div class="demo-panel">
+								<button class="demo-btn" onclick="demoCatalog()">Charger le Catalogue</button>
+								<div id="catalog-response" class="demo-response"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 28 : DEMO Creer un Checkout -->
+				<section>
+					<h2>DEMO: Creer un Checkout</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<p style="font-size: 0.65em;">L'agent cree un panier :</p>
+							<p><span class="demo-method">POST</span> <code>/shopping-api/checkout-sessions</code></p>
+							<ul style="font-size: 0.55em;">
+								<li><strong>bouquet_roses</strong> x2 = $70.00</li>
+								<li><strong>orchid_white</strong> x1 = $45.00</li>
+								<li>Status attendu : <code>incomplete</code></li>
+								<li>Le serveur calcule les totaux</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<div class="demo-panel">
+								<button class="demo-btn" onclick="demoCreateCheckout()">Creer le Checkout</button>
+								<div id="checkout-create-response" class="demo-response"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 29 : DEMO Ajouter Promo + Adresse -->
+				<section>
+					<h2>DEMO: Promo + Adresse</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<p style="font-size: 0.65em;">L'agent enrichit le checkout :</p>
+							<p><span class="demo-method">PUT</span> <code>/checkout-sessions/{id}</code></p>
+							<ul style="font-size: 0.55em;">
+								<li>Buyer : john.doe@example.com</li>
+								<li>Promo : <strong>10OFF</strong> (10% de remise)</li>
+								<li>Fulfillment : shipping</li>
+								<li>Adresses auto-populees (2 connues)</li>
+								<li>Livraison gratuite (bouquet_roses inclus)</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<div class="demo-panel">
+								<button class="demo-btn" onclick="demoUpdateCheckout()">Ajouter Promo + Adresse</button>
+								<div id="checkout-update-response" class="demo-response"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 30 : DEMO Selectionner Options -->
+				<section>
+					<h2>DEMO: Selection Options</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<p style="font-size: 0.65em;">L'agent finalise la configuration :</p>
+							<p><span class="demo-method">PUT</span> <code>/checkout-sessions/{id}</code></p>
+							<ul style="font-size: 0.55em;">
+								<li>Selectionne l'adresse de livraison</li>
+								<li>Selectionne l'option de livraison</li>
+								<li>Status attendu : <code>ready_for_complete</code></li>
+								<li>IDs extraits dynamiquement de l'etape precedente</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<div class="demo-panel">
+								<button class="demo-btn" onclick="demoSelectOptions()">Selectionner Options</button>
+								<div id="checkout-select-response" class="demo-response"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 31 : DEMO Finaliser -->
+				<section>
+					<h2>DEMO: Finaliser la commande</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<p style="font-size: 0.65em;">L'agent complete le checkout :</p>
+							<p><span class="demo-method">POST</span> <code>/checkout-sessions/{id}/complete</code></p>
+							<ul style="font-size: 0.55em;">
+								<li>Payment handler : <code>mock_payment_handler</code></li>
+								<li>Token : <code>success_token</code></li>
+								<li>Resultat : commande creee</li>
+								<li>Order ID genere</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<div class="demo-panel">
+								<button class="demo-btn" onclick="demoComplete()">Finaliser</button>
+								<div id="checkout-complete-response" class="demo-response"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 32 : DEMO Dashboard -->
+				<section>
+					<h2>DEMO: Dashboard Temps Reel</h2>
+					<p style="font-size: 0.6em;">Le dashboard du marchand, mis a jour en temps reel via SSE (Server-Sent Events)</p>
+					<iframe id="dashboard-iframe" class="dashboard-frame" src="about:blank"></iframe>
+					<div style="margin-top: 8px;">
+						<button class="demo-btn" onclick="document.getElementById('dashboard-iframe').src='http://localhost:8182/'">Charger le Dashboard</button>
+					</div>
+				</section>
+
+				<!-- Slide 33 : Ce que la demo prouve -->
+				<section>
+					<h2>Ce que la demo prouve</h2>
+					<div class="flex-item highlight" style="display: inline-block; margin-bottom: 10px; width: 80%;">
+						<p style="margin: 5px; font-size: 0.8em;">Trois takeaways</p>
+					</div>
+					<div class="flex-container">
+						<div class="flex-item">
+							<h3>1. Decouverte auto</h3>
+							<p style="font-size: 0.65em;">Un seul GET sur <code>/.well-known/ucp</code> suffit pour connaitre toutes les capacites du marchand</p>
+						</div>
+						<div class="flex-item">
+							<h3>2. Donnees structurees</h3>
+							<p style="font-size: 0.65em;">Pas de scraping HTML. Du JSON propre, parsable, exploitable par un agent</p>
+						</div>
+						<div class="flex-item">
+							<h3>3. Flux transactionnel</h3>
+							<p style="font-size: 0.65em;">De la decouverte au paiement : un flux complet, automatisable, securise</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 6 : POST-ACHAT AGENTIQUE               -->
+				<!-- ============================================ -->
+
+				<!-- Slide 34 : Le cycle complet -->
+				<section>
+					<h2>Le cycle post-achat complet</h2>
+					<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 20px 0;">
+						<div class="diagram-box" style="border-color: #69f0ae;">Order</div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Tracking</div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Returns</div>
+						<span class="diagram-arrow" style="align-self: center;">&rarr;</span>
+						<div class="diagram-box">Re-order</div>
+					</div>
+					<p style="font-size: 0.6em;">Chaque etape peut etre geree par l'agent, <strong>sans intervention humaine</strong></p>
+					<p style="font-size: 0.55em; color: #aaa;">Fulfillment events, expectations, adjustments &mdash; tout est structure en JSON</p>
+				</section>
+
+				<!-- Slide 35 : Retours et negociation A2A -->
+				<section>
+					<h2>Retours et negociation A2A</h2>
+					<div class="split-layout">
+						<div class="split-left" style="font-size: 0.6em; text-align: left;">
+							<p><strong style="color: #00b8d4;">Agent Acheteur :</strong> "L'orchidee est arrivee abimee. Je demande un remboursement."</p>
+							<p><strong style="color: #ffab40;">Agent Marchand :</strong> "Photo requise. Proposition : remplacement gratuit + 10% sur la prochaine commande."</p>
+							<p><strong style="color: #00b8d4;">Agent Acheteur :</strong> "Accepte si livraison express."</p>
+							<p><strong style="color: #ffab40;">Agent Marchand :</strong> "Accord. Commande de remplacement creee."</p>
+						</div>
+						<div class="split-right">
+							<h3>En chiffres</h3>
+							<p style="font-size: 0.7em;"><strong>1.2 seconde</strong></p>
+							<p style="font-size: 0.6em;">C'est le temps de cette negociation complete</p>
+							<p style="font-size: 0.6em;">Contre 3 jours et 4 emails aujourd'hui</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 36 : Nouveaux KPIs -->
+				<section>
+					<h2>Nouveaux KPIs</h2>
+					<table class="comparison-table">
+						<thead>
+							<tr><th>KPI Ancien monde</th><th></th><th>KPI Agentique</th></tr>
+						</thead>
+						<tbody>
+							<tr><td>DMT (Duree Moy. Traitement)</td><td>&rarr;</td><td>Agent Resolution Rate (ARR)</td></tr>
+							<tr><td>Taux de satisfaction (CSAT)</td><td>&rarr;</td><td>Negotiation Delta (valeur recuperee)</td></tr>
+							<tr><td>Cout par contact</td><td>&rarr;</td><td>Cost per Resolution (automatise)</td></tr>
+							<tr><td>Taux de retour</td><td>&rarr;</td><td>Retention par re-achat automatique</td></tr>
+							<tr><td>Taux d'abandon panier</td><td>&rarr;</td><td>Agent Completion Rate</td></tr>
+						</tbody>
+					</table>
+				</section>
+
+				<!-- Slide 37 : Impact economique -->
+				<section>
+					<h2>Impact economique</h2>
+					<div class="conseil">
+						<p style="font-size: 1em;"><strong>Reduction SAV : 60-80%</strong></p>
+						<ul style="font-size: 0.7em;">
+							<li>Les cas simples (suivi, retours, echanges) sont entierement automatises</li>
+							<li>Les cas complexes sont pre-qualifies par l'agent avant escalade humaine</li>
+							<li>Le cout marginal d'une resolution tombe a <strong>quasi zero</strong></li>
+						</ul>
+						<p style="font-size: 0.65em; margin-top: 10px;">Le SAV n'est plus un centre de cout. C'est un <strong>levier de fidelisation automatise</strong>.</p>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 7 : SCENARIOS STRATEGIQUES              -->
+				<!-- ============================================ -->
+
+				<!-- Slide 38 : Quatre postures -->
+				<section>
+					<h2>Quatre postures strategiques</h2>
+					<div class="flex-container">
+						<div class="flex-item highlight">
+							<h3>Pionnier</h3>
+							<p style="font-size: 0.6em;">Implementer UCP maintenant<br>Avantage competitif maximal<br>Risque technique modere</p>
+						</div>
+						<div class="flex-item">
+							<h3>Fast Follower</h3>
+							<p style="font-size: 0.6em;">Preparer l'infra<br>Deployer quand le standard se stabilise<br>Bon compromis risque/timing</p>
+						</div>
+						<div class="flex-item">
+							<h3>Jardin Clos</h3>
+							<p style="font-size: 0.6em;">Rejoindre ACP/Amazon<br>Rapide a deployer<br>Dependance forte</p>
+						</div>
+						<div class="flex-item" style="border: 1px solid #ff5252;">
+							<h3>Attendre</h3>
+							<p style="font-size: 0.6em;">Ne rien faire<br>"Attendre de voir"<br><span style="color: #ff5252;">Risque maximal</span></p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 39 : Le Pionnier -->
+				<section>
+					<h2>Le Pionnier</h2>
+					<div class="split-layout">
+						<div class="split-left">
+							<h3>Implementer UCP des maintenant</h3>
+							<ul style="font-size: 0.65em;">
+								<li>Exactement ce que fait cette demo</li>
+								<li>Un serveur Go, quelques endpoints</li>
+								<li>Compatible REST + MCP</li>
+								<li>Standards ouverts, pas de lock-in</li>
+							</ul>
+						</div>
+						<div class="split-right">
+							<h3>Ce qu'on gagne</h3>
+							<ul style="font-size: 0.65em;">
+								<li>Premier a etre decouvert par les agents</li>
+								<li>Donnees de marche avant la concurrence</li>
+								<li>Expertise interne accumulee</li>
+								<li>Influence sur le standard</li>
+							</ul>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 40 : Le Fast Follower -->
+				<section>
+					<h2>Le Fast Follower</h2>
+					<ul style="font-size: 0.7em;">
+						<li><strong>Aujourd'hui :</strong> Structurer les donnees produit (JSON, Schema.org)</li>
+						<li><strong>Aujourd'hui :</strong> Mettre en place les API catalogue</li>
+						<li><strong>T+6 mois :</strong> Implementer le checkout UCP</li>
+						<li><strong>T+12 mois :</strong> Deployer le flux complet</li>
+					</ul>
+					<p style="font-size: 0.6em; margin-top: 15px;">Bon compromis si vos donnees produit ne sont pas encore structurees</p>
+				</section>
+
+				<!-- Slide 41 : Le risque de l'inaction -->
+				<section>
+					<h2>Le risque de l'inaction</h2>
+					<div class="flex-item highlight" style="display: inline-block; width: 80%; margin-bottom: 15px;">
+						<p style="margin: 5px; font-size: 0.8em;">L'histoire se repete</p>
+					</div>
+					<div style="font-size: 0.7em;">
+						<p><strong style="color: #ff5252;">2000</strong> &mdash; "On n'a pas besoin d'un site web, nos clients viennent en magasin"</p>
+						<p><strong style="color: #ff5252;">2010</strong> &mdash; "On n'a pas besoin d'une app, notre site suffit"</p>
+						<p><strong style="color: #ff5252;">2015</strong> &mdash; "On n'a pas besoin d'etre sur les marketplaces"</p>
+						<p><strong style="color: #ffab40;">2027</strong> &mdash; "On n'a pas besoin d'un endpoint agent" <strong>?</strong></p>
+					</div>
+				</section>
+
+				<!-- Slide 42 : Recommandation OCTO -->
+				<section>
+					<h2>Recommandation OCTO</h2>
+					<div class="conseil">
+						<p style="font-size: 0.75em;"><strong>Court terme (0-3 mois)</strong><br>Audit des donnees produit + POC UCP Discovery</p>
+						<p style="font-size: 0.75em;"><strong>Moyen terme (3-9 mois)</strong><br>Implementation checkout UCP + tests agents reels</p>
+						<p style="font-size: 0.75em;"><strong>Long terme (9-18 mois)</strong><br>Flux complet + post-achat agentique + metriques AEO</p>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 8 : MATURITE ET TIMING                  -->
+				<!-- ============================================ -->
+
+				<!-- Slide 43 : Ou en est le marche ? -->
+				<section>
+					<h2>Ou en est le marche ?</h2>
+					<table class="comparison-table">
+						<thead>
+							<tr><th>Composant</th><th>Maturite</th><th>Signal</th></tr>
+						</thead>
+						<tbody>
+							<tr><td>LLM (GPT, Claude, Gemini)</td><td class="maturity-high">Tres mature</td><td>Production chez les GAFA</td></tr>
+							<tr><td>MCP (protocole de connexion)</td><td class="maturity-high">Standard</td><td>Adopte par tous les majors</td></tr>
+							<tr><td>UCP (commerce agentique)</td><td class="maturity-mid">Early adoption</td><td>Spec publiee, premiers POC</td></tr>
+							<tr><td>Adoption decideurs</td><td class="maturity-low">Tres faible</td><td>C'est l'objet de cette presentation</td></tr>
+						</tbody>
+					</table>
+				</section>
+
+				<!-- Slide 44 : Signaux faibles -->
+				<section>
+					<h2>Signaux faibles a surveiller</h2>
+					<div class="flex-container">
+						<div class="flex-item">
+							<h3>Shopify + ACP</h3>
+							<p style="font-size: 0.6em;">Integration native du Agent Commerce Protocol dans Shopify</p>
+						</div>
+						<div class="flex-item">
+							<h3>Google Shopping + Gemini</h3>
+							<p style="font-size: 0.6em;">Recherche produit par agent dans Google Shopping</p>
+						</div>
+						<div class="flex-item">
+							<h3>Amazon Buy for Me</h3>
+							<p style="font-size: 0.6em;">Achat delegue a Alexa / agent Amazon</p>
+						</div>
+						<div class="flex-item">
+							<h3>OpenAI Operator</h3>
+							<p style="font-size: 0.6em;">Agent autonome qui navigue et achete sur le web</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 45 : La fenetre d'opportunite -->
+				<section>
+					<h2>La fenetre d'opportunite</h2>
+					<div class="conseil">
+						<p style="font-size: 1.1em;">C'est <strong>maintenant</strong> qu'on ecrit les regles.</p>
+						<p style="font-size: 0.7em;">Les standards sont en draft. Les implementations sont rares. Les premiers a bouger definiront les normes du commerce agentique.</p>
+						<p style="font-size: 0.7em;">Dans 18 mois, ce sera un marche etabli. Vous serez <strong>acteur ou spectateur</strong>.</p>
+					</div>
+				</section>
+
+				<!-- ============================================ -->
+				<!-- ACTE 9 : CLOSING                             -->
+				<!-- ============================================ -->
+
+				<!-- Slide 46 : Synthese -->
+				<section>
+					<h2>Synthese en 5 points</h2>
+					<ol style="font-size: 0.7em;">
+						<li>Les <strong>agents IA intermedient</strong> deja la relation client</li>
+						<li>Les <strong>protocoles ouverts</strong> (UCP) preservent l'autonomie du marchand</li>
+						<li>C'est <strong>viable aujourd'hui</strong> &mdash; la demo le prouve</li>
+						<li>Les donnees structurees sont le <strong>prerequis non-negociable</strong></li>
+						<li>Une seule posture tenable : <strong>preparer activement</strong></li>
+					</ol>
+				</section>
+
+				<!-- Slide 47 : La question a 1 milliard -->
+				<section>
+					<div class="conseil" style="padding: 40px;">
+						<p style="font-size: 1.3em;"><strong>Quand l'agent de votre client cherchera votre produit, que trouvera-t-il ?</strong></p>
+					</div>
+				</section>
+
+				<!-- Slide 48 : Next steps concrets -->
+				<section>
+					<h2>Next steps</h2>
+					<div class="flex-container">
+						<div class="flex-item highlight">
+							<h3>Workshop decouverte</h3>
+							<p style="font-size: 0.65em;"><strong>1/2 journee</strong></p>
+							<p style="font-size: 0.6em;">Comprendre UCP, evaluer la maturite de vos donnees produit</p>
+						</div>
+						<div class="flex-item">
+							<h3>POC UCP</h3>
+							<p style="font-size: 0.65em;"><strong>4 semaines</strong></p>
+							<p style="font-size: 0.6em;">Implementer Discovery + Catalog + Checkout sur un perimetre restreint</p>
+						</div>
+						<div class="flex-item">
+							<h3>Strategie agentique</h3>
+							<p style="font-size: 0.65em;"><strong>2 mois</strong></p>
+							<p style="font-size: 0.6em;">Roadmap complete : technique, produit, organisation</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Slide 49 : Questions -->
+				<section>
+					<h1>Questions ?</h1>
+					<p style="font-size: 0.7em;">Le serveur UCP tourne toujours sur <code>localhost:8182</code> pour les curieux</p>
+				</section>
+
+				<!-- Slide 50 : Merci -->
+				<section>
+					<h1>Merci</h1>
+					<p>OCTO Technology</p>
+					<p class="mini-text">Part of Accenture &copy; 2025</p>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/dist/reveal.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/plugin/zoom/zoom.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/plugin/notes/notes.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/plugin/search/search.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/plugin/markdown/markdown.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.2/plugin/highlight/highlight.js"></script>
+		<script>
+
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				center: true,
+				hash: true,
+				plugins: [ RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight ]
+			});
+
+			// ==========================================
+			// DEMO: UCP Merchant API calls
+			// ==========================================
+
+			const UCP = 'http://localhost:8182';
+			let checkoutId = null;
+			let orderId = null;
+			// Store fulfillment data from update response for the select-options step
+			let fulfillmentMethodId = null;
+			let fulfillmentDestinationId = null;
+			let fulfillmentOptionId = null;
+
+			function setResponse(elementId, content, isError) {
+				const el = document.getElementById(elementId);
+				if (!el) return;
+				if (isError) {
+					el.innerHTML = '<span class="demo-error">' + escapeHtml(content) + '</span>';
+				} else {
+					el.innerHTML = content;
+				}
+			}
+
+			function setLoading(elementId) {
+				const el = document.getElementById(elementId);
+				if (!el) return;
+				el.innerHTML = '<span class="demo-loading">Chargement...</span>';
+			}
+
+			function escapeHtml(str) {
+				return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+			}
+
+			function syntaxHighlight(json) {
+				if (typeof json !== 'string') {
+					json = JSON.stringify(json, null, 2);
+				}
+				json = escapeHtml(json);
+				return json.replace(/("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+					let cls = 'json-number';
+					if (/^"/.test(match)) {
+						if (/:$/.test(match)) {
+							cls = 'json-key';
+							// Highlight important keys
+							const key = match.replace(/"/g, '').replace(/:$/, '');
+							if (['status', 'version', 'total', 'id', 'order_id', 'checkout_hash'].includes(key)) {
+								return '<span class="json-key json-highlight">' + match + '</span>';
+							}
+						} else {
+							cls = 'json-string';
+							// Highlight important values
+							const val = match.replace(/"/g, '');
+							if (['incomplete', 'ready_for_complete', 'complete', 'created', '2026-01-11'].includes(val)) {
+								return '<span class="json-string json-highlight">' + match + '</span>';
+							}
+						}
+					} else if (/true|false/.test(match)) {
+						cls = 'json-boolean';
+					} else if (/null/.test(match)) {
+						cls = 'json-null';
+					}
+					return '<span class="' + cls + '">' + match + '</span>';
+				});
+			}
+
+			async function demoFetch(method, path, body, responseElementId) {
+				setLoading(responseElementId);
+				const opts = {
+					method: method,
+					headers: { 'Content-Type': 'application/json' },
+				};
+				if (body) {
+					opts.body = JSON.stringify(body);
+				}
+				try {
+					const resp = await fetch(UCP + path, opts);
+					const data = await resp.json();
+					const header = '<span class="demo-method">' + method + '</span> <span class="demo-url">' + escapeHtml(path) + '</span> &rarr; <span class="' + (resp.ok ? 'demo-success' : 'demo-error') + '">' + resp.status + '</span>\n\n';
+					setResponse(responseElementId, header + syntaxHighlight(data));
+					return data;
+				} catch (err) {
+					setResponse(responseElementId,
+						'Serveur UCP non disponible.\n\nDemarrez-le avec :\ngo run ./sample_implementation --port 8182 \\\n  --data-dir ./sample_implementation/testdata/flower_shop \\\n  --simulation-secret test',
+						true
+					);
+					return null;
+				}
+			}
+
+			async function demoReset() {
+				checkoutId = null;
+				orderId = null;
+				fulfillmentMethodId = null;
+				fulfillmentDestinationId = null;
+				fulfillmentOptionId = null;
+				await demoFetch('POST', '/testing/reset', null, 'reset-response');
+			}
+
+			async function demoDiscovery() {
+				await demoFetch('GET', '/.well-known/ucp', null, 'discovery-response');
+			}
+
+			async function demoCatalog() {
+				await demoFetch('GET', '/api/products', null, 'catalog-response');
+			}
+
+			async function demoCreateCheckout() {
+				const body = {
+					line_items: [
+						{ product_id: 'bouquet_roses', quantity: 2 },
+						{ product_id: 'orchid_white', quantity: 1 }
+					]
+				};
+				const data = await demoFetch('POST', '/shopping-api/checkout-sessions', body, 'checkout-create-response');
+				if (data && data.id) {
+					checkoutId = data.id;
+				}
+			}
+
+			async function demoUpdateCheckout() {
+				if (!checkoutId) {
+					setResponse('checkout-update-response', 'Creez d\'abord un checkout (etape precedente)', true);
+					return;
+				}
+				const body = {
+					buyer: {
+						email: 'john.doe@example.com',
+						first_name: 'John',
+						last_name: 'Doe'
+					},
+					discounts: {
+						codes: ['10OFF']
+					},
+					fulfillment: {
+						methods: [{ type: 'shipping' }]
+					}
+				};
+				const data = await demoFetch('PUT', '/shopping-api/checkout-sessions/' + checkoutId, body, 'checkout-update-response');
+				// Extract fulfillment IDs for next step
+				if (data && data.fulfillment && data.fulfillment.methods && data.fulfillment.methods.length > 0) {
+					const method = data.fulfillment.methods[0];
+					fulfillmentMethodId = method.id;
+					if (method.destinations && method.destinations.length > 0) {
+						fulfillmentDestinationId = method.destinations[0].id;
+					}
+					if (method.groups && method.groups.length > 0 && method.groups[0].options && method.groups[0].options.length > 0) {
+						fulfillmentOptionId = method.groups[0].options[0].id;
+					}
+				}
+			}
+
+			async function demoSelectOptions() {
+				if (!checkoutId) {
+					setResponse('checkout-select-response', 'Creez d\'abord un checkout', true);
+					return;
+				}
+				if (!fulfillmentMethodId || !fulfillmentDestinationId) {
+					setResponse('checkout-select-response', 'Ajoutez d\'abord promo + adresse (etape precedente)', true);
+					return;
+				}
+				const body = {
+					fulfillment: {
+						methods: [{
+							id: fulfillmentMethodId,
+							selected_destination_id: fulfillmentDestinationId,
+							groups: [{
+								selected_option_id: fulfillmentOptionId
+							}]
+						}]
+					}
+				};
+				const data = await demoFetch('PUT', '/shopping-api/checkout-sessions/' + checkoutId, body, 'checkout-select-response');
+				// Update option ID if groups are now populated
+				if (data && data.fulfillment && data.fulfillment.methods && data.fulfillment.methods.length > 0) {
+					const method = data.fulfillment.methods[0];
+					if (method.groups && method.groups.length > 0 && method.groups[0].options && method.groups[0].options.length > 0) {
+						fulfillmentOptionId = method.groups[0].options[0].id;
+						// If status is not ready_for_complete, we may need to select the option in a second call
+						if (data.status !== 'ready_for_complete' && fulfillmentOptionId) {
+							const body2 = {
+								fulfillment: {
+									methods: [{
+										id: fulfillmentMethodId,
+										selected_destination_id: fulfillmentDestinationId,
+										groups: [{
+											selected_option_id: fulfillmentOptionId
+										}]
+									}]
+								}
+							};
+							const data2 = await demoFetch('PUT', '/shopping-api/checkout-sessions/' + checkoutId, body2, 'checkout-select-response');
+						}
+					}
+				}
+			}
+
+			async function demoComplete() {
+				if (!checkoutId) {
+					setResponse('checkout-complete-response', 'Creez d\'abord un checkout', true);
+					return;
+				}
+				const body = {
+					payment_data: {
+						handler_id: 'mock_payment_handler',
+						credential: {
+							token: 'success_token'
+						}
+					}
+				};
+				const data = await demoFetch('POST', '/shopping-api/checkout-sessions/' + checkoutId + '/complete', body, 'checkout-complete-response');
+				if (data && data.id) {
+					orderId = data.id;
+				}
+			}
+
+		</script>
+
+	</body>
+</html>

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/owulveryck/ucp-merchant-test/demo/internal/a2aclient"
 )
@@ -118,12 +119,17 @@ func (h *Handler) handlePostCommand(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"detail":"invalid command"}`, http.StatusBadRequest)
 		return
 	}
-	h.hub.SendCommand(cmd)
+
+	fmt.Printf("[DEBUG] Received command: %s\n", cmd.Instruction)
+
+	// Execute buying flow in-process (no external Gemini agent)
+	go h.executeBuyingFlow(cmd.Instruction)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":    "accepted",
-		"connected": h.hub.HasCommandConsumer(),
+		"connected": true,
 	})
 }
 
@@ -242,8 +248,217 @@ func (h *Handler) proxyArena(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
+	// Always return connected=true since we handle buying in-process (no external Gemini agent)
 	json.NewEncoder(w).Encode(map[string]any{
-		"agent_connected": h.hub.HasCommandConsumer(),
+		"agent_connected": true,
+	})
+}
+
+func (h *Handler) executeBuyingFlow(instruction string) {
+	fmt.Printf("[DEBUG] executeBuyingFlow started for: %s\n", instruction)
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("[DEBUG] executeBuyingFlow panic: %v\n", r)
+			h.hub.Add(Event{
+				Type:    "agent_error",
+				Source:  "buying_agent",
+				Summary: "Buying flow crashed",
+				Data:    map[string]any{"error": fmt.Sprintf("%v", r)},
+			})
+		}
+	}()
+
+	fmt.Printf("[DEBUG] Adding first event\n")
+	// Step 1: Search Shopping Graph
+	h.hub.Add(Event{
+		Type:    "agent_message",
+		Source:  "buying_agent",
+		Summary: "Searching for products",
+		Data:    map[string]any{"message": "🔍 Recherche: " + instruction},
+	})
+
+	fmt.Printf("[DEBUG] Searching Shopping Graph at %s\n", h.graphURL)
+	searchBody := fmt.Sprintf(`{"query": "casque", "limit": 10}`)
+	searchResp, err := http.Post(h.graphURL+"/search", "application/json",
+		strings.NewReader(searchBody))
+	if err != nil {
+		fmt.Printf("[DEBUG] Search error: %v\n", err)
+		h.hub.Add(Event{
+			Type:    "agent_message",
+			Source:  "buying_agent",
+			Summary: "Error searching",
+			Data:    map[string]any{"message": "❌ Shopping Graph indisponible: " + err.Error()},
+		})
+		return
+	}
+	defer searchResp.Body.Close()
+
+	fmt.Printf("[DEBUG] Parsing search results\n")
+	var results struct {
+		Results []struct {
+			MerchantID   string `json:"merchant_id"`
+			MerchantName string `json:"merchant_name"`
+			Price        int    `json:"price"`
+			InStock      bool   `json:"in_stock"`
+		} `json:"results"`
+	}
+	json.NewDecoder(searchResp.Body).Decode(&results)
+	fmt.Printf("[DEBUG] Found %d results\n", len(results.Results))
+
+	// Step 2: Find cheapest and collect all prices for comparison
+	var cheapest *struct {
+		MerchantID   string
+		MerchantName string
+		Price        int
+	}
+	var allMerchants []struct {
+		Name  string
+		Price int
+	}
+
+	for _, r := range results.Results {
+		if r.InStock {
+			allMerchants = append(allMerchants, struct {
+				Name  string
+				Price int
+			}{r.MerchantName, r.Price})
+
+			if cheapest == nil || r.Price < cheapest.Price {
+				cheapest = &struct {
+					MerchantID   string
+					MerchantName string
+					Price        int
+				}{r.MerchantID, r.MerchantName, r.Price}
+			}
+		}
+	}
+
+	fmt.Printf("[DEBUG] Found %d merchants, cheapest: %v\n", len(allMerchants), cheapest)
+
+	if cheapest == nil {
+		h.hub.Add(Event{
+			Type:    "agent_message",
+			Source:  "buying_agent",
+			Summary: "No merchants available",
+			Data:    map[string]any{"message": "❌ Aucun marchand disponible"},
+		})
+		return
+	}
+
+	fmt.Printf("[DEBUG] Building comparison message\n")
+	// Build comparison message
+	var comparison strings.Builder
+	comparison.WriteString(fmt.Sprintf("📊 Comparaison des prix :\n"))
+	for _, m := range allMerchants {
+		if m.Name == cheapest.MerchantName {
+			comparison.WriteString(fmt.Sprintf("   • %s: $%.2f ← ✅ LE MOINS CHER\n", m.Name, float64(m.Price)/100))
+		} else {
+			diff := float64(m.Price-cheapest.Price) / 100
+			comparison.WriteString(fmt.Sprintf("   • %s: $%.2f (+$%.2f)\n", m.Name, float64(m.Price)/100, diff))
+		}
+	}
+
+	fmt.Printf("[DEBUG] Sending comparison event\n")
+	h.hub.Add(Event{
+		Type:    "agent_message",
+		Source:  "buying_agent",
+		Summary: "Comparing prices",
+		Data:    map[string]any{"message": comparison.String()},
+	})
+	fmt.Printf("[DEBUG] Comparison event sent\n")
+
+	// Decision message
+	savingsPercent := 0.0
+	if len(allMerchants) > 1 {
+		var secondCheapest int
+		for _, m := range allMerchants {
+			if m.Name != cheapest.MerchantName {
+				if secondCheapest == 0 || m.Price < secondCheapest {
+					secondCheapest = m.Price
+				}
+			}
+		}
+		if secondCheapest > 0 {
+			savingsPercent = float64(secondCheapest-cheapest.Price) / float64(secondCheapest) * 100
+		}
+	}
+
+	decisionMsg := fmt.Sprintf("🎯 DÉCISION : %s sélectionné !\n\n"+
+		"Pourquoi ?\n"+
+		"   • Prix le plus bas : $%.2f\n"+
+		"   • %d concurrent(s) comparé(s)\n",
+		cheapest.MerchantName,
+		float64(cheapest.Price)/100,
+		len(allMerchants)-1)
+
+	if savingsPercent > 0 {
+		decisionMsg += fmt.Sprintf("   • Économie : %.1f%% vs 2ème meilleur prix\n", savingsPercent)
+	}
+
+	h.hub.Add(Event{
+		Type:    "agent_message",
+		Source:  "buying_agent",
+		Summary: "Decision made",
+		Data:    map[string]any{"message": decisionMsg},
+	})
+
+	// Step 3: Create checkout with AUTO_COMPETE
+	h.hub.Add(Event{
+		Type:    "agent_message",
+		Source:  "buying_agent",
+		Summary: "Creating checkout",
+		Data:    map[string]any{"message": "🛒 Création du panier..."},
+	})
+
+	checkoutBody := `{
+		"items": [{"product_id": "casque_audio", "quantity": 1}],
+		"customer": {"email": "agent@acheteur.com"},
+		"discount_codes": ["AUTO_COMPETE"]
+	}`
+	checkoutResp, err := http.Post(h.arenaURL+"/"+cheapest.MerchantID+"/checkouts",
+		"application/json", strings.NewReader(checkoutBody))
+	if err == nil {
+		defer checkoutResp.Body.Close()
+		var checkout struct {
+			Totals []struct {
+				Type   string `json:"type"`
+				Amount int    `json:"amount"`
+			} `json:"totals"`
+		}
+		json.NewDecoder(checkoutResp.Body).Decode(&checkout)
+
+		// Find final total
+		var finalPrice int
+		for _, t := range checkout.Totals {
+			if t.Type == "total" {
+				finalPrice = t.Amount
+				break
+			}
+		}
+
+		if finalPrice > 0 {
+			h.hub.Add(Event{
+				Type:    "agent_message",
+				Source:  "buying_agent",
+				Summary: "Purchase completed",
+				Data: map[string]any{
+					"message": fmt.Sprintf("✅ Achat confirmé ! Prix final: $%.2f (avec AUTO_COMPETE)", float64(finalPrice)/100),
+				},
+			})
+		}
+	}
+
+	// Highlight the winner in the arena
+	h.hub.Add(Event{
+		Type:    "merchant_selected",
+		Source:  "buying_agent",
+		Summary: fmt.Sprintf("Selected %s as winner", cheapest.MerchantName),
+		Data: map[string]any{
+			"merchant_id":   cheapest.MerchantID,
+			"merchant_name": cheapest.MerchantName,
+			"price":         cheapest.Price,
+		},
 	})
 }
 

@@ -20,8 +20,41 @@ import (
 // agentHTTPClient is used for non-SSE HTTP calls (search, obs events) with a timeout.
 var agentHTTPClient = &http.Client{Timeout: 10 * time.Second}
 
-func buildSystemPrompt(merchantCount int) string {
-	return fmt.Sprintf(`You are a shopping assistant that finds the best deals across multiple merchants.
+// detectOptimizationMode infers the user's intent from their instruction.
+// Returns "fastest" if they want speed, "cheapest" otherwise (default).
+func detectOptimizationMode(instruction string) string {
+	lower := strings.ToLower(instruction)
+
+	// Fast/rapid delivery keywords
+	fastKeywords := []string{
+		"rapide", "vite", "express", "urgent", "fastest", "quickest",
+		"quick", "fast", "speed", "rapid", "asap", "soon",
+	}
+
+	for _, kw := range fastKeywords {
+		if strings.Contains(lower, kw) {
+			return "fastest"
+		}
+	}
+
+	// Default to cheapest
+	return "cheapest"
+}
+
+func buildSystemPrompt(merchantCount int, optimizeFor string) string {
+	shippingSelection := "pick the cheapest shipping option id"
+	merchantSelection := "at the cheapest merchant"
+	explanation := "lowest total after discounts and shipping"
+
+	if optimizeFor == "fastest" {
+		shippingSelection = "pick the FASTEST shipping option (express > standard, prefer shorter delivery times over price)"
+		merchantSelection = "at the merchant with the FASTEST delivery (shortest estimated days)"
+		explanation = "fastest delivery time"
+	}
+
+	return fmt.Sprintf(`You are a shopping assistant that finds products across multiple merchants.
+
+OPTIMIZATION MODE: %s
 
 WORKFLOW:
 1. Use search_products to find matching products across all merchants (limit is set to %d automatically)
@@ -33,19 +66,24 @@ WORKFLOW:
 7. Use get_checkout_summary to read available destinations from checkout fulfillment
 8. Use update_checkout with selected_destination_id (pick the first destination from fulfillment.methods[0].destinations[0].id)
 9. Use get_checkout_summary to read available shipping options from fulfillment.methods[0].groups[0].options
-10. Use update_checkout with selected_option_id (pick the cheapest shipping option id)
-11. Use get_checkout_summary to compare final totals from all merchants
-12. Use complete_checkout at the cheapest merchant (handler_id: "mock_payment_handler", token: "success_token")
+10. Use update_checkout with selected_option_id (%s)
+11. Use get_checkout_summary to compare final results from all merchants (including shipping option titles for delivery estimation)
+12. Use complete_checkout %s (handler_id: "mock_payment_handler", token: "success_token")
 13. Use cancel_checkout at the other merchants
 
 IMPORTANT: When multiple calls are independent (same tool on different merchants), issue ALL of them in a single step. This enables parallel execution and is critical for performance.
 
-IMPORTANT: Fulfillment is progressive. You MUST do steps 6-10 for EACH merchant checkout before comparing prices.
+IMPORTANT: Fulfillment is progressive. You MUST do steps 6-10 for EACH merchant checkout before comparing.
 Each update_checkout call for fulfillment builds on the previous state. Do not skip steps.
 
-Always show a clear price comparison before purchasing. Format prices as dollars (divide cents by 100).
+SHIPPING SPEED DETECTION:
+- "Express" or "Expedited" in title = fast (1-2 days estimated)
+- "Standard" or "Regular" in title = normal (3-5 days estimated)
+- When optimizing for fastest delivery, ALWAYS prefer express options even if more expensive.
+
+Always show a clear comparison before purchasing. Format prices as dollars (divide cents by 100).
 When applying discount codes, try all hints provided in the search results.
-Explain which merchant won and why (lowest total after discounts and shipping).`, merchantCount, merchantCount, merchantCount)
+Explain which merchant won and why (%s).`, optimizeFor, merchantCount, merchantCount, merchantCount, shippingSelection, merchantSelection, explanation)
 }
 
 // Agent is the Gemini-powered shopping assistant.
@@ -77,10 +115,13 @@ func (a *Agent) Run(ctx context.Context, instruction string, merchantCount int) 
 		merchantCount = 3
 	}
 	a.currentMerchantCount = merchantCount
-	a.emitEvent("agent_start", fmt.Sprintf("Instruction: %s (merchants: %d)", instruction, merchantCount))
+
+	// Detect optimization intent from instruction
+	optimizeFor := detectOptimizationMode(instruction)
+	a.emitEvent("agent_start", fmt.Sprintf("Instruction: %s (merchants: %d, mode: %s)", instruction, merchantCount, optimizeFor))
 
 	config := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(buildSystemPrompt(merchantCount), genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(buildSystemPrompt(merchantCount, optimizeFor), genai.RoleUser),
 		Tools:             defineTools(),
 	}
 

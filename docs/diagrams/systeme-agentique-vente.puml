@@ -1,0 +1,66 @@
+@startuml Système Agentique - Vente d'Item
+
+!theme toy
+skinparam backgroundColor #F8F9FA
+skinparam defaultFontSize 14
+skinparam shadowing true
+
+' Style des rectangles
+skinparam rectangle {
+    roundCorner 25
+    BackgroundColor<<orchestrator>> #FF9800
+    BorderColor<<orchestrator>> #E65100
+    BorderThickness<<orchestrator>> 4
+    FontColor<<orchestrator>> white
+    FontStyle<<orchestrator>> bold
+
+    BackgroundColor<<agent>> #4CAF50
+    BorderColor<<agent>> #2E7D32
+    BorderThickness<<agent>> 3
+    FontColor<<agent>> white
+    FontStyle<<agent>> bold
+
+    BackgroundColor<<actor>> #2196F3
+    BorderColor<<actor>> #0D47A1
+    BorderThickness<<actor>> 3
+    FontColor<<actor>> white
+    FontStyle<<actor>> bold
+}
+
+' === CLIENT ===
+rectangle "**VOTRE CLIENT**\n\nDemande le prix\nd'un produit" as Acheteur <<actor>>
+
+' === ORCHESTRATEUR ===
+rectangle "**AGENT VENDEUR**\n**[CERVEAU CENTRAL]**\n\n**INTENTION**\nQuel prix optimiser pour\nMAXIMISER profit et vente ?\n\n**DÉCISION**\nPrix final calculé selon :\n→ Valeur du client\n→ Position marché" as Agent1 <<orchestrator>>
+
+' === AGENTS SPÉCIALISÉS ===
+rectangle "**AGENT FIDÉLITÉ**\n\n**INTENTION**\nCe client mérite-t-il\nun prix préférentiel ?\n\n**ANALYSE**\n• Historique d'achats\n• Montant dépensé\n• Potentiel de fidélité\n\n**DÉCISION**\n✓ Client VIP : Prix ajusté\n✗ Client standard : Prix normal" as Agent2 <<agent>>
+
+rectangle "**AGENT COMPÉTITIVITÉ**\n\n**INTENTION**\nSommes-nous compétitifs\nsur ce produit ?\n\n**ANALYSE**\n• Prix des concurrents\n• Codes promo actifs\n• Notre position marché\n\n**DÉCISION**\nPrix pour gagner : $XX.XX\nPosition actuelle : Xème/Y" as Agent3 <<agent>>
+
+' === FLUX AVEC COULEURS ===
+
+Acheteur -down[#1976D2,thickness=4]-> Agent1 : **1. DEMANDE**\nCombien coûte\nce produit ?
+Agent1 -up[#1976D2,thickness=4]-> Acheteur : **6. PRIX OPTIMAL**\nPrix gagnant\net rentable
+
+Agent1 -down[#FF5722,thickness=3]-> Agent2 : **2. CONSULTER**\nValeur de ce client ?
+Agent2 -up[#8BC34A,thickness=3]-> Agent1 : **4. RECOMMANDATION**\nClient VIP ou Standard\n+ Prix suggéré
+
+Agent1 -down[#FF5722,thickness=3]-> Agent3 : **3. CONSULTER**\nPosition compétitive ?
+Agent3 -up[#8BC34A,thickness=3]-> Agent1 : **5. RECOMMANDATION**\nPrix pour battre\nles concurrents
+
+Agent2 -[#9E9E9E,dashed]- Agent3 : Coordination centralisée\npar le Vendeur
+
+' === TITRE ===
+title <size:18><b>SYSTÈME MULTI-AGENTS DE PRICING INTELLIGENT</b></size>\n<size:12>Le bon prix, au bon client, selon le marché</size>
+
+' === LÉGENDE ===
+legend bottom right
+  <size:13><b>COMMENT ÇA FONCTIONNE ?</b></size>
+
+  <back:#2196F3>    </back> **Client** formule sa demande
+  <back:#FF9800>    </back> **Cerveau central** orchestre et décide
+  <back:#4CAF50>    </back> **Agents experts** analysent et recommandent
+endlegend
+
+@enduml

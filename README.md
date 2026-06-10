@@ -5,6 +5,32 @@
 
 A Go-based merchant server implementing the [Universal Commerce Protocol (UCP)](https://ucp.dev) Shopping Service. Supports both MCP (JSON-RPC) and REST API transports. Passes all 60 UCP conformance tests.
 
+---
+
+## 🚀 Nouveauté : Agents A2A Indépendants
+
+**Système multi-agent autonome pour démos rapides et POC**
+
+```bash
+# Démarrez un agent en 1 commande
+./bin/customer-growth-agent --port 9001
+
+# Testez immédiatement
+curl -X POST http://localhost:9001/a2a \
+  -d '{"jsonrpc":"2.0","method":"analyze_customer","params":{"customer_id":"elsi"},"id":1}'
+```
+
+**📖 [Guide complet Agents A2A](docs/agents-a2a-guide.md)** | **💼 [Valeur business](docs/agents-a2a-summary.md)**
+
+**Agents disponibles** :
+- **Customer Growth Agent** (port 9001) - Analyse fidélisation client
+- **Competitiveness Agent** (port 9002) - Stratégie de prix compétitive
+- **Dashboard Web** (port 8080) - Interface de test interactive
+
+**Pourquoi ?** Démos clients en 30 secondes vs 30 minutes de setup infrastructure.
+
+---
+
 ## Quick Start
 
 ```bash
@@ -153,4 +179,27 @@ internal/
   event/                        # SSE event hub
   store/                        # Store interface
   config/                       # Configuration types
+  a2a/                          # Agent-to-Agent (A2A) infrastructure
+    types.go                    # JSON-RPC 2.0 types
+    agent.go                    # Agent interface
+    server.go                   # HTTP JSON-RPC server
+  pricing-unified/              # Unified pricing system
+    agents/                     # Pricing agents (Customer Growth, Competitiveness)
+    datasources/                # Data sources (mock + interfaces)
+```
+
+## 📚 Documentation
+
+### Pour démarrer
+- **[Tutorial Agents A2A](docs/agents-a2a-guide.md#-tutorial---premier-lancement-apprentissage)** - Votre premier agent en 5 minutes
+- **[How-to Guides](docs/agents-a2a-guide.md#-how-to-guides---tâches-pratiques)** - Tâches pratiques courantes
+
+### Comprendre l'architecture
+- **[ADR-0011: Agents A2A Indépendants](docs/decisions/0011-agents-a2a-independants.md)** - Microservices vs Monolithe
+- **[ADR-0012: Mock Data Sources](docs/decisions/0012-mock-data-sources-standalone.md)** - Données de test intégrées
+- **[Tous les ADRs](docs/decisions/)** - Décisions d'architecture
+
+### Référence technique
+- **[Reference API](docs/agents-a2a-guide.md#-reference---documentation-technique)** - Endpoints, paramètres, exemples
+- **[Concepts expliqués](docs/agents-a2a-guide.md#-explanation---comprendre-les-concepts)** - Pourquoi A2A ? Comment ça marche ?
 ```
