@@ -224,9 +224,9 @@ go build -o bin/customer-growth-agent ./cmd/customer-growth-agent
 | ID | Total dépensé | Tier | Achats | Dernière activité |
 |----|---------------|------|--------|-------------------|
 | `elsi` | $850 | Gold | 8 | 10 jours |
-| `alice` | $1200 | Premium | 15 | 7 jours |
-| `bob` | $50 | Standard | 1 | 120 jours |
-| `john` | $350 | Silver | 4 | 20 jours |
+| `olwu` | $1200 | Premium | 15 | 7 jours |
+| `lja` | $50 | Standard | 1 | 120 jours |
+| `manu` | $350 | Silver | 4 | 20 jours |
 
 ### Produits avec données concurrents
 

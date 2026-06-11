@@ -54,7 +54,7 @@
 | ↳ Customer Growth Agent | Méthodes, paramètres, exemples |
 | ↳ Competitiveness Agent | Méthodes, paramètres, exemples |
 | ↳ Dashboard Web | API et interface |
-| [Clients de test](agents-a2a-guide.md#clients-de-test-disponibles) | elsi, alice, bob, john |
+| [Clients de test](agents-a2a-guide.md#clients-de-test-disponibles) | elsi, olwu, lja, manu |
 | [Produits mock](agents-a2a-guide.md#produits-avec-données-concurrents) | laptop, mouse, keyboard, monitor |
 | [JSON-RPC 2.0](agents-a2a-guide.md#structure-json-rpc-20) | Format requête/réponse |
 
@@ -176,7 +176,7 @@ R: [Comparaison détaillée](agents-a2a-summary.md#-différence-avec-le-système
 R: [Exemple concret](agents-a2a-summary.md#-exemple-concret) - Script de démo prêt à l'emploi
 
 **Q: Les données de test sont-elles suffisantes pour une démo ?**  
-R: Oui ! 4 clients (elsi, alice, bob, john) + 4 produits. [Voir détails](agents-a2a-guide.md#clients-de-test-disponibles)
+R: Oui ! 4 clients (elsi, olwu, lja, manu) + 4 produits. [Voir détails](agents-a2a-guide.md#clients-de-test-disponibles)
 
 **Q: Comment ajouter mes propres clients de test ?**  
 R: [How-to ajouter client](agents-a2a-guide.md#comment-ajouter-un-nouveau-client-de-test)

@@ -32,20 +32,20 @@ Implémenter des **Mock Data Sources** intégrés dans le code avec données de 
     PurchaseCount:    8,
     LastPurchaseDays: 10,
 }
-"alice": {
-    CustomerID:       "alice",
+"olwu": {
+    CustomerID:       "olwu",
     TotalSpent:       120000,  // $1200 - Premium tier
     PurchaseCount:    15,
     LastPurchaseDays: 7,
 }
-"bob": {
-    CustomerID:       "bob",
+"lja": {
+    CustomerID:       "lja",
     TotalSpent:       5000,    // $50 - Standard tier
     PurchaseCount:    1,
     LastPurchaseDays: 120,
 }
-"john": {
-    CustomerID:       "john",
+"manu": {
+    CustomerID:       "manu",
     TotalSpent:       35000,   // $350 - Silver tier
     PurchaseCount:    4,
     LastPurchaseDays: 20,
@@ -120,7 +120,7 @@ agent := agents.NewCustomerGrowthAgent(dataSource)
 - ✅ Pas de docker-compose pour développer
 
 **Documentation**
-- ✅ Exemples vivants dans le code (clients elsi, alice = tutoriel)
+- ✅ Exemples vivants dans le code (clients elsi, olwu, lja, manu = tutoriel)
 
 ### Négatives
 
