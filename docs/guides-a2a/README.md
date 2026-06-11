@@ -1,5 +1,7 @@
 # 📚 Guide Agents A2A - Version Simplifiée
 
+**Architecture Microservices** pour démos rapides et POCs
+
 **Pour les non-techniques** : Utilisez vos agents intelligents sans coder !
 
 ---
