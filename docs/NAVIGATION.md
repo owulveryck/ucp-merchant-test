@@ -98,7 +98,7 @@
 
 1. **ADRs complets** :
    - [ADR-0011: Microservices A2A](decisions/0011-agents-a2a-independants.md)
-   - [ADR-0012: Mock Data Sources](decisions/0012-mock-data-sources-standalone.md)
+   - [ADR-0012: Clients et Produits de Test](decisions/0012-mock-data-sources-standalone.md)
 2. **Architecture détaillée** : [Concepts expliqués](agents-a2a-guide.md#-explanation---comprendre-les-concepts)
 3. **Alternatives rejetées** : Voir sections "Alternatives" dans les ADRs
 4. **Migration production** : [Mock → Production](decisions/0012-mock-data-sources-standalone.md#migration-vers-production)

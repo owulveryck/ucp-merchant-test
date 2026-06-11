@@ -1,4 +1,4 @@
-# ADR-0012: Mock Data Sources pour Mode Standalone
+# ADR-0012: Clients et Produits de Test
 
 **Date**: 2026-06-09  
 **Statut**: ✅ Accepté  

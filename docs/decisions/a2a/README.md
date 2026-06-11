@@ -35,7 +35,7 @@
 
 ### 🎮 Données de Test
 
-**[0012 - Mock Data Sources Standalone](0012-mock-data-sources-standalone.md)**
+**[0012 - Clients et Produits de Test](0012-mock-data-sources-standalone.md)**
 - **Décision** : Données hardcodées dans le code
 - **Contexte** : Tests sans base de données
 - **Migration** : Interface unifiée mock → production
