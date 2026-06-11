@@ -31,7 +31,6 @@
 **[0011 - Agents A2A Indépendants](0011-agents-a2a-independants.md)**
 - **Décision** : Microservices autonomes communiquant via JSON-RPC 2.0
 - **Contexte** : Simplifier les démos clients et POCs
-- **Alternatives rejetées** : gRPC, GraphQL Federation
 - **Impact** : POC en 30s vs 30min de setup
 
 ### 🎮 Données de Test

@@ -137,32 +137,6 @@ agent := agents.NewCustomerGrowthAgent(dataSource)
 - ❌ Ajouter un client = modifier le code + recompiler
 - ⚠️ Mitigation : Futurs ADR pour mock data YAML/JSON externalisé
 
-## Alternatives considérées
-
-### 1. SQLite embarqué
-
-**Pour** : Vraie BDD SQL, CRUD complet  
-**Contre** : Fichier à gérer, schéma à migrer, complexité setup  
-**Rejet** : Trop complexe pour des démos rapides
-
-### 2. Fichiers JSON/YAML
-
-**Pour** : Éditable sans recompilation  
-**Contre** : Parsing errors possibles, chemins relatifs fragiles  
-**Rejet** : Le gain (édition sans recompile) ne justifie pas la fragilité
-
-### 3. API mock externe (mockapi.io, wiremock)
-
-**Pour** : Réalisme accru (vraies requêtes HTTP)  
-**Contre** : Dépendance réseau, latence, service externe  
-**Rejet** : Contradictoire avec "standalone" (pas de dépendance)
-
-### 4. Embedded etcd/bolt
-
-**Pour** : Stockage persistant key-value  
-**Contre** : Overhead mémoire, complexité, pas de SQL  
-**Rejet** : Over-engineering pour 4 clients de test
-
 ## Migration vers production
 
 **Code agent inchangé** (interface identique) :
