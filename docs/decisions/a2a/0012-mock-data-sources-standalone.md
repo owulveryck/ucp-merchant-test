@@ -1,4 +1,4 @@
-# ADR-0012: Mock Data Sources pour Mode Standalone
+# ADR-0012: Clients et Produits de Test
 
 **Date**: 2026-06-09  
 **Statut**: ✅ Accepté  
@@ -32,20 +32,20 @@ Implémenter des **Mock Data Sources** intégrés dans le code avec données de 
     PurchaseCount:    8,
     LastPurchaseDays: 10,
 }
-"alice": {
-    CustomerID:       "alice",
+"olwu": {
+    CustomerID:       "olwu",
     TotalSpent:       120000,  // $1200 - Premium tier
     PurchaseCount:    15,
     LastPurchaseDays: 7,
 }
-"bob": {
-    CustomerID:       "bob",
+"lja": {
+    CustomerID:       "lja",
     TotalSpent:       5000,    // $50 - Standard tier
     PurchaseCount:    1,
     LastPurchaseDays: 120,
 }
-"john": {
-    CustomerID:       "john",
+"manu": {
+    CustomerID:       "manu",
     TotalSpent:       35000,   // $350 - Silver tier
     PurchaseCount:    4,
     LastPurchaseDays: 20,
@@ -120,7 +120,7 @@ agent := agents.NewCustomerGrowthAgent(dataSource)
 - ✅ Pas de docker-compose pour développer
 
 **Documentation**
-- ✅ Exemples vivants dans le code (clients elsi, alice = tutoriel)
+- ✅ Exemples vivants dans le code (clients elsi, olwu, lja, manu = tutoriel)
 
 ### Négatives
 
@@ -136,32 +136,6 @@ agent := agents.NewCustomerGrowthAgent(dataSource)
 **Maintenance**
 - ❌ Ajouter un client = modifier le code + recompiler
 - ⚠️ Mitigation : Futurs ADR pour mock data YAML/JSON externalisé
-
-## Alternatives considérées
-
-### 1. SQLite embarqué
-
-**Pour** : Vraie BDD SQL, CRUD complet  
-**Contre** : Fichier à gérer, schéma à migrer, complexité setup  
-**Rejet** : Trop complexe pour des démos rapides
-
-### 2. Fichiers JSON/YAML
-
-**Pour** : Éditable sans recompilation  
-**Contre** : Parsing errors possibles, chemins relatifs fragiles  
-**Rejet** : Le gain (édition sans recompile) ne justifie pas la fragilité
-
-### 3. API mock externe (mockapi.io, wiremock)
-
-**Pour** : Réalisme accru (vraies requêtes HTTP)  
-**Contre** : Dépendance réseau, latence, service externe  
-**Rejet** : Contradictoire avec "standalone" (pas de dépendance)
-
-### 4. Embedded etcd/bolt
-
-**Pour** : Stockage persistant key-value  
-**Contre** : Overhead mémoire, complexité, pas de SQL  
-**Rejet** : Over-engineering pour 4 clients de test
 
 ## Migration vers production
 

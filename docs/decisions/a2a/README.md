@@ -31,12 +31,11 @@
 **[0011 - Agents A2A Indépendants](0011-agents-a2a-independants.md)**
 - **Décision** : Microservices autonomes communiquant via JSON-RPC 2.0
 - **Contexte** : Simplifier les démos clients et POCs
-- **Alternatives rejetées** : gRPC, GraphQL Federation
 - **Impact** : POC en 30s vs 30min de setup
 
 ### 🎮 Données de Test
 
-**[0012 - Mock Data Sources Standalone](0012-mock-data-sources-standalone.md)**
+**[0012 - Clients et Produits de Test](0012-mock-data-sources-standalone.md)**
 - **Décision** : Données hardcodées dans le code
 - **Contexte** : Tests sans base de données
 - **Migration** : Interface unifiée mock → production
@@ -130,9 +129,9 @@ curl -X POST http://localhost:9001/a2a \
 | ID | Montant dépensé | Tier | Achats | Dernière activité |
 |----|-----------------|------|--------|-------------------|
 | `elsi` | $850 | Gold | 8 | 10 jours |
-| `alice` | $1200 | Premium | 15 | 7 jours |
-| `bob` | $50 | Standard | 1 | 120 jours |
-| `john` | $350 | Silver | 4 | 20 jours |
+| `olwu` | $1200 | Premium | 15 | 7 jours |
+| `lja` | $50 | Standard | 1 | 120 jours |
+| `manu` | $350 | Silver | 4 | 20 jours |
 
 ### Produits avec concurrents
 

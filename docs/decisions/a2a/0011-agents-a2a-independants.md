@@ -85,26 +85,6 @@ cmd/agents-dashboard/
 - ❌ N binaires à déployer vs 1 monolithe
 - ⚠️ Mitigation : Scripts de déploiement (`start-agents.sh`, `stop-agents.sh`)
 
-## Alternatives considérées
-
-### 1. Rester en architecture monolithique
-
-**Pour** : Performance max, cohérence ACID  
-**Contre** : Impossible de démontrer rapidement, couplage fort  
-**Rejet** : La démonstrabilité est critique pour la conversion client
-
-### 2. gRPC au lieu de JSON-RPC
-
-**Pour** : Performance, streaming bidirectionnel, typage strict  
-**Contre** : Complexité (Protocol Buffers), moins testable avec curl  
-**Rejet** : La simplicité et debuggabilité sont prioritaires (POC/démos)
-
-### 3. GraphQL Federation
-
-**Pour** : Schéma unifié, découverte automatique  
-**Contre** : Overhead complexe pour un cas simple, courbe d'apprentissage  
-**Rejet** : Over-engineering pour le besoin actuel
-
 ## Métriques de succès
 
 - ✅ Temps de setup démo : < 1 minute (atteint : 30s)
